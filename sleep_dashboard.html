@@ -509,13 +509,6 @@ function updateCards(data) {
   document.getElementById('card-deep-sub').textContent = pct(avg.deep, avg.total) + ' 佔比';
   document.getElementById('card-eff').innerHTML = `${avg.eff}<span class="stat-unit">%</span>`;
   document.getElementById('card-eff-sub').textContent = avg.eff >= 85 ? '✓ 良好' : avg.eff >= 75 ? '⚠ 一般' : '✗ 需改善';
-
-  // sidebar
-  document.getElementById('avgDeep').textContent = pct(avg.deep, avg.total);
-  document.getElementById('avgRem').textContent = pct(avg.rem, avg.total);
-  document.getElementById('avgCore').textContent = pct(avg.core, avg.total);
-  document.getElementById('avgTotal').textContent = minToHm(avg.total);
-  document.getElementById('avgEff').textContent = avg.eff + '%';
 }
 
 function updateMetrics(data) {
