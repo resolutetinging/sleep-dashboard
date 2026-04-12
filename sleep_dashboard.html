@@ -576,18 +576,18 @@ function updateTrend(data) {
     const dow = DOW[new Date(d.date + 'T12:00:00').getDay()];
     return d.date.slice(5) + '（' + dow + '）';
   });
-  const deep = data.map(d => d.deep_min);
-  const rem = data.map(d => d.rem_min);
-  const core = data.map(d => d.core_min);
+  const deep  = data.map(d => d.deep_min);
+  const rem   = data.map(d => d.rem_min);
+  const core  = data.map(d => d.core_min);
   const awake = data.map(d => d.awake_min);
   const totals = data.map(d => d.deep_min + d.rem_min + d.core_min);
   const tickColor = '#4a4540';
   const gridColor = '#cdc8c033';
 
-  // Moving average trendline (7-day)
+  // 7-day moving average trendline
   const trendData = totals.map((_, i) => {
-    const window = totals.slice(Math.max(0, i-3), i+4);
-    return Math.round(window.reduce((a,b)=>a+b,0) / window.length);
+    const w = totals.slice(Math.max(0, i-3), i+4);
+    return Math.round(w.reduce((a,b)=>a+b,0) / w.length);
   });
 
   const cfg = {
@@ -595,16 +595,13 @@ function updateTrend(data) {
     data: {
       labels,
       datasets: [
-        { label:'深度', data:deep, backgroundColor:COLORS.deep+'cc', stack:'s', yAxisID:'y' },
-        { label:'REM', data:rem, backgroundColor:COLORS.rem+'cc', stack:'s', yAxisID:'y' },
-        { label:'核心', data:core, backgroundColor:COLORS.core+'cc', stack:'s', yAxisID:'y' },
-        { label:'清醒', data:awake, backgroundColor:COLORS.awake+'88', stack:'s', yAxisID:'y' },
-        {
-          label:'趨勢', data:trendData, type:'line',
-          borderColor:'#8a7060', borderWidth:2, borderDash:[4,3],
-          pointRadius:0, tension:0.4, fill:false,
-          stack: undefined, yAxisID:'y'
-        },
+        { label:'深度', data:deep,  backgroundColor:COLORS.deep+'cc', stack:'s' },
+        { label:'REM',  data:rem,   backgroundColor:COLORS.rem+'cc',  stack:'s' },
+        { label:'核心', data:core,  backgroundColor:COLORS.core+'cc', stack:'s' },
+        { label:'清醒', data:awake, backgroundColor:COLORS.awake+'88',stack:'s' },
+        { label:'趨勢線', data:trendData, type:'line',
+          borderColor:'#8a7060', borderWidth:2, borderDash:[5,3],
+          pointRadius:0, tension:0.4, fill:false, stack:undefined },
       ]
     },
     options: {
@@ -618,46 +615,42 @@ function updateTrend(data) {
             return d.date + '（週' + dow + '）';
           },
           label: i => {
-            if (i.dataset.label === '趨勢') return ` 7日趨勢: ${minToHm(i.raw)}`;
+            if (i.dataset.label === '趨勢線') return ` 7日平均: ${minToHm(i.raw)}`;
             return ` ${i.dataset.label}: ${i.raw} 分鐘`;
           },
-          afterBody: i => {
-            const idx = i[0].dataIndex;
-            const t = totals[idx];
-            return [`總計: ${minToHm(t)}`];
-          }
-        }},
-        // Draw total label on top of each bar
-        afterDatasetsDraw: undefined,
+          afterBody: i => [`總計: ${minToHm(totals[i[0].dataIndex])}`]
+        }}
       },
       scales:{
         x:{ stacked:true, ticks:{ color:tickColor, maxTicksLimit:14, font:{size:10, weight:'bold'} }, grid:{color:gridColor} },
         y:{ stacked:true, ticks:{ color:tickColor, callback:v=>v+'m', font:{size:10, weight:'bold'} }, grid:{color:gridColor} }
       }
-    },
-    plugins: [{
-      id: 'totalLabels',
-      afterDatasetsDraw(chart) {
-        if (data.length > 60) return; // skip when too many bars
-        const ctx = chart.ctx;
-        const meta = chart.getDatasetMeta(3); // awake dataset (top of stack)
-        ctx.save();
-        ctx.font = 'bold 9px "DM Mono",monospace';
-        ctx.fillStyle = '#4a4540';
-        ctx.textAlign = 'center';
-        meta.data.forEach((bar, i) => {
-          const total = totals[i];
-          const h = Math.floor(total/60), m = total%60;
-          const label = h > 0 ? `${h}h${m > 0 ? m+'m' : ''}` : `${m}m`;
-          ctx.fillText(label, bar.x, bar.y - 3);
-        });
-        ctx.restore();
-      }
-    }]
+    }
+  };
+
+  // Total label plugin (drawn after chart)
+  const totalLabelPlugin = {
+    id: 'totalLabels',
+    afterDraw(chart) {
+      if (data.length > 60) return;
+      const ctx = chart.ctx;
+      const meta = chart.getDatasetMeta(3); // top of stack = awake
+      ctx.save();
+      ctx.font = 'bold 9px "DM Mono",monospace';
+      ctx.fillStyle = '#4a4540';
+      ctx.textAlign = 'center';
+      meta.data.forEach((bar, i) => {
+        const t = totals[i];
+        const h = Math.floor(t/60), m = t%60;
+        const lbl = h > 0 ? `${h}h${m>0?m+'m':''}` : `${m}m`;
+        ctx.fillText(lbl, bar.x, bar.y - 4);
+      });
+      ctx.restore();
+    }
   };
 
   if (trendChart) { trendChart.destroy(); trendChart = null; }
-  trendChart = new Chart(document.getElementById('trendChart'), cfg);
+  trendChart = new Chart(document.getElementById('trendChart'), { ...cfg, plugins:[totalLabelPlugin] });
 }
 
 function updateDonut(data) {
