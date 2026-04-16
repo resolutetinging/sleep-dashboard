@@ -372,6 +372,44 @@
 
   </div>
 
+  <!-- SLEEP DEBT + COMBAT POWER ROW -->
+  <div class="two-col">
+
+    <!-- SLEEP DEBT -->
+    <div class="panel" id="debtPanel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">睡眠債 · 過去 7 天</div>
+          <div class="panel-sub">以 8 小時為標準計算累積差額</div>
+        </div>
+      </div>
+      <div id="debtAlert" style="display:none;margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#b05858;color:#fff;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">⚠ High Exhaustion Risk</div>
+        <div id="debtAlertDetail" style="font-size:11px;opacity:.9;line-height:1.6"></div>
+      </div>
+      <div id="debtBars" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div id="debtSummary" style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
+    </div>
+
+    <!-- COMBAT POWER INDEX -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">⚡ 戰力指數 · 昨晚</div>
+          <div class="panel-sub">Deep×0.7 + REM×0.3，含睡眠債調節</div>
+        </div>
+      </div>
+      <div id="combatScore" style="text-align:center;padding:16px 0 8px">
+        <div id="combatNum" style="font-size:56px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
+        <div id="combatLabel" style="font-size:13px;font-weight:600;margin:6px 0 2px">—</div>
+        <div id="combatSub" style="font-size:11px;color:var(--text-dim)">—</div>
+      </div>
+      <div id="combatBars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+      <div id="combatTasks" style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.8"></div>
+    </div>
+
+  </div>
+
   <!-- TREND CHART -->
   <div class="panel">
     <div class="panel-header">
@@ -441,44 +479,6 @@
       </div>
     </div>
     <div class="chart-wrap"><canvas id="bedtimeChart" height="100"></canvas></div>
-  </div>
-
-  <!-- SLEEP DEBT + COMBAT POWER ROW -->
-  <div class="two-col">
-
-    <!-- SLEEP DEBT -->
-    <div class="panel" id="debtPanel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">睡眠債 · 過去 7 天</div>
-          <div class="panel-sub">以 8 小時為標準計算累積差額</div>
-        </div>
-      </div>
-      <div id="debtAlert" style="display:none;margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#b05858;color:#fff;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px">⚠ High Exhaustion Risk</div>
-        <div id="debtAlertDetail" style="font-size:11px;opacity:.9;line-height:1.6"></div>
-      </div>
-      <div id="debtBars" style="display:flex;flex-direction:column;gap:8px"></div>
-      <div id="debtSummary" style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
-    </div>
-
-    <!-- COMBAT POWER INDEX -->
-    <div class="panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">⚡ 戰力指數 · 昨晚</div>
-          <div class="panel-sub">REM×0.6 + Deep×0.4（相對建議值）</div>
-        </div>
-      </div>
-      <div id="combatScore" style="text-align:center;padding:16px 0 8px">
-        <div id="combatNum" style="font-size:56px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
-        <div id="combatLabel" style="font-size:13px;font-weight:600;margin:6px 0 2px">—</div>
-        <div id="combatSub" style="font-size:11px;color:var(--text-dim)">—</div>
-      </div>
-      <div id="combatBars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
-      <div id="combatTasks" style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.8"></div>
-    </div>
-
   </div>
 
 </main>
@@ -995,7 +995,6 @@ function updateSleepDebt(allData) {
 }
 
 function updateCombatPower(totalDebt) {
-  // Use the most recent night with data
   const last = RAW.summary[RAW.summary.length - 1];
   if (!last) return;
 
@@ -1004,10 +1003,10 @@ function updateCombatPower(totalDebt) {
   const deepPct = pctNum(last.deep_min, totalSleep);
 
   // Normalize to recommended range: REM 20-25%, Deep 13-23%
-  const remScore  = Math.min(remPct  / 22.5 * 100, 100); // 22.5 = midpoint of 20-25
-  const deepScore = Math.min(deepPct / 18   * 100, 100); // 18 = midpoint of 13-23
+  const remScore  = Math.min(remPct  / 22.5 * 100, 100);
+  const deepScore = Math.min(deepPct / 18   * 100, 100);
 
-  // Raw score: Deep 70% (physical recovery) + REM 30% (cognitive)
+  // Raw score: Deep 70% + REM 30%
   const rawScore = deepScore * 0.7 + remScore * 0.3;
 
   // Debt adjustment: 3-hour buffer, -2 pts per extra hour of debt
@@ -1015,7 +1014,7 @@ function updateCombatPower(totalDebt) {
   const debtPenalty = Math.max(0, debtHours - 3) * 2;
   const score = Math.round(Math.max(0, rawScore - debtPenalty));
 
-  // Label and color — thresholds: <60 Critical (red), <70 Caution (amber), ≥70 Normal
+  // Thresholds: <60 Critical (red), <70 Caution (amber), 70-79 Stable, ≥80 Peak
   let label, color, tasks;
   if (score >= 80) {
     label = '🔥 高效能 · Peak';
@@ -1043,13 +1042,11 @@ function updateCombatPower(totalDebt) {
   const DOW = ['日','一','二','三','四','五','六'];
   const dow = DOW[new Date(last.date + 'T12:00:00').getDay()];
 
-  // Show debt penalty breakdown if it's affecting the score
   const penaltyNote = debtPenalty > 0
     ? `<br><span style="color:#e67e22;font-size:10px">⚠ 睡眠債扣分 −${debtPenalty.toFixed(1)}（原始分 ${Math.round(rawScore)}）</span>`
     : '';
   document.getElementById('combatSub').innerHTML = `基於 ${last.date}（${dow}）睡眠數據${penaltyNote}`;
 
-  // Component bars — Deep first (higher weight)
   document.getElementById('combatBars').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:6px">
       <div>
