@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 # ─── 設定區（只需修改這裡）───────────────────────────────────────────────
 ICLOUD_FOLDER = os.path.expanduser(
-    "~/Library/Mobile Documents/com~apple~CloudDocs/Auto Export/Daily Sleep Update"
+    "/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update"
 )
 DASHBOARD_PATH = os.path.expanduser("~/sleep-dashboard/sleep_dashboard.html")
 GITHUB_REPO_DIR = os.path.expanduser("~/sleep-dashboard")
