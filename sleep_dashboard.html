@@ -990,9 +990,11 @@ function updateSleepDebt(allData) {
     `7 天合計：<strong style="color:${debtColor}">${debtSign} ${minToHm(Math.abs(totalDebt))}</strong>　
      低睡眠日（< 6.5h）：<strong>${lowDays} 天</strong>　
      ${ highRisk ? '<strong style="color:#a05858">⚠ 建議近期補眠並降低高強度工作安排</strong>' : '整體睡眠狀況尚可' }`;
+
+  return totalDebt; // for combat power debt adjustment
 }
 
-function updateCombatPower() {
+function updateCombatPower(totalDebt) {
   // Use the most recent night with data
   const last = RAW.summary[RAW.summary.length - 1];
   if (!last) return;
@@ -1005,25 +1007,31 @@ function updateCombatPower() {
   const remScore  = Math.min(remPct  / 22.5 * 100, 100); // 22.5 = midpoint of 20-25
   const deepScore = Math.min(deepPct / 18   * 100, 100); // 18 = midpoint of 13-23
 
-  const score = Math.round(remScore * 0.6 + deepScore * 0.4);
+  // Raw score: Deep 70% (physical recovery) + REM 30% (cognitive)
+  const rawScore = deepScore * 0.7 + remScore * 0.3;
 
-  // Label and color
+  // Debt adjustment: 3-hour buffer, -2 pts per extra hour of debt
+  const debtHours = (totalDebt || 0) / 60;
+  const debtPenalty = Math.max(0, debtHours - 3) * 2;
+  const score = Math.round(Math.max(0, rawScore - debtPenalty));
+
+  // Label and color — thresholds: <60 Critical (red), <70 Caution (amber), ≥70 Normal
   let label, color, tasks;
   if (score >= 80) {
     label = '🔥 高效能 · Peak';
     color = '#5e8f7e';
     tasks = '✦ 適合：深度創意工作、複雜決策、高強度學習<br>✦ 邏輯與應變能力處於最佳狀態<br>✦ 可安排重要會議、簡報或挑戰性任務';
-  } else if (score >= 60) {
+  } else if (score >= 70) {
     label = '⚡ 穩定輸出 · Stable';
     color = '#5c7a96';
     tasks = '✦ 適合：例行工作、中等難度任務、協作討論<br>✦ 建議避免需要高度專注的複雜判斷<br>✦ 下午可安排休息或輕量運動提升狀態';
-  } else if (score >= 40) {
-    label = '⚠ 低效模式 · Low';
-    color = '#b08d62';
+  } else if (score >= 60) {
+    label = '⚠ 注意 · Caution';
+    color = '#e67e22';
     tasks = '✦ 適合：整理性工作、回信、行政事務<br>✦ 避免重要決策或創意密集型工作<br>✦ 建議 20 分鐘午睡以回復認知功能';
   } else {
-    label = '🔴 恢復優先 · Rest';
-    color = '#a05858';
+    label = '🔴 恢復優先 · Critical';
+    color = '#c0392b';
     tasks = '✦ 建議優先安排休息，不宜硬撐<br>✦ 僅處理最低限度的必要事務<br>✦ 今晚務必保障 7.5 小時以上睡眠';
   }
 
@@ -1034,27 +1042,32 @@ function updateCombatPower() {
 
   const DOW = ['日','一','二','三','四','五','六'];
   const dow = DOW[new Date(last.date + 'T12:00:00').getDay()];
-  document.getElementById('combatSub').textContent = `基於 ${last.date}（${dow}）睡眠數據`;
 
-  // Component bars
+  // Show debt penalty breakdown if it's affecting the score
+  const penaltyNote = debtPenalty > 0
+    ? `<br><span style="color:#e67e22;font-size:10px">⚠ 睡眠債扣分 −${debtPenalty.toFixed(1)}（原始分 ${Math.round(rawScore)}）</span>`
+    : '';
+  document.getElementById('combatSub').innerHTML = `基於 ${last.date}（${dow}）睡眠數據${penaltyNote}`;
+
+  // Component bars — Deep first (higher weight)
   document.getElementById('combatBars').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:6px">
       <div>
         <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
-          <span style="color:var(--text-dim)">REM 邏輯應變力 ×0.6</span>
-          <span style="font-family:DM Mono,monospace;font-weight:700;color:var(--rem)">${remPct.toFixed(1)}%（得分 ${Math.round(remScore)}）</span>
-        </div>
-        <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
-          <div style="width:${remScore}%;height:100%;background:var(--rem);border-radius:3px"></div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
-          <span style="color:var(--text-dim)">Deep 物理耐力氣場 ×0.4</span>
+          <span style="color:var(--text-dim)">Deep 物理耐力氣場 ×0.7</span>
           <span style="font-family:DM Mono,monospace;font-weight:700;color:var(--deep)">${deepPct.toFixed(1)}%（得分 ${Math.round(deepScore)}）</span>
         </div>
         <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
           <div style="width:${deepScore}%;height:100%;background:var(--deep);border-radius:3px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
+          <span style="color:var(--text-dim)">REM 邏輯應變力 ×0.3</span>
+          <span style="font-family:DM Mono,monospace;font-weight:700;color:var(--rem)">${remPct.toFixed(1)}%（得分 ${Math.round(remScore)}）</span>
+        </div>
+        <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
+          <div style="width:${remScore}%;height:100%;background:var(--rem);border-radius:3px"></div>
         </div>
       </div>
     </div>`;
@@ -1075,8 +1088,8 @@ function refreshAll() {
   updateTrend(data);
   updateDonut(data);
   updateBedtime(data);
-  updateSleepDebt(data);
-  updateCombatPower();
+  const totalDebt = updateSleepDebt(data);
+  updateCombatPower(totalDebt);
 }
 
 // Init
