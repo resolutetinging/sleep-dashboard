@@ -15,8 +15,8 @@ from datetime import datetime, timedelta
 ICLOUD_FOLDER = os.path.expanduser(
     "/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update"
 )
-DASHBOARD_PATH = os.path.expanduser("~/sleep-dashboard/sleep_dashboard.html")
-GITHUB_REPO_DIR = os.path.expanduser("~/sleep-dashboard")
+DASHBOARD_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard.html"
+GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
 # ────────────────────────────────────────────────────────────────────────
 
 
