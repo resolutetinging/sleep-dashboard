@@ -1408,6 +1408,7 @@ function updateCombatPower(totalDebt) {
   }
 
   document.getElementById('combatNum').textContent = score;
+  localStorage.setItem('sas_combat', score);
   document.getElementById('combatNum').style.color = color;
   document.getElementById('combatLabel').textContent = label;
   document.getElementById('combatLabel').style.color = color;
