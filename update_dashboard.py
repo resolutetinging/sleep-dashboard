@@ -22,6 +22,10 @@ GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
 
 def parse_json_files():
     """讀取所有 HealthAutoExport JSON，轉成 summary 列表"""
+    # Force iCloud to download files before reading
+    import subprocess, time
+    subprocess.run(['/usr/bin/brctl', 'download', ICLOUD_FOLDER], capture_output=True)
+    time.sleep(8)
     pattern = os.path.join(ICLOUD_FOLDER, "HealthAutoExport-*.json")
     files = sorted(glob.glob(pattern))
     print(f"找到 {len(files)} 個 JSON 檔案")
