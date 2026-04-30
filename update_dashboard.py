@@ -25,8 +25,9 @@ def parse_json_files():
     import subprocess, time, tempfile
     # Copy iCloud files to local temp dir first (avoids launchd iCloud permission issue)
     local_tmp = tempfile.mkdtemp()
-    subprocess.run(['cp', '-r', ICLOUD_FOLDER + '/', local_tmp], capture_output=True)
-    time.sleep(5)
+    subprocess.run(['rsync', '-a', '--copy-unsafe-links',
+                    ICLOUD_FOLDER + '/', local_tmp], capture_output=True)
+    time.sleep(10)
     pattern = os.path.join(local_tmp, "HealthAutoExport-*.json")
     files = sorted(glob.glob(pattern))
     print(f"找到 {len(files)} 個 JSON 檔案")
