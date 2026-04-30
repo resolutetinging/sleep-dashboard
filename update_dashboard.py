@@ -24,13 +24,14 @@ def parse_json_files():
     """讀取所有 HealthAutoExport JSON，轉成 summary 列表"""
     # Force iCloud to download files before reading
     import subprocess, time
-    subprocess.run(['/usr/bin/brctl', 'download', ICLOUD_FOLDER], capture_output=True)
-    time.sleep(30)
-    print(f"ICLOUD路徑: {ICLOUD_FOLDER}")
-    print(f"路徑存在: {os.path.exists(ICLOUD_FOLDER)}")
-    print(f"資料夾內容: {len(os.listdir(ICLOUD_FOLDER)) if os.path.exists(ICLOUD_FOLDER) else 0} 個檔案")
     pattern = os.path.join(ICLOUD_FOLDER, "HealthAutoExport-*.json")
     files = sorted(glob.glob(pattern))
+    # Download each file individually
+    for fpath in files:
+    subprocess.run(['/usr/bin/brctl', 'download', fpath], capture_output=True)
+    time.sleep(60)
+    print(f"ICLOUD路徑: {ICLOUD_FOLDER}")
+    print(f"路徑存在: {os.path.exists(ICLOUD_FOLDER)}")
     print(f"找到 {len(files)} 個 JSON 檔案")
 
     summary = []
