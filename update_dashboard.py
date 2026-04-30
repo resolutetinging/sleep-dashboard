@@ -25,7 +25,7 @@ def parse_json_files():
     # Force iCloud to download files before reading
     import subprocess, time
     subprocess.run(['/usr/bin/brctl', 'download', ICLOUD_FOLDER], capture_output=True)
-    time.sleep(8)
+    time.sleep(30)
     print(f"ICLOUD路徑: {ICLOUD_FOLDER}")
     print(f"路徑存在: {os.path.exists(ICLOUD_FOLDER)}")
     print(f"資料夾內容: {len(os.listdir(ICLOUD_FOLDER)) if os.path.exists(ICLOUD_FOLDER) else 0} 個檔案")
