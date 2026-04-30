@@ -26,6 +26,9 @@ def parse_json_files():
     import subprocess, time
     subprocess.run(['/usr/bin/brctl', 'download', ICLOUD_FOLDER], capture_output=True)
     time.sleep(8)
+    print(f"ICLOUD路徑: {ICLOUD_FOLDER}")
+    print(f"路徑存在: {os.path.exists(ICLOUD_FOLDER)}")
+    print(f"資料夾內容: {len(os.listdir(ICLOUD_FOLDER)) if os.path.exists(ICLOUD_FOLDER) else 0} 個檔案")
     pattern = os.path.join(ICLOUD_FOLDER, "HealthAutoExport-*.json")
     files = sorted(glob.glob(pattern))
     print(f"找到 {len(files)} 個 JSON 檔案")
