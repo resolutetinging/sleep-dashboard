@@ -155,7 +155,8 @@ def git_push():
             ["git", "commit", "-m", f"auto update: {today}"],
             check=True
         )
-        subprocess.run(["git", "push"], check=True)
+        subprocess.run(['git', 'pull', '--rebase', 'origin', 'main'], cwd=GITHUB_REPO_DIR)
+        subprocess.run(['git', 'push'], cwd=GITHUB_REPO_DIR)
         print(f"✅ 已 push 到 GitHub")
 
     except subprocess.CalledProcessError as e:
