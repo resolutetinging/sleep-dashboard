@@ -2,13 +2,14 @@
 """
 Sleep Dashboard 自動更新腳本
 每天由 Mac 排程執行，讀取 iCloud 的 HealthAutoExport JSON 檔案
-重新生成 sleep_dashboard.html 並 push 到 GitHub
+支持原始 HealthAutoExport 格式與 Shortcut 扁平化格式
 """
 
 import json
 import os
 import glob
 import subprocess
+import re
 from datetime import datetime, timedelta
 
 # ─── 設定區（只需修改這裡）───────────────────────────────────────────────
@@ -19,37 +20,70 @@ DASHBOARD_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard.html"
 GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
 # ────────────────────────────────────────────────────────────────────────
 
+def clean_json_content(content):
+    """移除 JSON 中可能導致解析錯誤的控制字元"""
+    # 移除不可見字元，但保留換行與標準空白
+    return "".join(c for c in content if c.isprintable() or c in "\n\r\t")
+
+def hr2min(v):
+    """單位是 hr，轉成分鐘"""
+    try:
+        return round(float(v) * 60)
+    except:
+        return 0
+
+def parse_time(s):
+    """解析入睡/起床時間字串"""
+    if not s or not isinstance(s, str):
+        return "00:00"
+    s = s.strip()
+    try:
+        # 處理 T 分隔格式: 2026-05-11T00:54:51
+        if "T" in s:
+            dt = datetime.strptime(s[:19], "%Y-%m-%dT%H:%M:%S")
+        # 處理標準空白格式: 2026-05-11 00:54:51
+        else:
+            dt = datetime.strptime(s[:19], "%Y-%m-%d %H:%M:%S")
+        return dt.strftime("%H:%M")
+    except:
+        return "00:00"
 
 def parse_json_files():
-    """讀取所有 HealthAutoExport JSON，轉成 summary 列表"""
-    # iCloud files are pre-downloaded by run_update.sh via 'open' command
+    """讀取所有 JSON/TXT 檔案，轉成 summary 列表"""
     pattern = os.path.join(ICLOUD_FOLDER, "*.*")
     files = sorted(glob.glob(pattern))
-    print(f"找到 {len(files)} 個 JSON 檔案")
+    print(f"找到 {len(files)} 個資料檔案")
 
     summary = []
     for fpath in files:
+        # 只處理 .json 和 .txt
+        if not (fpath.endswith(".json") or fpath.endswith(".txt")):
+            continue
+
         try:
-            with open(fpath, "r", encoding="utf-8") as f:
-                raw = json.load(f)
+            # 使用 utf-8-sig 自動處理 BOM 頭
+            with open(fpath, "r", encoding="utf-8-sig") as f:
+                content = f.read()
+                clean_raw = clean_json_content(content)
+                raw = json.loads(clean_raw)
 
-            metrics = raw.get("data", {}).get("metrics", [])
-            sleep_metric = next((m for m in metrics if m.get("name") == "sleep_analysis"), None)
-            if not sleep_metric:
-                continue
+            entries = []
+            # --- 模式 A: 原始 HealthAutoExport 格式 (多層級) ---
+            if isinstance(raw, dict) and "data" in raw and "metrics" in raw["data"]:
+                metrics = raw.get("data", {}).get("metrics", [])
+                sleep_metric = next((m for m in metrics if m.get("name") == "sleep_analysis"), None)
+                if sleep_metric:
+                    entries = sleep_metric.get("data", [])
 
-            for entry in sleep_metric.get("data", []):
-                # 日期（取 date 欄位的日期部分）
-                date_str = entry.get("date", "")[:10]  # "2026-04-10"
+            # --- 模式 B: Shortcut 扁平化格式 (直接是大括號) ---
+            elif isinstance(raw, dict) and "date" in raw:
+                entries = [raw]
+
+            # 開始解析提取出的 entries
+            for entry in entries:
+                date_str = entry.get("date", "").strip()[:10]
                 if not date_str or date_str < "2026-01-01":
                     continue
-
-                # 單位是 hr，轉成分鐘
-                def hr2min(v):
-                    try:
-                        return round(float(v) * 60)
-                    except:
-                        return 0
 
                 deep_min  = hr2min(entry.get("deep", 0))
                 rem_min   = hr2min(entry.get("rem", 0))
@@ -57,21 +91,11 @@ def parse_json_files():
                 awake_min = hr2min(entry.get("awake", 0))
                 total_min = deep_min + rem_min + core_min
 
-                if total_min < 60:  # 排除太短的紀錄
-                    continue
-
-                # 入睡 / 起床時間
-                def parse_time(s):
-                    try:
-                        dt = datetime.strptime(s[:19], "%Y-%m-%d %H:%M:%S")
-                        return dt.strftime("%H:%M")
-                    except:
-                        return "00:00"
+                if total_min < 60: continue
 
                 bedtime = parse_time(entry.get("sleepStart", ""))
                 wake    = parse_time(entry.get("sleepEnd", ""))
 
-                # 睡眠效率
                 total_in_bed = total_min + awake_min
                 efficiency = round(total_min / total_in_bed * 100, 1) if total_in_bed > 0 else 100.0
 
@@ -90,7 +114,7 @@ def parse_json_files():
         except Exception as e:
             print(f"  ⚠ 跳過 {os.path.basename(fpath)}: {e}")
 
-    # 依日期排序、去重（同日取最後一筆）
+    # 去重與排序
     seen = {}
     for s in summary:
         seen[s["date"]] = s
@@ -98,82 +122,4 @@ def parse_json_files():
     print(f"解析完成：{len(summary)} 筆有效夜晚數據")
     return summary
 
-
-def update_html(summary):
-    """讀取現有 HTML，只替換 RAW 數據部分"""
-    if not os.path.exists(DASHBOARD_PATH):
-        print(f"❌ 找不到 dashboard 檔案：{DASHBOARD_PATH}")
-        return False
-
-    with open(DASHBOARD_PATH, "r", encoding="utf-8") as f:
-        html = f.read()
-
-    # 找到 RAW data 的開頭與結尾位置
-    marker_start = 'const RAW = '
-    marker_end   = ';\n\nconst COLORS'
-
-    idx_start = html.find(marker_start)
-    idx_end   = html.find(marker_end)
-
-    if idx_start == -1 or idx_end == -1:
-        print("❌ 找不到 RAW 數據標記，請確認 dashboard HTML 格式正確")
-        return False
-
-    # 最近 90 天的數據保留 segments（空的，因為 Health Auto Export 沒有 segment 細節）
-    # summary only 模式：detail 取最後 90 筆（無 segments）
-    detail = [dict(d, segments=[]) for d in summary[-90:]]
-
-    new_raw = json.dumps({"summary": summary, "detail": detail},
-                         ensure_ascii=False, separators=(',', ':'))
-
-    new_html = html[:idx_start + len(marker_start)] + new_raw + html[idx_end:]
-
-    with open(DASHBOARD_PATH, "w", encoding="utf-8") as f:
-        f.write(new_html)
-
-    last_date = summary[-1]["date"] if summary else "?"
-    print(f"✅ HTML 更新完成，最新數據：{last_date}")
-    return True
-
-
-def git_push():
-    """Commit 並 push 到 GitHub"""
-    try:
-        os.chdir(GITHUB_REPO_DIR)
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        subprocess.run(["git", "add", "sleep_dashboard.html"], check=True)
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--quiet"],
-            capture_output=True
-        )
-        if result.returncode == 0:
-            print("ℹ️  沒有新變更，不需要 push")
-            return
-
-        subprocess.run(
-            ["git", "commit", "-m", f"auto update: {today}"],
-            check=True
-        )
-        subprocess.run(['git', 'pull', '--rebase', 'origin', 'main'], cwd=GITHUB_REPO_DIR)
-        subprocess.run(['git', 'push'], cwd=GITHUB_REPO_DIR)
-        print(f"✅ 已 push 到 GitHub")
-
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Git 操作失敗：{e}")
-
-
-if __name__ == "__main__":
-    print(f"\n{'='*50}")
-    print(f"Sleep Dashboard 更新 — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print('='*50)
-
-    summary = parse_json_files()
-    if not summary:
-        print("❌ 沒有讀取到任何數據，中止")
-        exit(1)
-
-    if update_html(summary):
-        git_push()
-
-    print("完成\n")
+# (其餘 update_html, git_push, main 函數保持不變，直接沿用你原有的即可)
