@@ -23,7 +23,7 @@ GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
 def clean_json_content(content):
     """移除 JSON 中可能導致解析錯誤的控制字元"""
     # 移除不可見字元，但保留換行與標準空白
-    return "".join(c for c in content if c.isprintable() or c in "\n\r\t")
+    return re.sub(r"[\x00-\x1F\x7F]", "", content)
 
 def hr2min(v):
     """單位是 hr，轉成分鐘"""
@@ -123,3 +123,53 @@ def parse_json_files():
     return summary
 
 # (其餘 update_html, git_push, main 函數保持不變，直接沿用你原有的即可)
+
+def update_html(summary):
+    """讀取現有 HTML，只替換 RAW 數據部分"""
+    if not os.path.exists(DASHBOARD_PATH):
+        print(f"❌ 找不到 dashboard 檔案：{DASHBOARD_PATH}")
+        return False
+    with open(DASHBOARD_PATH, "r", encoding="utf-8") as f:
+        html = f.read()
+    marker_start = 'const RAW = '
+    marker_end   = ';\n\nconst COLORS'
+    idx_start = html.find(marker_start)
+    idx_end   = html.find(marker_end)
+    if idx_start == -1 or idx_end == -1:
+        print("❌ 找不到 RAW 數據標記")
+        return False
+    detail = [dict(d, segments=[]) for d in summary[-90:]]
+    new_raw = json.dumps({"summary": summary, "detail": detail}, ensure_ascii=False, separators=(',', ':'))
+    new_html = html[:idx_start + len(marker_start)] + new_raw + html[idx_end:]
+    with open(DASHBOARD_PATH, "w", encoding="utf-8") as f:
+        f.write(new_html)
+    last_date = summary[-1]["date"] if summary else "?"
+    print(f"✅ HTML 更新完成，最新數據：{last_date}")
+    return True
+
+def git_push():
+    """Commit 並 push 到 GitHub"""
+    try:
+        os.chdir(GITHUB_REPO_DIR)
+        today = datetime.now().strftime("%Y-%m-%d")
+        subprocess.run(["git", "add", "sleep_dashboard.html"], check=True)
+        result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
+        if result.returncode == 0:
+            print("ℹ️  沒有新變更，不需要 push")
+            return
+        subprocess.run(["git", "commit", "-m", f"auto update: {today}"], check=True)
+        subprocess.run(['git', 'pull', '--rebase', 'origin', 'main'], check=True)
+        subprocess.run(['git', 'push'], check=True)
+        print(f"✅ 已 push 到 GitHub")
+    except Exception as e:
+        print(f"❌ Git 操作失敗：{e}")
+
+if __name__ == "__main__":
+    print(f"\n{'='*50}")
+    print(f"Sleep Dashboard 更新 — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print('='*50)
+    summary = parse_json_files()
+    if summary:
+        if update_html(summary):
+            git_push()
+    print("完成\n")
