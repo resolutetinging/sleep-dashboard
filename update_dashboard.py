@@ -16,6 +16,9 @@ from datetime import datetime, timedelta
 ICLOUD_FOLDER = os.path.expanduser(
     "/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update"
 )
+# 優先讀本機 cache（由 run_update.sh 複製而來，避免 iCloud EAGAIN）
+JSON_CACHE = "/Users/tinayu/sleep-dashboard/json_cache"
+DATA_FOLDER = JSON_CACHE if os.path.isdir(JSON_CACHE) and os.listdir(JSON_CACHE) else ICLOUD_FOLDER
 DASHBOARD_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard.html"
 GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
 # ────────────────────────────────────────────────────────────────────────
@@ -50,7 +53,7 @@ def parse_time(s):
 
 def parse_json_files():
     """讀取所有 JSON/TXT 檔案，轉成 summary 列表"""
-    pattern = os.path.join(ICLOUD_FOLDER, "*.*")
+    pattern = os.path.join(DATA_FOLDER, "*.*")
     files = sorted(glob.glob(pattern))
     print(f"找到 {len(files)} 個資料檔案")
 
