@@ -219,6 +219,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <button class="ni" onclick="go('op')" id="ni-op">
       <span class="ni-icon">📋</span><div><span class="ni-label">Optimizer</span><span class="ni-sub">配速秘書</span></div>
     </button>
+    <button class="ni" onclick="go('rf')" id="ni-rf">
+      <span class="ni-icon">☕</span><div><span class="ni-label">Refueler</span><span class="ni-sub">攝取記錄</span></div>
+    </button>
   </nav>
   <div class="sb-foot">資料僅存於本機 · LocalStorage · 零上傳</div>
 </aside>
@@ -466,6 +469,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   <div class="frame-wrap"><div class="frame-loading" id="op-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="op-frame" src="about:blank" title="Daily Optimizer"></iframe></div>
 </div>
 
+<!-- REFUELER -->
+<div class="view-frame" id="v-rf">
+  <div class="frame-bar"><div><div class="frame-title">Refueler</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">攝取記錄 · 咖啡 / 水分 / 消費</div></div><a href="https://resolutetinging.github.io/control-center/refueler.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
+  <div class="frame-wrap"><div class="frame-loading" id="rf-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="rf-frame" src="about:blank" title="Refueler"></iframe></div>
+</div>
+
 </main>
 <script>
 /* CLOCK */
@@ -480,9 +489,9 @@ tick();setInterval(tick,30000);
 var $=id=>document.getElementById(id);
 
 /* FRAMES */
-var frameSrcs={sl:'./sleep_dashboard.html',mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html',op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html'};
+var frameSrcs={sl:'./sleep_dashboard.html',mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html',op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html',rf:'https://resolutetinging.github.io/control-center/refueler.html'};
 function frameLoaded(k){var el=$(k+'-loading');if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',320);}}
-['sl','mn','op'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
+['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
 function go(id){
   document.querySelectorAll('.view-ov,.view-frame').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(n=>{n.classList.remove('on');n.removeAttribute('aria-current');});
@@ -501,16 +510,17 @@ function paceBody(s){
   if(s>=40)return '<strong>上午</strong> 輕度例行任務<br><strong>下午</strong> 保持節奏，不啟新項目<br><strong>晚間</strong> 提早收工補眠';
   return '<strong>今日</strong> 以休息為主<br><strong>強制</strong> 補眠、獨處、身體照護';
 }
-function updateCombat(score){
+function updateCombat(score,skipAnim){
   if(isNaN(score)||score===_combat)return;
   _combat=score;
   var col=scoreColor(score);
   var cols=score>=70?['#27ae60','#2ecc71']:score>=40?['#e67e22','#f39c12']:['#c0392b','#e74c3c'];
   var gg=$('gg');if(gg){gg.children[0].setAttribute('stop-color',cols[0]);gg.children[1].setAttribute('stop-color',cols[1]);}
   var arc=$('g-arc');if(arc)arc.style.strokeDashoffset=220*(1-score/100);
-  var t0=performance.now(),dur=900,numEl=$('g-num');
-  function step(t){var p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3);numEl.textContent=Math.round(e*score);numEl.setAttribute('fill',score>=70?'#27ae60':score>=40?'#e67e22':'#c0392b');if(p<1)requestAnimationFrame(step);}
-  requestAnimationFrame(step);
+  var numEl=$('g-num');
+  var startVal=parseInt(numEl.textContent)||0;if(isNaN(startVal))startVal=0;
+  if(skipAnim){numEl.textContent=score;numEl.setAttribute('fill',score>=70?'#27ae60':score>=40?'#e67e22':'#c0392b');}
+  else{var t0=performance.now(),dur=900;function step(t){var p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3);numEl.textContent=Math.round(startVal+(score-startVal)*e);numEl.setAttribute('fill',score>=70?'#27ae60':score>=40?'#e67e22':'#c0392b');if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
   var sl=$('g-status-label');if(sl){sl.textContent=scoreLabel(score)+' · '+score;sl.className='pill '+(score>=70?'p-ok':score>=40?'p-warn':'p-no');}
   var dr=$('g-drag');if(dr)dr.textContent=score>=70?'睡眠結構健康，維持現有作息':score>=40?'深睡或REM偏低，注意補眠':'深睡&REM嚴重不足，今日強制休息';
   var nc=$('num-combat');if(nc){nc.textContent=score;nc.style.color=col;}
@@ -828,12 +838,18 @@ function loadHDProfile(){
   }catch(e){console.warn('HD',e);}
 }
 
-/* WEEK VIEW — use most recent 30 days of data, display last 7 calendar days */
+/* WEEK VIEW — use most recent 30 days of data, display last 14 calendar days (2 weeks) */
 function loadWeekView(){
   var moods=getMoods();
-  // Build mood map from ALL records (not just last 7 days)
+  // Aggregate all records per day: average score, union factors/tags
   var moodMap={};
-  moods.forEach(m=>{if(!moodMap[m.date]||m.score>0)moodMap[m.date]=m;});
+  moods.forEach(m=>{
+    if(!moodMap[m.date])moodMap[m.date]={date:m.date,scoreSum:0,count:0,tags:[],factors:[]};
+    moodMap[m.date].scoreSum+=m.score;moodMap[m.date].count++;
+    (m.tags||[]).forEach(t=>{if(!moodMap[m.date].tags.includes(t))moodMap[m.date].tags.push(t);});
+    (m.factors||[]).forEach(f=>{if(!moodMap[m.date].factors.includes(f))moodMap[m.date].factors.push(f);});
+  });
+  Object.values(moodMap).forEach(d=>{d.score=Math.round(d.scoreSum/d.count*10)/10;});
 
   // Last 7 calendar days for the strip
   renderWeekStrip(moodMap);
@@ -868,31 +884,38 @@ function loadWeekView(){
 function renderWeekStrip(moodMap){
   var strip=$('week-day-strip');if(!strip)return;
   var DAYS=['日','一','二','三','四','五','六'];
-  // Start from Monday of current week
   var now=new Date();
   var dow=now.getDay();
   var mondayOffset=dow===0?-6:1-dow;
   var monday=new Date(now);monday.setDate(now.getDate()+mondayOffset);
-  var cols='';
-  for(var i=0;i<7;i++){
-    var d=new Date(monday);d.setDate(monday.getDate()+i);
-    var k=dkey(d);var isFuture=d>now;var isToday=dkey(d)===dkey(now);
-    var mood=moodMap[k];var s=mood?mood.score:null;
-    var bg=s!==null?(s>=7?'#27ae60':s>=4?'#e67e22':'#c0392b'):'';
-    var ring=isFuture?'<div class="day-score-ring empty" style="opacity:.3">—</div>'
-      :s!==null?'<div class="day-score-ring" style="background:'+bg+'">'+Math.round(s)+'</div>'
-      :'<div class="day-score-ring empty">—</div>';
-    var emoji=(!isFuture&&s!==null)?(s>=9?'🤩':s>=7?'😊':s>=5?'😐':s>=3?'😔':'😞'):(isFuture?'':'·');
-    var factors=mood?(mood.factors||[]).slice(0,2).map(f=>'<div class="day-factor-tag">'+f+'</div>').join(''):'';
-    cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>週'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div></div>';
+  var lastMonday=new Date(monday);lastMonday.setDate(monday.getDate()-7);
+  function makeWeekCols(startDate){
+    var cols='';
+    for(var i=0;i<7;i++){
+      var d=new Date(startDate);d.setDate(startDate.getDate()+i);
+      var k=dkey(d);var isFuture=d>now;var isToday=dkey(d)===dkey(now);
+      var mood=moodMap[k];var s=mood?mood.score:null;
+      var bg=s!==null?(s>=7?'#27ae60':s>=4?'#e67e22':'#c0392b'):'';
+      var ring=isFuture?'<div class="day-score-ring empty" style="opacity:.3">—</div>'
+        :s!==null?'<div class="day-score-ring" style="background:'+bg+'">'+Math.round(s)+'</div>'
+        :'<div class="day-score-ring empty">—</div>';
+      var emoji=(!isFuture&&s!==null)?(s>=9?'🤩':s>=7?'😊':s>=5?'😐':s>=3?'😔':'😞'):(isFuture?'':'·');
+      var factors=mood?(mood.factors||[]).slice(0,3).map(f=>'<div class="day-factor-tag">'+f+'</div>').join(''):'';
+      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>週'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div></div>';
+    }
+    return cols;
   }
-  strip.innerHTML=cols;
+  strip.innerHTML=
+    '<div style="font-size:.58rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600;grid-column:1/-1;margin-bottom:4px;">上週</div>'+
+    '<div class="week-days" style="margin-bottom:10px;">'+makeWeekCols(lastMonday)+'</div>'+
+    '<div style="font-size:.58rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:4px;">本週</div>'+
+    '<div class="week-days">'+makeWeekCols(monday)+'</div>';
 }
 /* MAIN RENDER */
 var chartsDrawn=false;
 function renderOv(){
   var stored=localStorage.getItem('sas_combat');
-  if(stored&&!_combat)updateCombat(parseInt(stored));
+  if(stored&&!_combat)updateCombat(parseInt(stored),true);
 
   var moods=getMoods();
   var todayMood=moods.find(m=>m.date===today());
