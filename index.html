@@ -200,7 +200,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <aside class="sb" role="navigation" aria-label="主選單">
   <div class="sb-brand">
     <div class="brand-word">Self Alignment System</div>
-    <div class="brand-tagline">個人狀態管理系統</div>
   </div>
   <div class="sb-clock">
     <div class="cl-time" id="cl-time">—</div>
@@ -208,19 +207,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
   <nav class="sb-nav">
     <button class="ni on" onclick="go('ov')" id="ni-ov" aria-current="page">
-      <span class="ni-icon">🏠</span><div><span class="ni-label">Overview</span><span class="ni-sub">今日總覽</span></div>
+      <span class="ni-icon">🏠</span><span class="ni-label">Overview</span>
     </button>
     <button class="ni" onclick="go('sl')" id="ni-sl">
-      <span class="ni-icon">🔋</span><div><span class="ni-label">Sleep</span><span class="ni-sub">生理油錶</span></div>
+      <span class="ni-icon">🔋</span><span class="ni-label">Sleep</span>
     </button>
     <button class="ni" onclick="go('mn')" id="ni-mn">
-      <span class="ni-icon">🌊</span><div><span class="ni-label">Mental</span><span class="ni-sub">心理氣象站</span></div>
+      <span class="ni-icon">🌊</span><span class="ni-label">Mental</span>
     </button>
     <button class="ni" onclick="go('op')" id="ni-op">
-      <span class="ni-icon">📋</span><div><span class="ni-label">Optimizer</span><span class="ni-sub">配速秘書</span></div>
+      <span class="ni-icon">📋</span><span class="ni-label">Optimizer</span>
     </button>
     <button class="ni" onclick="go('rf')" id="ni-rf">
-      <span class="ni-icon">☕</span><div><span class="ni-label">Refueler</span><span class="ni-sub">攝取記錄</span></div>
+      <span class="ni-icon">☕</span><span class="ni-label">Refueler</span>
     </button>
   </nav>
   <div class="sb-foot">資料僅存於本機 · LocalStorage · 零上傳</div>
@@ -342,7 +341,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="week-strip">
       <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1a1814;margin-bottom:.7rem">每日狀態 · 影響因子</div>
-      <div class="week-days" id="week-day-strip"><div style="font-size:.7rem;color:var(--faint);padding:.5rem">載入中…</div></div>
+      <div id="week-day-strip"><div style="font-size:.7rem;color:var(--faint);padding:.5rem">載入中…</div></div>
     </div>
     <div class="week-grid">
       <div>
@@ -479,11 +478,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <script>
 /* CLOCK */
 function tick(){
-  var n=new Date(),w=['日','一','二','三','四','五','六'];
+  var n=new Date(),WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var $=id=>document.getElementById(id);
   $('cl-time').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
-  $('cl-date').textContent=(n.getMonth()+1)+'/'+n.getDate()+' 週'+w[n.getDay()];
-  var ds=$('ov-ds');if(ds)ds.textContent=n.getFullYear()+'年'+(n.getMonth()+1)+'月'+n.getDate()+'日 週'+w[n.getDay()];
+  $('cl-date').textContent=(n.getMonth()+1)+'/'+n.getDate()+' '+WD[n.getDay()];
+  var ds=$('ov-ds');if(ds)ds.textContent=n.getFullYear()+'/'+(n.getMonth()+1)+'/'+n.getDate()+' · '+WD[n.getDay()];
 }
 tick();setInterval(tick,30000);
 var $=id=>document.getElementById(id);
@@ -883,7 +882,7 @@ function loadWeekView(){
 
 function renderWeekStrip(moodMap){
   var strip=$('week-day-strip');if(!strip)return;
-  var DAYS=['日','一','二','三','四','五','六'];
+  var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var now=new Date();
   var dow=now.getDay();
   var mondayOffset=dow===0?-6:1-dow;
@@ -901,7 +900,7 @@ function renderWeekStrip(moodMap){
         :'<div class="day-score-ring empty">—</div>';
       var emoji=(!isFuture&&s!==null)?(s>=9?'🤩':s>=7?'😊':s>=5?'😐':s>=3?'😔':'😞'):(isFuture?'':'·');
       var factors=mood?(mood.factors||[]).slice(0,3).map(f=>'<div class="day-factor-tag">'+f+'</div>').join(''):'';
-      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>週'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div></div>';
+      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div></div>';
     }
     return cols;
   }
