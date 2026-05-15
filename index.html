@@ -498,7 +498,7 @@ function go(id){
   var ni=$('ni-'+id);ni.classList.add('on');ni.setAttribute('aria-current','page');
   if(id==='ov')renderOv();
 }
-function initFrames(){Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank')f.src=frameSrcs[k];});}
+function initFrames(){var cb=Date.now();Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank'){var s=frameSrcs[k];f.src=s+(s.includes('?')?'&':'?')+'_cb='+cb;}});}
 
 /* COMBAT */
 var _combat=null,_debt=null;
