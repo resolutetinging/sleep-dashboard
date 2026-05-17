@@ -529,6 +529,7 @@
         <div id="combatLabel" style="font-size:13px;font-weight:600;margin:6px 0 2px">—</div>
         <div id="combatSub" style="font-size:11px;color:var(--text-dim)">—</div>
       </div>
+      <div id="combatEndurance" style="margin-top:6px;font-size:11.5px;text-align:center;font-weight:500;">—</div>
       <div id="combatBars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
       <div id="combatTasks" style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.8"></div>
     </div>
@@ -1487,6 +1488,17 @@ function updateCombatPower(totalDebt) {
   document.getElementById('combatNum').textContent = score;
   document.getElementById('combatNum').style.color = color;
   try{localStorage.setItem('sas_combat',String(score));}catch(e){}
+
+  // 體能續航：0分=8:00止、100分=22:00止，線性映射
+  const endHour = 8 + (score / 100) * 14;
+  const endH = Math.floor(endHour);
+  const endM = Math.round((endHour - endH) * 60);
+  const endTimeStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+  const endColor = score >= 70 ? '#5e8f7e' : score >= 40 ? '#e67e22' : '#c0392b';
+  try{localStorage.setItem('sas_endurance', endTimeStr);}catch(e){}
+  document.getElementById('combatEndurance').textContent = `體能續航至 ${endTimeStr}`;
+  document.getElementById('combatEndurance').style.color = endColor;
+
   document.getElementById('combatLabel').textContent = label;
   document.getElementById('combatLabel').style.color = color;
 
