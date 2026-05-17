@@ -21,9 +21,17 @@ done
 
 for f in "$SRC"/*.json "$SRC"/*.txt; do
     [ -f "$f" ] || continue
-    [ -s "$f" ] || { echo "⚠ 跳過 $(basename "$f")（iCloud 未下載）"; continue; }
     fname=$(basename "$f")
-    cat "$f" > "$DEST/$fname" 2>/dev/null && echo "✓ 複製 $fname" || echo "⚠ 跳過 $fname（無法讀取）"
+    # 用暫存檔避免 iCloud stub 造成 dest 空檔殘留
+    cat "$f" > "$DEST/$fname.tmp" 2>/dev/null
+    if [ -s "$DEST/$fname.tmp" ]; then
+        mv "$DEST/$fname.tmp" "$DEST/$fname"
+        echo "✓ 複製 $fname"
+    else
+        rm -f "$DEST/$fname.tmp"
+        /usr/bin/brctl download "$f" 2>/dev/null || true
+        echo "⚠ 跳過 $fname（iCloud stub 尚未下載）"
+    fi
 done
 
 python3 /Users/tinayu/sleep-dashboard/update_dashboard.py
