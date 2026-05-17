@@ -526,7 +526,7 @@ function updateCombat(score,skipAnim){
   var bc=$('bar-combat');if(bc){bc.style.background=col;setTimeout(()=>bc.style.width=score+'%',200);}
   var pb=$('pace-badge');if(pb){pb.textContent=scoreLabel(score)+'狀態';pb.style.background=score>=70?'rgba(39,174,96,.14)':score>=40?'rgba(230,126,34,.14)':'rgba(192,57,43,.12)';pb.style.color=col;}
   var pbo=$('pace-body');if(pbo)pbo.innerHTML=paceBody(score);
-  var _eh=8+score/100*14,_eH=Math.floor(_eh),_eM=Math.round((_eh-_eH)*60);var _eStr=String(_eH).padStart(2,'0')+':'+String(_eM).padStart(2,'0');var eEl=\$('g-endurance');if(eEl)eEl.textContent=_eStr;try{localStorage.setItem('sas_endurance',_eStr);}catch(e){}
+  var eEl=$('g-endurance');if(eEl)eEl.textContent=String(8+Math.floor(score/100*14)).padStart(2,'0')+':00';
   var eb=$('g-endurance-bar');if(eb)eb.style.width=score+'%';
   buildPacePills(score);
   buildInertiaAlert(score);
