@@ -374,7 +374,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="cco-inner">
       <div>
         <div style="position:relative;height:180px"><canvas id="corr-chart"></canvas></div>
-        <div id="corr-daily-rates" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:6px;font-size:.58rem;text-align:center;color:var(--sub)"></div>
         <div class="corr-legend">
           <span class="corr-leg-item"><span style="width:14px;height:3px;background:var(--mental);border-radius:2px;display:inline-block"></span>情緒分（折線）</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--danger);display:inline-block"></span>意志力透支</span>
@@ -778,21 +777,6 @@ function rebuildCorrChart(){
     if(avg3&&avg3<5)ip.innerHTML='近3天情緒均值 <strong>'+avg3.toFixed(1)+'</strong> 分，處於低谷。預測 <strong>'+(_lag||'1–3')+' 天</strong>後行為表現明顯下滑。建議啟動防禦模式。';
     else ip.textContent='目前狀態平穩，無立即下行風險。';
   }
-  // 每日達成率小格
-  var rateGrid=$('corr-daily-rates');
-  if(rateGrid){
-    var cells='';
-    for(var ri=13;ri>=0;ri--){
-      var rd=new Date();rd.setDate(rd.getDate()-ri);
-      var rk=dkey(rd);
-      var rrev=getReview(rk);var ritems=rrev?(rrev.items||[]):[];
-      var rdone=ritems.filter(t=>t.status==='done').length;
-      var rpct=ritems.length?Math.round(rdone/ritems.length*100):null;
-      var rcls=rpct!==null?(rpct>=80?'var(--ok)':rpct>=50?'var(--warn)':'var(--danger)'):'var(--faint)';
-      cells+='<div style="padding:2px 0"><div style="color:var(--faint)">'+(rd.getMonth()+1)+'/'+(rd.getDate())+'</div><div style="font-weight:600;color:'+rcls+'">'+(rpct!==null?rpct+'%':'—')+'</div></div>';
-    }
-    rateGrid.innerHTML=cells;
-  }
 }
 function buildTaskTaxonomy(){
   var counts={logic:0,social:0,input:0,other:0};
@@ -929,14 +913,13 @@ function renderWeekStrip(moodMap){
       var ring=isFuture?'<div class="day-score-ring empty" style="opacity:.3">—</div>'
         :s!==null?'<div class="day-score-ring" style="background:'+bg+'">'+Math.round(s)+'</div>'
         :'<div class="day-score-ring empty">—</div>';
-      var emoji=(!isFuture&&s!==null)?(s>=9?'🤩':s>=7?'😊':s>=5?'😐':s>=3?'😔':'😞'):(isFuture?'':'·');
       var factors=mood?(mood.factors||[]).slice(0,3).map(f=>'<div class="day-factor-tag">'+f+'</div>').join(''):'';
       var wrev=!isFuture?getReview(k):null;var witems=wrev?(wrev.items||[]):[];
       var wdone=witems.filter(t=>t.status==='done').length;
       var wpct=witems.length?Math.round(wdone/witems.length*100):null;
       var wpcol=wpct!==null?(wpct>=80?'var(--ok)':wpct>=50?'var(--warn)':'var(--danger)'):'';
       var wptag=wpct!==null?'<div style="font-size:.58rem;font-weight:600;color:'+wpcol+';margin-top:2px">'+wpct+'%</div>':'';
-      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div>'+wptag+'</div>';
+      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+wptag+'<div class="day-factors">'+factors+'</div></div>';
     }
     return cols;
   }
