@@ -1086,7 +1086,7 @@ async function analyzeLastWeek(){
   var lwDates=[];
   for(var i=0;i<7;i++){var d=new Date(lastMonday);d.setDate(lastMonday.getDate()+i);lwDates.push(dkey(d));}
 
-  // 從情緒紀錄取上週資料
+  // 情緒維度
   var moods=getMoods();
   var moodMap={};moods.forEach(m=>{moodMap[m.date]=m;});
   var lwEntries=lwDates.map(k=>moodMap[k]).filter(Boolean);
@@ -1099,41 +1099,67 @@ async function analyzeLastWeek(){
   var fc={};allFactors.forEach(f=>{fc[f]=(fc[f]||0)+1;});
   var topFactors=Object.entries(fc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f])=>f);
 
+  // 行為維度：上週任務完成率
+  var taskDays=0,taskDoneSum=0,taskTotalSum=0;
+  lwDates.forEach(function(k){
+    var rev=getReview(k);
+    if(rev&&rev.items&&rev.items.length){
+      taskDays++;
+      taskDoneSum+=rev.items.filter(function(t){return t.status==='done';}).length;
+      taskTotalSum+=rev.items.length;
+    }
+  });
+  var taskDoneRate=taskTotalSum>0?Math.round(taskDoneSum/taskTotalSum*100)+'%':'無資料';
+  var taskSummary=taskTotalSum>0?taskDoneSum+'/'+taskTotalSum+' 項（'+taskDays+' 天有紀錄）':'無任務紀錄';
+
+  // 睡眠維度：戰力 + 睡眠債
+  var combatVal=_combat||(parseInt(localStorage.getItem('sas_combat')||'0')||null);
+  var debtVal=_debt;
+  var sleepSummary=combatVal?'戰力 '+combatVal+'/100':'—';
+  if(debtVal!==null&&debtVal>0)sleepSummary+='，睡眠債 '+debtVal.toFixed(1)+' 小時';
+
   // 顯示上週數字摘要
   if(statRow){
-    var color=parseFloat(avg)>=7?'var(--ok)':parseFloat(avg)>=4?'var(--warn)':'var(--danger)';
+    var moodColor=parseFloat(avg)>=7?'var(--ok)':parseFloat(avg)>=4?'var(--warn)':'var(--danger)';
+    var taskColor=taskTotalSum>0?(taskDoneSum/taskTotalSum>=0.7?'var(--ok)':taskDoneSum/taskTotalSum>=0.4?'var(--warn)':'var(--danger)'):'var(--faint)';
     statRow.innerHTML=[
-      ['情緒均值',avg+' / 10',color],
+      ['情緒均值',avg+' / 10',moodColor],
       ['趨勢',trend,'var(--sub)'],
-      ['有效紀錄',lwEntries.length+' / 7 天','var(--info)']
-    ].map(r=>'<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>').join('');
+      ['行為完成率',taskDoneRate,taskColor]
+    ].map(function(r){return '<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
   }
 
   var hd=window._hdData||{};
   var prompt=`整合人類圖與身心數據的週報顧問。
 
-上週（${lwDates[0]} ~ ${lwDates[6]}）數據摘要：
-- 情緒均值：${avg}/10
-- 情緒趨勢：${trend}
-- 有效紀錄：${lwEntries.length}/7 天
-- 最高分日：${maxDay?maxDay.date+'（'+maxDay.score+'分）':'—'}
-- 最低分日：${minDay?minDay.date+'（'+minDay.score+'分）':'—'}
+上週（${lwDates[0]} ~ ${lwDates[6]}）三維數據摘要：
+
+【睡眠】
+- ${sleepSummary}
+
+【情緒】
+- 均值：${avg}/10，趨勢：${trend}
+- 最高分：${maxDay?maxDay.date+'（'+maxDay.score+'分）':'—'}，最低分：${minDay?minDay.date+'（'+minDay.score+'分）':'—'}
 - 主要影響因子：${topFactors.join('、')||'無'}
+
+【行為／任務】
+- 完成率：${taskDoneRate}（${taskSummary}）
+
 人類圖：類型 ${hd.type||'未知'}，策略 ${hd.strat||'未知'}，權威 ${hd.auth||'未知'}，非自己 ${hd.notself||'未知'}
 
 請提供上週回顧（繁體中文）：
 
 **1. 上週整體狀態評估**
-情緒走勢與高低點的脈絡解讀
+睡眠、情緒、行為三個面向的整合解讀
 
 **2. 主要模式洞察**
 影響因子規律、與人類圖設計的對應或背離
 
 **3. 帶入本週的關鍵提醒**（1-2條）
-從上週經驗提取、本週最需注意的事
+從上週三維數據提取、本週最需注意的事
 
 最後另起一行，格式固定為：
-📌 ${lwDates[0].slice(5).replace('-','/')}～${lwDates[6].slice(5).replace('-','/')}：[25字以內的上週狀態一句話總結]`;
+📌 ${lwDates[0].slice(5).replace('-','/')}～${lwDates[6].slice(5).replace('-','/')}：[25字以內，涵蓋睡眠/情緒/行為三方的上週狀態總結]`;
 
   try{
     var r=await aiCall(prompt,1400);
