@@ -358,12 +358,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
   <!-- 上週狀態回顧 -->
   <div class="card clw">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
       <div class="lbl" style="margin-bottom:0">📋 上週狀態回顧</div>
       <button class="hd-btn" id="lw-btn" onclick="analyzeLastWeek()">
         <div class="hd-spinner-inline" id="lw-spinner"></div><span id="lw-btn-text">生成上週回顧</span>
       </button>
     </div>
+    <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1a1814;margin-bottom:.6rem">每日狀態 · 影響因子</div>
+    <div id="lw-day-strip" style="margin-bottom:1rem;padding-bottom:.9rem;border-bottom:.5px solid var(--border)"><div style="font-size:.7rem;color:var(--faint);padding:.5rem">載入中…</div></div>
     <div id="lw-stat-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.6rem"></div>
     <div class="week-ai-result" id="lw-ai-result">點擊「生成上週回顧」以獲得上週狀態分析。</div>
   </div>
@@ -923,11 +925,9 @@ function renderWeekStrip(moodMap){
     }
     return cols;
   }
-  strip.innerHTML=
-    '<div style="font-size:.58rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600;grid-column:1/-1;margin-bottom:4px;">上週</div>'+
-    '<div class="week-days" style="margin-bottom:10px;">'+makeWeekCols(lastMonday)+'</div>'+
-    '<div style="font-size:.58rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:4px;">本週</div>'+
-    '<div class="week-days">'+makeWeekCols(monday)+'</div>';
+  strip.innerHTML='<div class="week-days">'+makeWeekCols(monday)+'</div>';
+  var lwStrip=$('lw-day-strip');
+  if(lwStrip)lwStrip.innerHTML='<div class="week-days">'+makeWeekCols(lastMonday)+'</div>';
 }
 /* MAIN RENDER */
 var chartsDrawn=false;
