@@ -161,8 +161,19 @@ def git_push():
             print("ℹ️  沒有新變更，不需要 push")
             return
         subprocess.run(["git", "commit", "-m", f"auto update: {today}"], check=True)
-        subprocess.run(['git', 'pull', '--rebase', 'origin', 'main'], check=True)
-        subprocess.run(['git', 'push'], check=True)
+
+        # 從持久檔案讀取 PAT（LaunchAgent 無法存取 osxkeychain）
+        pat_file = os.path.expanduser("~/.sleep_dashboard_pat")
+        if os.path.exists(pat_file):
+            with open(pat_file) as f:
+                pat = f.read().strip()
+            push_url = f"https://{pat}@github.com/resolutetinging/sleep-dashboard.git"
+        else:
+            push_url = "origin"
+            print("⚠️  ~/.sleep_dashboard_pat 不存在，以預設 origin 推送")
+
+        subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True)
+        subprocess.run(['git', 'push', push_url, 'main'], check=True)
         print(f"✅ 已 push 到 GitHub")
     except Exception as e:
         print(f"❌ Git 操作失敗：{e}")
