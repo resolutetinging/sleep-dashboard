@@ -69,9 +69,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .cm {grid-column:5/13;grid-row:2}     /* mental wave */
 .cd {grid-column:5/13;grid-row:3}     /* debt */
 .chw{grid-column:1/13;grid-row:4}     /* week view */
-.cco{grid-column:1/13;grid-row:5}     /* correlation — full width */
-.ctx{grid-column:1/13;grid-row:6}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:7}     /* HD AI */
+.clw{grid-column:1/13;grid-row:5}     /* last week recap */
+.cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
+.ctx{grid-column:1/13;grid-row:7}     /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:8}     /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -355,6 +356,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
   </div>
 
+  <!-- 上週狀態回顧 -->
+  <div class="card clw">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.5rem">
+      <div class="lbl" style="margin-bottom:0">📋 上週狀態回顧</div>
+      <button class="hd-btn" id="lw-btn" onclick="analyzeLastWeek()">
+        <div class="hd-spinner-inline" id="lw-spinner"></div><span id="lw-btn-text">生成上週回顧</span>
+      </button>
+    </div>
+    <div id="lw-stat-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.6rem"></div>
+    <div class="week-ai-result" id="lw-ai-result">點擊「生成上週回顧」以獲得上週狀態分析。</div>
+  </div>
+
   <!-- 三維相關性圖 -->
   <div class="card cco">
     <div class="lbl">🔬 三維相關性 — 情緒週期 × 行為完成度（近14日）</div>
@@ -498,7 +511,7 @@ function go(id){
   var ni=$('ni-'+id);ni.classList.add('on');ni.setAttribute('aria-current','page');
   if(id==='ov')renderOv();
 }
-function initFrames(){var cb=Date.now();Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank'){var s=frameSrcs[k];f.src=s+(s.includes('?')?'&':'?')+'_cb='+cb;}});}
+function initFrames(){Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank')f.src=frameSrcs[k];});}
 
 /* COMBAT */
 var _combat=null,_debt=null;
@@ -1013,11 +1026,12 @@ function fmtAI(raw){
 
 async function aiCall(prompt,maxTokens){
   var key=localStorage.getItem('tina_groq')||'';
-  if(!key)throw new Error('找不到 Groq API Key（tina_groq）');
+  if(!key)throw new Error('找不到 Groq API Key，請在設定頁輸入（localStorage: tina_groq）');
   var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:.7})});
-  var d=await r.json();
+  var txt=await r.text();
+  var d;try{d=JSON.parse(txt);}catch(e){throw new Error('Groq 非 JSON 回應（'+r.status+'）: '+txt.slice(0,120));}
   if(d.choices&&d.choices[0])return d.choices[0].message.content;
-  throw new Error('API回應異常');
+  throw new Error('Groq '+r.status+': '+(d.error?.message||txt.slice(0,120)));
 }
 
 async function analyzeHD(){
@@ -1054,6 +1068,72 @@ ${hd.parsed?'- 原始解析資料：'+hd.parsed:''}
 **5. 防禦性提醒**（3-5條今日不宜）
 
 **6. 長期培養建議**（2-3條）`,3000);
+    res.innerHTML=fmtAI(r);
+  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+e.message+'</span>';}
+  btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
+}
+
+async function analyzeLastWeek(){
+  var btn=$('lw-btn'),sp=$('lw-spinner'),bt=$('lw-btn-text'),res=$('lw-ai-result'),statRow=$('lw-stat-row');
+  btn.disabled=true;sp.style.display='block';bt.textContent='分析中…';
+  res.innerHTML='<span style="color:var(--faint)">分析中…</span>';
+
+  // 計算上週日期範圍
+  var now=new Date();
+  var dow=now.getDay();
+  var thisMonday=new Date(now);thisMonday.setDate(now.getDate()+(dow===0?-6:1-dow));
+  var lastMonday=new Date(thisMonday);lastMonday.setDate(thisMonday.getDate()-7);
+  var lwDates=[];
+  for(var i=0;i<7;i++){var d=new Date(lastMonday);d.setDate(lastMonday.getDate()+i);lwDates.push(dkey(d));}
+
+  // 從情緒紀錄取上週資料
+  var moods=getMoods();
+  var moodMap={};moods.forEach(m=>{moodMap[m.date]=m;});
+  var lwEntries=lwDates.map(k=>moodMap[k]).filter(Boolean);
+  var scores=lwEntries.map(m=>m.score);
+  var avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):'—';
+  var trend=scores.length>=2?(scores[scores.length-1]>scores[0]+0.5?'↑ 上升':scores[scores.length-1]<scores[0]-0.5?'↓ 下降':'→ 持平'):'—';
+  var maxDay=lwEntries.reduce((b,m)=>(!b||m.score>b.score)?m:b,null);
+  var minDay=lwEntries.reduce((b,m)=>(!b||m.score<b.score)?m:b,null);
+  var allFactors=lwEntries.flatMap(m=>m.factors||[]);
+  var fc={};allFactors.forEach(f=>{fc[f]=(fc[f]||0)+1;});
+  var topFactors=Object.entries(fc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f])=>f);
+
+  // 顯示上週數字摘要
+  if(statRow){
+    var color=parseFloat(avg)>=7?'var(--ok)':parseFloat(avg)>=4?'var(--warn)':'var(--danger)';
+    statRow.innerHTML=[
+      ['情緒均值',avg+' / 10',color],
+      ['趨勢',trend,'var(--sub)'],
+      ['有效紀錄',lwEntries.length+' / 7 天','var(--info)']
+    ].map(r=>'<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>').join('');
+  }
+
+  var hd=window._hdData||{};
+  var prompt=`整合人類圖與身心數據的週報顧問。
+
+上週（${lwDates[0]} ~ ${lwDates[6]}）數據摘要：
+- 情緒均值：${avg}/10
+- 情緒趨勢：${trend}
+- 有效紀錄：${lwEntries.length}/7 天
+- 最高分日：${maxDay?maxDay.date+'（'+maxDay.score+'分）':'—'}
+- 最低分日：${minDay?minDay.date+'（'+minDay.score+'分）':'—'}
+- 主要影響因子：${topFactors.join('、')||'無'}
+人類圖：類型 ${hd.type||'未知'}，策略 ${hd.strat||'未知'}，權威 ${hd.auth||'未知'}，非自己 ${hd.notself||'未知'}
+
+請提供上週回顧（繁體中文）：
+
+**1. 上週整體狀態評估**
+情緒走勢與高低點的脈絡解讀
+
+**2. 主要模式洞察**
+影響因子規律、與人類圖設計的對應或背離
+
+**3. 帶入本週的關鍵提醒**（1-2條）
+從上週經驗提取、本週最需注意的事`;
+
+  try{
+    var r=await aiCall(prompt,1200);
     res.innerHTML=fmtAI(r);
   }catch(e){res.innerHTML='<span style="color:var(--danger)">'+e.message+'</span>';}
   btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
