@@ -921,7 +921,8 @@ function renderWeekStrip(moodMap){
       var wpct=witems.length?Math.round(wdone/witems.length*100):null;
       var wpcol=wpct!==null?(wpct>=80?'var(--ok)':wpct>=50?'var(--warn)':'var(--danger)'):'';
       var wptag=wpct!==null?'<div style="font-size:.58rem;font-weight:600;color:'+wpcol+';margin-top:2px">'+wpct+'%</div>':'';
-      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+wptag+'<div class="day-factors">'+factors+'</div></div>';
+      var restTag=(!isFuture&&wrev&&wrev.restMode)?'<div style="font-size:.55rem;color:#7a9e8a;font-weight:600;margin-top:2px">🌿 休假</div>':'';
+      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+restTag+wptag+'<div class="day-factors">'+factors+'</div></div>';
     }
     return cols;
   }
