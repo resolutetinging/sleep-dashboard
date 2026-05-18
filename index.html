@@ -1016,7 +1016,7 @@ function fmtAI(raw){
     var hM=t.match(/^\*\*(\d+\.\s+[^*]+)\*\*$/)||t.match(/^#{1,3}\s+(.+)$/);
     if(hM){html+='<div style="margin-top:1rem;margin-bottom:.35rem;padding-bottom:.25rem;border-bottom:1.5px solid rgba(40,38,32,.09);font-weight:700;font-size:.9rem;color:#1a1814">'+hM[1].replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</div>';return;}
     var nM=t.match(/^(\d+)\.\s+(.+)/);
-    if(nM){html+='<div style="display:flex;gap:7px;margin-top:.4rem;align-items:baseline"><span style="color:var(--mental);font-weight:700;flex-shrink:0;min-width:16px">'+nM[1]+'.</span><span style="color:var(--sub);line-height:1.65">'+nM[2].replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</span></div>';return;}
+    if(nM){html+='<div style="display:flex;gap:7px;margin-top:.4rem;align-items:baseline"><span style="color:var(--sub);font-weight:700;flex-shrink:0;min-width:16px">'+nM[1]+'.</span><span style="color:var(--sub);line-height:1.65">'+nM[2].replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</span></div>';return;}
     var bM=t.match(/^[-·•]\s+(.+)/);
     if(bM){html+='<div style="display:flex;gap:7px;margin-top:.25rem;margin-left:1.2rem;align-items:baseline"><span style="color:var(--faint);flex-shrink:0">›</span><span style="color:var(--sub);line-height:1.65">'+bM[1].replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</span></div>';return;}
     html+='<div style="color:var(--sub);line-height:1.75;margin-top:.15rem">'+t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</div>';
@@ -1130,11 +1130,27 @@ async function analyzeLastWeek(){
 影響因子規律、與人類圖設計的對應或背離
 
 **3. 帶入本週的關鍵提醒**（1-2條）
-從上週經驗提取、本週最需注意的事`;
+從上週經驗提取、本週最需注意的事
+
+最後另起一行，格式固定為：
+📌 ${lwDates[0].slice(5).replace('-','/')}～${lwDates[6].slice(5).replace('-','/')}：[25字以內的上週狀態一句話總結]`;
 
   try{
-    var r=await aiCall(prompt,1200);
-    res.innerHTML=fmtAI(r);
+    var r=await aiCall(prompt,1400);
+    // 提取 📌 摘要行，分離顯示
+    var summaryMatch=r.match(/📌[^\n]+/);
+    var summaryText=summaryMatch?summaryMatch[0]:'';
+    var mainText=summaryText?r.replace(summaryMatch[0],'').trim():r;
+    // 儲存摘要到 localStorage 供 CC hover 使用
+    if(summaryText){
+      localStorage.setItem('sas_weekly_recap',JSON.stringify({
+        text:summaryText,week:lwDates[0]+'~'+lwDates[6],ts:Date.now()
+      }));
+    }
+    res.innerHTML=fmtAI(mainText);
+    if(summaryText){
+      res.innerHTML+='<div style="margin-top:1rem;padding:.6rem .85rem;background:var(--bg2);border-left:3px solid var(--accent);border-radius:0 var(--rsm) var(--rsm) 0;font-size:.8rem;color:var(--ink);line-height:1.6">'+summaryText+'</div>';
+    }
   }catch(e){res.innerHTML='<span style="color:var(--danger)">'+e.message+'</span>';}
   btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
 }
