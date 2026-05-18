@@ -920,8 +920,8 @@ function renderWeekStrip(moodMap){
       var wdone=witems.filter(t=>t.status==='done').length;
       var wpct=witems.length?Math.round(wdone/witems.length*100):null;
       var wpcol=wpct!==null?(wpct>=80?'var(--ok)':wpct>=50?'var(--warn)':'var(--danger)'):'';
-      var restTag='<div style="font-size:.55rem;color:#7a9e8a;font-weight:600;margin-top:3px;min-height:1.1em">'+(!isFuture&&wrev&&wrev.restMode?'🌿 休假':'')+'</div>';
-      var wptag='<div style="font-size:.58rem;font-weight:600;color:'+wpcol+';margin-top:1px;min-height:1.1em">'+(wpct!==null?wpct+'%':'')+'</div>';
+      var restTag='<div style="font-size:.55rem;color:#7a9e8a;font-weight:600;margin-top:3px;height:14px;line-height:14px;overflow:hidden">'+(!isFuture&&wrev&&wrev.restMode?'🌿 休假':'')+'</div>';
+      var wptag='<div style="font-size:.58rem;font-weight:600;color:'+wpcol+';margin-top:1px;height:14px;line-height:14px;overflow:hidden">'+(wpct!==null?wpct+'%':'')+'</div>';
       cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+restTag+wptag+'<div class="day-factors">'+factors+'</div></div>';
     }
     return cols;
