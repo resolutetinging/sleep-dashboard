@@ -374,6 +374,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="cco-inner">
       <div>
         <div style="position:relative;height:180px"><canvas id="corr-chart"></canvas></div>
+        <div id="corr-daily-rates" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:6px;font-size:.58rem;text-align:center;color:var(--sub)"></div>
         <div class="corr-legend">
           <span class="corr-leg-item"><span style="width:14px;height:3px;background:var(--mental);border-radius:2px;display:inline-block"></span>情緒分（折線）</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--danger);display:inline-block"></span>意志力透支</span>
@@ -398,7 +399,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
           <div style="display:flex;flex-direction:column;gap:6px;font-size:.68rem;color:var(--sub);line-height:1.6">
             <div style="display:flex;gap:7px;align-items:baseline">
               <span style="width:10px;height:10px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:2px"></span>
-              <span><strong style="color:var(--text)">意志力透支</strong>：情緒/戰力綜合低於 55%，但任務完成率高於 83%。預測 1–3 天後戰力下行。</span>
+              <span><strong style="color:var(--text)">意志力透支</strong>：情緒/戰力加權均值低於 55%，但任務完成率高於 83%。預測 <span id="lag-predict-days">1–3</span> 天後戰力下行。</span>
             </div>
             <div style="display:flex;gap:7px;align-items:baseline">
               <span style="width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0;margin-top:2px"></span>
@@ -514,7 +515,7 @@ function go(id){
 function initFrames(){Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank')f.src=frameSrcs[k];});}
 
 /* COMBAT */
-var _combat=null,_debt=null;
+var _combat=null,_debt=null,_lag=null;
 function scoreColor(s){return s>=70?'var(--ok)':s>=40?'var(--warn)':'var(--danger)';}
 function scoreLabel(s){return s>=85?'頂峰':s>=70?'良好':s>=55?'普通':s>=40?'注意':'需休息';}
 function paceBody(s){
@@ -662,7 +663,7 @@ function buildAlignToday(combat){
   if(!todayMood||!items.length){$('align-today').innerHTML='<span style="font-size:.68rem;color:var(--faint)">今日尚無完整紀錄</span>';return;}
   var dr=done/items.length;
   var cls=alignClass(todayMood.score,combat,dr);
-  var html=cls==='over'?'<span class="align-badge align-over">⚡ 意志力透支</span><div style="font-size:.65rem;color:var(--sub);margin-top:4px">狀態偏低但完成度高，預測48h內戰力下行。</div>'
+  var html=cls==='over'?'<span class="align-badge align-over">⚡ 意志力透支</span><div style="font-size:.65rem;color:var(--sub);margin-top:4px">狀態偏低但完成度高，預測'+(_lag?_lag+'天':'1–3天')+'內戰力下行。</div>'
     :cls==='under'?'<span class="align-badge align-under">💭 低輸出</span><div style="font-size:.65rem;color:var(--sub);margin-top:4px">狀態良好但完成度低，確認優先順序。</div>'
     :'<span class="align-badge align-ok">✓ 狀態對齊</span><div style="font-size:.65rem;color:var(--sub);margin-top:4px">行為輸出與內在狀態匹配。</div>';
   $('align-today').innerHTML=html;
@@ -766,14 +767,31 @@ function rebuildCorrChart(){
     ins.innerHTML=tags.join('');
   }
   var lag=calcLag(moods);
+  _lag=lag;
   var lagEl=$('lag-days');if(lagEl)lagEl.textContent=lag?'平均'+lag+'天後':'積累中';
   var lagExp=$('lag-explain');
   if(lagExp)lagExp.innerHTML=lag?'歷史模式：狀態下滑後，行為完成率平均延遲 <strong>'+lag+' 天</strong>才跟著下降。':'持續記錄後自動計算滯後天數。';
+  var lpd=$('lag-predict-days');if(lpd)lpd.textContent=lag?lag:'1–3';
   var ip=$('inertia-predict');
   if(ip){
     var rec=moods.slice(-3);var avg3=rec.length?rec.reduce((a,m)=>a+m.score,0)/rec.length:null;
-    if(avg3&&avg3<5)ip.innerHTML='近3天情緒均值 <strong>'+avg3.toFixed(1)+'</strong> 分，處於低谷。預測 '+(lag||2)+' 天後行為表現明顯下滑。建議啟動防禦模式。';
+    if(avg3&&avg3<5)ip.innerHTML='近3天情緒均值 <strong>'+avg3.toFixed(1)+'</strong> 分，處於低谷。預測 <strong>'+(_lag||'1–3')+' 天</strong>後行為表現明顯下滑。建議啟動防禦模式。';
     else ip.textContent='目前狀態平穩，無立即下行風險。';
+  }
+  // 每日達成率小格
+  var rateGrid=$('corr-daily-rates');
+  if(rateGrid){
+    var cells='';
+    for(var ri=13;ri>=0;ri--){
+      var rd=new Date();rd.setDate(rd.getDate()-ri);
+      var rk=dkey(rd);
+      var rrev=getReview(rk);var ritems=rrev?(rrev.items||[]):[];
+      var rdone=ritems.filter(t=>t.status==='done').length;
+      var rpct=ritems.length?Math.round(rdone/ritems.length*100):null;
+      var rcls=rpct!==null?(rpct>=80?'var(--ok)':rpct>=50?'var(--warn)':'var(--danger)'):'var(--faint)';
+      cells+='<div style="padding:2px 0"><div style="color:var(--faint)">'+(rd.getMonth()+1)+'/'+(rd.getDate())+'</div><div style="font-weight:600;color:'+rcls+'">'+(rpct!==null?rpct+'%':'—')+'</div></div>';
+    }
+    rateGrid.innerHTML=cells;
   }
 }
 function buildTaskTaxonomy(){
@@ -913,7 +931,12 @@ function renderWeekStrip(moodMap){
         :'<div class="day-score-ring empty">—</div>';
       var emoji=(!isFuture&&s!==null)?(s>=9?'🤩':s>=7?'😊':s>=5?'😐':s>=3?'😔':'😞'):(isFuture?'':'·');
       var factors=mood?(mood.factors||[]).slice(0,3).map(f=>'<div class="day-factor-tag">'+f+'</div>').join(''):'';
-      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div></div>';
+      var wrev=!isFuture?getReview(k):null;var witems=wrev?(wrev.items||[]):[];
+      var wdone=witems.filter(t=>t.status==='done').length;
+      var wpct=witems.length?Math.round(wdone/witems.length*100):null;
+      var wpcol=wpct!==null?(wpct>=80?'var(--ok)':wpct>=50?'var(--warn)':'var(--danger)'):'';
+      var wptag=wpct!==null?'<div style="font-size:.58rem;font-weight:600;color:'+wpcol+';margin-top:2px">'+wpct+'%</div>':'';
+      cols+='<div class="day-col"><div class="day-header'+(isToday?' today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'<br>'+DAYS[d.getDay()]+'</div>'+ring+'<div class="day-emoji">'+emoji+'</div><div class="day-factors">'+factors+'</div>'+wptag+'</div>';
     }
     return cols;
   }
