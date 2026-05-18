@@ -1118,21 +1118,42 @@ async function analyzeLastWeek(){
   var sleepSummary=combatVal?'戰力 '+combatVal+'/100':'—';
   if(debtVal!==null&&debtVal>0)sleepSummary+='，睡眠債 '+debtVal.toFixed(1)+' 小時';
 
+  // 補給維度：讀取 Refueler 上週資料（同 origin localStorage）
+  var rfRaw=null;try{rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
+  var rfAll=rfRaw&&rfRaw.entries?rfRaw.entries:[];
+  var lwSet=new Set(lwDates);
+  var lwRf=rfAll.filter(function(e){return e.timestamp&&lwSet.has(e.timestamp.slice(0,10));});
+  var rfCoffee=lwRf.filter(function(e){return e.type==='coffee';});
+  var rfWater=lwRf.filter(function(e){return e.type==='water';});
+  var coffeeDaySet=new Set(rfCoffee.map(function(e){return e.timestamp.slice(0,10);}));
+  var coffeeCups=rfCoffee.length;
+  var coffeeAvgPerDay=coffeeCups>0?(coffeeCups/7).toFixed(1):null;
+  var coffeeSpend=rfCoffee.reduce(function(s,e){return s+(e.coffeePrice||e.price||0)+(e.dessertPrice||0);},0);
+  var waterDaySet=new Set(rfWater.map(function(e){return e.timestamp.slice(0,10);}));
+  var waterTotal=rfWater.reduce(function(s,e){return s+(e.amount||0);},0);
+  var waterAvgPerDay=waterDaySet.size>0?Math.round(waterTotal/waterDaySet.size):null;
+  var hasRfData=coffeeDaySet.size>0||waterDaySet.size>0;
+  var rfCoffeeSummary=coffeeDaySet.size>0?coffeeCups+' 杯（'+coffeeDaySet.size+' 天），均 '+coffeeAvgPerDay+' 杯/日'+(coffeeSpend>0?'，NT$'+coffeeSpend:''):'無記錄';
+  var rfWaterSummary=waterDaySet.size>0?waterTotal+' ml（'+waterDaySet.size+' 天），日均 '+waterAvgPerDay+' ml':'無記錄';
+
   // 顯示上週數字摘要
   if(statRow){
     var moodColor=parseFloat(avg)>=7?'var(--ok)':parseFloat(avg)>=4?'var(--warn)':'var(--danger)';
     var taskColor=taskTotalSum>0?(taskDoneSum/taskTotalSum>=0.7?'var(--ok)':taskDoneSum/taskTotalSum>=0.4?'var(--warn)':'var(--danger)'):'var(--faint)';
-    statRow.innerHTML=[
+    var statItems=[
       ['情緒均值',avg+' / 10',moodColor],
       ['趨勢',trend,'var(--sub)'],
       ['行為完成率',taskDoneRate,taskColor]
-    ].map(function(r){return '<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
+    ];
+    if(coffeeDaySet.size>0) statItems.push(['☕ 咖啡',coffeeCups+' 杯','#C47A3A']);
+    if(waterDaySet.size>0) statItems.push(['💧 水分',(waterAvgPerDay||0)+' ml/日','#4a7fa5']);
+    statRow.innerHTML=statItems.map(function(r){return '<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
   }
 
   var hd=window._hdData||{};
   var prompt=`整合人類圖與身心數據的週報顧問。
 
-上週（${lwDates[0]} ~ ${lwDates[6]}）三維數據摘要：
+上週（${lwDates[0]} ~ ${lwDates[6]}）四維數據摘要：
 
 【睡眠】
 - ${sleepSummary}
@@ -1145,24 +1166,34 @@ async function analyzeLastWeek(){
 【行為／任務】
 - 完成率：${taskDoneRate}（${taskSummary}）
 
+【補給（Refueler）】
+${hasRfData?`- 咖啡：${rfCoffeeSummary}
+- 水分：${rfWaterSummary}`:'- 本週無 Refueler 記錄（功能較晚啟用，資料累積中）'}
+
 人類圖：類型 ${hd.type||'未知'}，策略 ${hd.strat||'未知'}，權威 ${hd.auth||'未知'}，非自己 ${hd.notself||'未知'}
 
 請提供上週回顧（繁體中文）：
 
 **1. 上週整體狀態評估**
-睡眠、情緒、行為三個面向的整合解讀
+睡眠、情緒、行為、補給四個面向的整合解讀（補給無資料時僅評估前三維）
 
-**2. 主要模式洞察**
-影響因子規律、與人類圖設計的對應或背離
+**2. 跨維度模式洞察**
+維度間的交互關係（如咖啡攝取量與情緒/睡眠的相關性、行為完成率與狀態的滯後關係），影響因子規律，與人類圖設計的對應或背離
 
-**3. 帶入本週的關鍵提醒**（1-2條）
-從上週三維數據提取、本週最需注意的事
+**3. 本週具體建議**（3-4條，每條針對不同維度或交叉點）
+- 睡眠調整：針對睡眠債/戰力現狀的實際作法
+- 補給優化：咖啡攝取時機/水分補充策略（補給有資料時）
+- 行為策略：下週任務安排與節奏建議
+- 人類圖落地：從設計角度對本人能量管理的提醒
+
+**4. 下週一個最值得實驗的改變**
+綜合所有維度，選出一個最有槓桿效果的調整方向（具體、可執行）
 
 最後另起一行，格式固定為：
-📌 ${lwDates[0].slice(5).replace('-','/')}～${lwDates[6].slice(5).replace('-','/')}：[25字以內，涵蓋睡眠/情緒/行為三方的上週狀態總結]`;
+📌 ${lwDates[0].slice(5).replace('-','/')}～${lwDates[6].slice(5).replace('-','/')}：[30字以內，涵蓋上週最關鍵狀態與一個帶入本週的方向]`;
 
   try{
-    var r=await aiCall(prompt,1400);
+    var r=await aiCall(prompt,2000);
     // 提取 📌 摘要行，分離顯示
     var summaryMatch=r.match(/📌[^\n]+/);
     var summaryText=summaryMatch?summaryMatch[0]:'';
