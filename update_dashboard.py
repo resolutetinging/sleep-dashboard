@@ -158,9 +158,9 @@ def git_push():
         subprocess.run(["git", "add", "sleep_dashboard.html"], check=True)
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if result.returncode == 0:
-            print("ℹ️  沒有新變更，不需要 push")
-            return
-        subprocess.run(["git", "commit", "-m", f"auto update: {today}"], check=True)
+            print("ℹ️  HTML 無新變更，略過 commit")
+        else:
+            subprocess.run(["git", "commit", "-m", f"auto update: {today}"], check=True)
 
         # 從持久檔案讀取 PAT（LaunchAgent 無法存取 osxkeychain）
         pat_file = os.path.expanduser("~/.sleep_dashboard_pat")
@@ -172,7 +172,9 @@ def git_push():
             push_url = "origin"
             print("⚠️  ~/.sleep_dashboard_pat 不存在，以預設 origin 推送")
 
+        subprocess.run(['git', 'stash'], check=False)
         subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True)
+        subprocess.run(['git', 'stash', 'pop'], check=False)
         subprocess.run(['git', 'push', push_url, 'main'], check=True)
         print(f"✅ 已 push 到 GitHub")
     except Exception as e:
