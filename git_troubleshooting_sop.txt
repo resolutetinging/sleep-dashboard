@@ -1,0 +1,74 @@
+Sleep Dashboard — Git 問題排除指引
+=====================================
+建立日期：2026-05-21
+
+
+【常見問題】git commit 失敗，exit status 128
+----------------------------------------------
+
+症狀：
+  update.log 最後顯示：
+  ❌ Git 操作失敗：Command '['git', 'commit', ...]' returned non-zero exit status 128.
+
+根本原因：
+  git index 裡殘留衝突條目（Unmerged paths: deleted by us），
+  通常是 update.log / update_error.log / json_cache/ 這幾個檔案。
+  這些檔案已在 .gitignore 並用 git rm --cached 移出追蹤，
+  但 index 條目沒有被清乾淨，導致每次 commit 都被擋住。
+
+
+【排除 SOP】
+------------
+
+Step 1  確認是不是這個問題
+
+    cd /Users/tinayu/sleep-dashboard
+    git status
+
+    如果看到以下內容，就是同樣的問題：
+      Unmerged paths:
+        deleted by us:   json_cache/...
+        deleted by us:   update.log
+        deleted by us:   update_error.log
+
+
+Step 2  列出所有衝突檔案
+
+    git ls-files -u | awk '{print $4}' | sort -u
+
+
+Step 3  一次清除衝突 index 條目
+
+    git ls-files -u | awk '{print $4}' | sort -u | xargs git rm --cached
+
+
+Step 4  確認狀態乾淨
+
+    git status
+    （應該只剩 sleep_dashboard.html 在 Changes to be committed，或 nothing to commit）
+
+
+Step 5  Commit & Push
+
+    git commit -m "auto update: $(date +%Y-%m-%d)"
+    git push
+
+
+【判斷表】
+----------
+
+  git status 顯示                        處理方式
+  ──────────────────────────────────────────────────────────────────
+  Unmerged paths: deleted by us          執行上方 Step 2~5
+  nothing to commit                      HTML 沒變，正常，不用管
+  push 被拒（non-fast-forward）          git pull --rebase，再 push
+                                         （注意勿把 log 檔案拉進追蹤）
+
+
+【預防說明】
+------------
+
+  此問題起因於 commit f1cb4fa（fix: remove gitignore-d files from tracking）
+  執行時 index 殘留舊衝突條目，2026-05-21 已手動清除。
+  往後正常情況下不會再發生，除非執行了 git pull 而 remote 仍有
+  這些檔案的舊版本，屆時重複上方 SOP 即可。
