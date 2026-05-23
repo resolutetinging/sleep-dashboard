@@ -176,7 +176,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .cco-inner,.ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -193,6 +193,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .day-factor-tag{font-size:.5rem}
   /* Corr chart taller on mobile since sidebar panel moves below */
   .cco-inner{gap:12px}
+  .cco{overflow:visible}
+  .cco-inner>div:first-child{min-width:0;width:100%}
 }
 </style>
 </head>
