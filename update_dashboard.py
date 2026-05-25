@@ -172,10 +172,14 @@ def git_push():
             push_url = "origin"
             print("⚠️  ~/.sleep_dashboard_pat 不存在，以預設 origin 推送")
 
-        subprocess.run(['git', 'stash'], check=False)
-        subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True)
-        subprocess.run(['git', 'stash', 'pop'], check=False)
-        subprocess.run(['git', 'push', push_url, 'main'], check=True)
+        stash_result = subprocess.run(['git', 'stash'], capture_output=True, text=True)
+        stashed = 'No local changes' not in stash_result.stdout
+        try:
+            subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True)
+            subprocess.run(['git', 'push', push_url, 'main'], check=True)
+        finally:
+            if stashed:
+                subprocess.run(['git', 'stash', 'pop'], check=False)
         print(f"✅ 已 push 到 GitHub")
     except Exception as e:
         print(f"❌ Git 操作失敗：{e}")
