@@ -19,8 +19,9 @@ ICLOUD_FOLDER = os.path.expanduser(
 # 優先讀本機 cache（由 run_update.sh 複製而來，避免 iCloud EAGAIN）
 JSON_CACHE = "/Users/tinayu/sleep-dashboard/json_cache"
 DATA_FOLDER = JSON_CACHE if os.path.isdir(JSON_CACHE) and os.listdir(JSON_CACHE) else ICLOUD_FOLDER
-DASHBOARD_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard.html"
-GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
+DASHBOARD_PATH    = "/Users/tinayu/sleep-dashboard/sleep_dashboard.html"
+DASHBOARD_V2_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard_v2.html"
+GITHUB_REPO_DIR   = "/Users/tinayu/sleep-dashboard"
 # ────────────────────────────────────────────────────────────────────────
 
 def clean_json_content(content):
@@ -128,34 +129,39 @@ def parse_json_files():
 # (其餘 update_html, git_push, main 函數保持不變，直接沿用你原有的即可)
 
 def update_html(summary):
-    """讀取現有 HTML，只替換 RAW 數據部分"""
-    if not os.path.exists(DASHBOARD_PATH):
-        print(f"❌ 找不到 dashboard 檔案：{DASHBOARD_PATH}")
-        return False
-    with open(DASHBOARD_PATH, "r", encoding="utf-8") as f:
-        html = f.read()
-    marker_start = 'const RAW = '
-    marker_end   = ';\n\nconst COLORS'
-    idx_start = html.find(marker_start)
-    idx_end   = html.find(marker_end)
-    if idx_start == -1 or idx_end == -1:
-        print("❌ 找不到 RAW 數據標記")
-        return False
+    """讀取現有 HTML，只替換 RAW 數據部分（同時更新現行版與 v2）"""
     detail = [dict(d, segments=[]) for d in summary[-90:]]
     new_raw = json.dumps({"summary": summary, "detail": detail}, ensure_ascii=False, separators=(',', ':'))
-    new_html = html[:idx_start + len(marker_start)] + new_raw + html[idx_end:]
-    with open(DASHBOARD_PATH, "w", encoding="utf-8") as f:
-        f.write(new_html)
-    last_date = summary[-1]["date"] if summary else "?"
-    print(f"✅ HTML 更新完成，最新數據：{last_date}")
-    return True
+    marker_start = 'const RAW = '
+    marker_end   = ';\n\nconst COLORS'
+    success = False
+    for path in [DASHBOARD_PATH, DASHBOARD_V2_PATH]:
+        if not os.path.exists(path):
+            print(f"⚠  找不到檔案，略過：{os.path.basename(path)}")
+            continue
+        with open(path, "r", encoding="utf-8") as f:
+            html = f.read()
+        idx_start = html.find(marker_start)
+        idx_end   = html.find(marker_end)
+        if idx_start == -1 or idx_end == -1:
+            print(f"❌ 找不到 RAW 標記：{os.path.basename(path)}")
+            continue
+        new_html = html[:idx_start + len(marker_start)] + new_raw + html[idx_end:]
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(new_html)
+        print(f"✅ {os.path.basename(path)} 更新完成")
+        success = True
+    if success:
+        last_date = summary[-1]["date"] if summary else "?"
+        print(f"   最新數據：{last_date}")
+    return success
 
 def git_push():
     """Commit 並 push 到 GitHub"""
     try:
         os.chdir(GITHUB_REPO_DIR)
         today = datetime.now().strftime("%Y-%m-%d")
-        subprocess.run(["git", "add", "sleep_dashboard.html"], check=True)
+        subprocess.run(["git", "add", "sleep_dashboard.html", "sleep_dashboard_v2.html"], check=True)
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if result.returncode == 0:
             print("ℹ️  HTML 無新變更，略過 commit")
