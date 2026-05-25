@@ -1080,7 +1080,7 @@ function updateNight() {
   else if (cyclesInt >= 4 && cyclesInt <= 6) cycleMsg += ' 週期數良好。';
   let deepNote = deepPct < 13 ? `深度睡眠 ${deepPct.toFixed(1)}% 偏低（建議 13–23%）。` : `深度睡眠 ${deepPct.toFixed(1)}% 正常。`;
   let remNote = remPct < 20 ? `REM ${remPct.toFixed(1)}% 偏低（建議 20–25%）。` : `REM ${remPct.toFixed(1)}% 良好。`;
-  document.getElementById('nightCycleInfo').innerHTML = cycleMsg + '<br>' + deepNote + ' ' + remNote;
+  document.getElementById('nightCycleInfo').innerHTML = cycleMsg + '<br>' + deepNote + '<br>' + remNote;
 }
 
 function changeNight(dir) {
@@ -1372,10 +1372,10 @@ function updateSocialJetlag() {
     advEl.innerHTML = '<span class="advice-status">✓ 社交時差在安全範圍（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">平日與週末生理時鐘偏移不大，週一狀態應相對穩定。<br>' + idealBedNote + '</span>';
   } else if (jetlagHr < 2) {
     advEl.className = 'advice-box warn';
-    advEl.innerHTML = '<span class="advice-status">⚡ 社交時差中度（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">' + mondayNote + ' 建議週末入睡時間不要比平日晚超過 1 小時；若有偏移，可在週日提早 30 分鐘入睡縮短落差。<br>' + idealBedNote + '</span>';
+    advEl.innerHTML = '<span class="advice-status">⚡ 社交時差中度（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">' + mondayNote + '<br>建議週末入睡時間不要比平日晚超過 1 小時；若有偏移，可在週日提早 30 分鐘入睡縮短落差。<br>' + idealBedNote + '</span>';
   } else {
     advEl.className = 'advice-box bad';
-    advEl.innerHTML = '<span class="advice-status">⚠ 社交時差偏高（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">' + mondayNote + ' 等同於每週經歷一次跨時區，對代謝與認知的影響接近輕度時差反應。建議週末盡量固定起床時間（即使晚睡），避免生理時鐘持續漂移。<br>' + idealBedNote + '</span>';
+    advEl.innerHTML = '<span class="advice-status">⚠ 社交時差偏高（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">' + mondayNote + '<br>等同於每週經歷一次跨時區，對代謝與認知的影響接近輕度時差反應。<br>建議週末盡量固定起床時間（即使晚睡），避免生理時鐘持續漂移。<br>' + idealBedNote + '</span>';
   }
 }
 
@@ -1438,8 +1438,8 @@ function updateSleepDebt(allData) {
   const debtColor = totalDebt > 0 ? '#a05858' : '#5e8f7e';
   const debtSign = totalDebt > 0 ? '累積欠債' : '睡眠盈餘';
   document.getElementById('debtSummary').innerHTML =
-    `7 天合計：<strong style="color:${debtColor}">${debtSign} ${minToHm(Math.abs(totalDebt))}</strong>　
-     低睡眠日（< 6.5h）：<strong>${lowDays} 天</strong>　
+    `7 天合計：<strong style="color:${debtColor}">${debtSign} ${minToHm(Math.abs(totalDebt))}</strong><br>
+     低睡眠日（< 6.5h）：<strong>${lowDays} 天</strong><br>
      ${ highRisk ? '<strong style="color:#a05858">⚠ 建議近期補眠並降低高強度工作安排</strong>' : '整體睡眠狀況尚可' }`;
 
   return totalDebt; // for combat power debt adjustment
