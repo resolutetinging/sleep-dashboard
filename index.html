@@ -728,20 +728,32 @@ function buildPacePills(score){
   el.innerHTML=base+(strat?'<span class="pill p-purple">⚠ '+strat+'</span>':'');
 }
 
-/* LAG EFFECT */
+/* LAG EFFECT — 跨維度滯後：情緒下滑 → 行為完成率下滑的平均天數 */
 function calcLag(moods){
-  var lags=[];
-  for(var i=1;i<moods.length-3;i++){
-    if(moods[i-1].score-moods[i].score>=2){
-      for(var j=i+1;j<moods.length;j++){
-        if(moods[j].score-moods[i].score>1){
-          for(var k=j+1;k<moods.length;k++){if(moods[k].score<moods[j].score-1){lags.push(k-i);break;}}
-          break;
-        }
-      }
-    }
+  // 建立過去 90 天完成率 map
+  var doneMap={};
+  for(var di=0;di<90;di++){
+    var d=new Date();d.setDate(d.getDate()-di);var k=dkey(d);
+    var rev=getReview(k);
+    if(rev){var items=rev.items||[];if(items.length>0)doneMap[k]=items.filter(t=>t.status==='done').length/items.length;}
   }
-  return lags.length?Math.round(lags.reduce((a,b)=>a+b,0)/lags.length):null;
+  // 情緒依日期升序排列
+  var sorted=moods.filter(m=>m.date).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  var lags=[];
+  for(var i=1;i<sorted.length;i++){
+    if(sorted[i-1].score-sorted[i].score<1.5)continue; // 情緒下滑門檻
+    var dp=sorted[i].date.split('-');
+    var dropD=new Date(parseInt(dp[0]),parseInt(dp[1])-1,parseInt(dp[2]));
+    // 基準：下滑日前 7 天的平均完成率（至少需 2 天資料）
+    var baseDays=[];
+    for(var b=1;b<=7;b++){var bd=new Date(dropD);bd.setDate(bd.getDate()-b);var bk=dkey(bd);if(doneMap[bk]!==undefined)baseDays.push(doneMap[bk]);}
+    if(baseDays.length<2)continue;
+    var base=baseDays.reduce((a,v)=>a+v,0)/baseDays.length;
+    if(base<0.3)continue; // 基準太低，無法偵測進一步下滑
+    // 往後最多 10 天，找完成率低於基準 20% 的第一天
+    for(var f=1;f<=10;f++){var fd=new Date(dropD);fd.setDate(fd.getDate()+f);var fk=dkey(fd);if(doneMap[fk]!==undefined&&doneMap[fk]<base-0.2){lags.push(f);break;}}
+  }
+  return lags.length>=2?Math.round(lags.reduce((a,b)=>a+b,0)/lags.length):null;
 }
 
 /* CHART HELPERS */
@@ -857,7 +869,7 @@ function rebuildCorrChart(){
   var lag=calcLag(moods);_lag=lag;
   var lagEl=$('lag-days');if(lagEl)lagEl.textContent=lag?'平均'+lag+'天後':'積累中';
   var lagExp=$('lag-explain');
-  if(lagExp)lagExp.innerHTML=lag?'歷史模式：狀態下滑後，行為完成率平均延遲 <strong>'+lag+' 天</strong>才跟著下降。':'持續記錄後自動計算滯後天數。';
+  if(lagExp)lagExp.innerHTML=lag?'歷史模式：情緒出現明顯下滑後，行為完成率平均延遲 <strong>'+lag+' 天</strong>才跟著降低（近90日情緒 × 完成率交叉分析）。':'持續記錄後自動計算（需至少2次情緒下滑事件且有完成率紀錄）。';
   var lpd=$('lag-predict-days');if(lpd)lpd.textContent=lag?lag:'1–3';
   var ip=$('inertia-predict');
   if(ip){
