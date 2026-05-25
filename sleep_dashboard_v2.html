@@ -323,7 +323,7 @@
       <div class="def-header">
         <span class="def-name" style="font-size:12px">💤 睡眠效率</span>
       </div>
-      <div class="def-desc">實際睡眠時間 ÷ 在床時間。&gt;85% 為良好，低於 75% 需注意。</div>
+      <div class="def-desc">實際睡眠時間 ÷ 在床時間。衡量睡眠「連續性」而非品質：高效率代表入睡後少清醒（睡眠不碎片化），低效率（&lt;85%）常見於失眠或焦慮。<br>⚠ 效率需搭配總睡眠時數解讀：睡 5h 全程熟睡效率仍高，但總量不足。</div>
     </div>
     <div class="def-item">
       <div class="def-header">
@@ -348,6 +348,12 @@
         <span class="def-name" style="font-size:12px">📊 作息規律性</span>
       </div>
       <div class="def-desc">入睡時間的標準差。反映生理時鐘的一致性，建議 &lt;45 分鐘。波動越大，身體越難預測睡眠時機，深度睡眠與 REM 品質都會受影響。</div>
+    </div>
+    <div class="def-item">
+      <div class="def-header">
+        <span class="def-name" style="font-size:12px">🏦 睡眠存款</span>
+      </div>
+      <div class="def-desc">本週（週一至今）累積睡眠時數，目標 49h（7 天 × 7h）。<br>存款充足：本週能量持續穩定。<br>不足：優先補回睡眠，而非用意志力撐住。</div>
     </div>
   </div>
 
@@ -663,6 +669,11 @@
       </div>
     </div>
     <div id="regularityContent"></div>
+    <div id="regularityAdvice" style="margin-top:12px"></div>
+    <div style="margin-top:18px">
+      <div style="font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">入睡 &amp; 起床時間趨勢</div>
+      <div class="chart-wrap"><canvas id="regularityTrendChart" height="100"></canvas></div>
+    </div>
   </div>
 
 </main>
@@ -675,7 +686,7 @@ const COLORS = {
   deep: '#5c7a96', rem: '#8b7898', core: '#5e8f7e', awake: '#b08d62'
 };
 
-let trendChart, donutChart, hypnoChart, pctTrendChart, effChart;
+let trendChart, donutChart, hypnoChart, pctTrendChart, effChart, regularityTrendChart;
 let currentRange = 90;
 let currentPctRange = 90;
 let currentEffRange = 30;
@@ -962,6 +973,64 @@ function updateRegularity(data) {
       <span style="color:#e67e22">●</span> 30–60 分鐘 稍不規律 &nbsp;
       <span style="color:#c0392b">●</span> &gt; 60 分鐘 作息混亂
     </div>`;
+
+  // Advice section based on SD
+  const advEl = document.getElementById('regularityAdvice');
+  if (advEl) {
+    const worse = Math.max(bedSD, wakeSD);
+    let advClass, advTitle, advDetail;
+    if (worse < 30) {
+      advClass = 'advice-box good';
+      advTitle = '✓ 作息高度規律，生理時鐘穩定';
+      advDetail = '入睡與起床時間波動極小，大腦能準確預期睡眠時機，有助深度睡眠在前半夜集中釋放。<br>維持目前作息即可，避免週末過度補眠破壞節律。';
+    } else if (worse < 60) {
+      advClass = 'advice-box warn';
+      advTitle = '⚡ 作息稍不規律，有改善空間';
+      advDetail = '生理時鐘每晚需重新校正，可能導致入睡較慢或深度睡眠比例偏低。<br>建議：固定起床時間（即使週末也不超過 30 分鐘差距），起床時間比入睡時間更容易鎖定且效果更佳。';
+    } else {
+      advClass = 'advice-box bad';
+      advTitle = '⚠ 作息波動偏大，需建立固定節律';
+      advDetail = '超過 1 小時的作息飄移等同長期輕度社交時差，影響皮質醇分泌節律與深度睡眠品質。<br>建議：先鎖定固定起床時間至少 2 週，再逐步調整入睡時間向前移。';
+    }
+    advEl.className = advClass;
+    advEl.innerHTML = `<span class="advice-status">${advTitle}</span><span class="advice-detail">${advDetail}</span>`;
+  }
+
+  // Draw bedtime trend chart
+  function bedToPlot(t) { let [h,m]=t.split(':').map(Number); let v=h*60+m; if(v>720)v-=1440; return v; }
+  function wakeToPlot(t) { let [h,m]=t.split(':').map(Number); return h*60+m; }
+  const DOW=['日','一','二','三','四','五','六'];
+  const labels=data.map(d=>{ const dow=DOW[new Date(d.date+'T12:00:00').getDay()]; return d.date.slice(5)+'（'+dow+'）'; });
+  const bedPts=data.map(d=>bedToPlot(d.bedtime));
+  const wakePts=data.map(d=>wakeToPlot(d.wake));
+  const tickColor='#4a4540'; const gridColor='#cdc8c033';
+  const cfg={
+    type:'line',
+    data:{labels,datasets:[
+      {label:'入睡',data:bedPts,borderColor:COLORS.deep,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false},
+      {label:'起床',data:wakePts,borderColor:COLORS.rem,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
+    ]},
+    options:{
+      responsive:true,animation:{duration:300},
+      plugins:{
+        legend:{labels:{color:tickColor,boxWidth:12,font:{size:11,weight:'bold'}}},
+        tooltip:{callbacks:{
+          title:i=>{const d=data[i[0].dataIndex];const dow=DOW[new Date(d.date+'T12:00:00').getDay()];return d.date+'（週'+dow+'）';},
+          label:i=>{let v=i.raw;if(v<0)v+=1440;return ` ${i.dataset.label}: ${minutesToTime(v)}`;}
+        }}
+      },
+      scales:{
+        x:{ticks:{color:tickColor,maxTicksLimit:14,font:{size:10,weight:'bold'}},grid:{color:gridColor}},
+        y:{
+          ticks:{color:tickColor,font:{size:10,weight:'bold'},stepSize:60,callback:v=>{let m=v<0?v+1440:v;return minutesToTime(m);}},
+          grid:{color:gridColor},
+          title:{display:true,text:'↑ 早上       晚上 ↓',color:'#7a7268',font:{size:9}}
+        }
+      }
+    }
+  };
+  if(regularityTrendChart){regularityTrendChart.data=cfg.data;regularityTrendChart.options=cfg.options;regularityTrendChart.update();}
+  else regularityTrendChart=new Chart(document.getElementById('regularityTrendChart'),cfg);
 }
 
 // HYPNOGRAM — sleep stage line chart
@@ -1309,18 +1378,30 @@ function updatePersonalBaseline() {
     const color = Math.abs(diff) < 2 ? '#5e8f7e' : diff > 0 ? '#5c7a96' : '#e67e22';
     return `<span style="color:${color};font-family:DM Mono,monospace;font-size:10px">${diff>=0?'+':''}${diff.toFixed(1)}%</span>`;
   }
+  function baselineAdvice(val, med, type) {
+    const diff = val - med;
+    if (type === 'deep') {
+      if (diff < -5) return '<br><span style="color:#e67e22;font-size:10px">低於個人基準 — 今日體力修復可能不足，建議降低高強度安排</span>';
+      if (diff > 5)  return '<br><span style="color:#5e8f7e;font-size:10px">高於個人基準 — 深度睡眠充足，身體修復良好</span>';
+      return '<br><span style="color:#5c7a96;font-size:10px">接近個人基準 — 狀態正常</span>';
+    } else {
+      if (diff < -5) return '<br><span style="color:#e67e22;font-size:10px">低於個人基準 — 邏輯與情緒調節能力可能受影響</span>';
+      if (diff > 5)  return '<br><span style="color:#5e8f7e;font-size:10px">高於個人基準 — REM 充足，記憶整合與創意思維佳</span>';
+      return '<br><span style="color:#5c7a96;font-size:10px">接近個人基準 — 狀態正常</span>';
+    }
+  }
   el.innerHTML = `
     <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">個人歷史基準（${all.length} 夜中位數）</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
         <div style="font-size:10px;color:var(--deep);font-weight:600;margin-bottom:4px">■ Deep 基礎能量</div>
         <div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace">中位數 ${deepMed.toFixed(1)}%</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:3px">昨晚 ${lastDeepPct.toFixed(1)}% ${diffTag(lastDeepPct, deepMed)}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:3px">昨晚 ${lastDeepPct.toFixed(1)}% ${diffTag(lastDeepPct, deepMed)}${baselineAdvice(lastDeepPct, deepMed, 'deep')}</div>
       </div>
       <div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
         <div style="font-size:10px;color:var(--rem);font-weight:600;margin-bottom:4px">■ REM 邏輯輸出</div>
         <div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace">中位數 ${remMed.toFixed(1)}%</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:3px">昨晚 ${lastRemPct.toFixed(1)}% ${diffTag(lastRemPct, remMed)}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:3px">昨晚 ${lastRemPct.toFixed(1)}% ${diffTag(lastRemPct, remMed)}${baselineAdvice(lastRemPct, remMed, 'rem')}</div>
       </div>
     </div>`;
 }
