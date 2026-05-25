@@ -143,6 +143,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-leg-item{display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--sub)}
 .xa-insight{display:flex;flex-wrap:wrap;gap:7px;margin-top:.75rem}
 .xa-tag{font-size:.68rem;padding:4px 11px;border-radius:20px;font-weight:500}
+.corr-range-btn{font-size:.62rem;padding:3px 10px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s}
+.corr-range-btn.active,.corr-range-btn:hover{background:var(--text);color:var(--card);border-color:var(--text)}
+.corr-rec{font-size:.7rem;color:var(--sub);line-height:1.7;margin-top:7px;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border-left:2px solid var(--mental)}
+.corr-defs{margin-top:1rem;padding:.9rem 1rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)}
 
 /* TAXONOMY */
 .ctx-inner{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:.5rem}
@@ -374,13 +378,21 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
   <!-- 三維相關性圖 -->
   <div class="card cco">
-    <div class="lbl">🔬 三維相關性 — 情緒週期 × 行為完成度（近14日）</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
+      <div class="lbl" style="margin-bottom:0">🔬 三維相關性 — 情緒 × 睡眠戰力 × 行為完成度</div>
+      <div style="display:flex;gap:5px">
+        <button class="corr-range-btn" onclick="setCorrRange(7)">1週</button>
+        <button class="corr-range-btn active" onclick="setCorrRange(14)">2週</button>
+        <button class="corr-range-btn" onclick="setCorrRange(30)">1月</button>
+        <button class="corr-range-btn" onclick="setCorrRange(180)">半年</button>
+      </div>
+    </div>
     <div class="cco-inner">
       <div>
         <div style="position:relative;height:180px"><canvas id="corr-chart"></canvas></div>
         <div class="corr-legend">
           <span class="corr-leg-item"><span style="width:14px;height:3px;background:var(--mental);border-radius:2px;display:inline-block"></span>情緒分（折線）</span>
-          <span class="corr-leg-item"><span style="width:14px;height:2px;background:#5c7a96;border-radius:2px;display:inline-block;opacity:.8;border-top:2px dashed #5c7a96;background:none"></span>睡眠戰力（虛線）</span>
+          <span class="corr-leg-item"><span style="display:inline-block;width:14px;height:0;border-top:2px dashed #5c7a96"></span>睡眠戰力（虛線）</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--danger);display:inline-block"></span>意志力透支</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--ok);display:inline-block"></span>狀態對齊</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--info);display:inline-block"></span>低輸出</span>
@@ -388,7 +400,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div>
         <div class="lbl">洞察摘要</div>
-        <div id="corr-insights" style="display:flex;flex-direction:column;gap:7px"></div>
+        <div id="corr-insights"></div>
         <div style="margin-top:1rem">
           <div class="lbl">滯後效應說明</div>
           <div id="lag-explain" style="font-size:.72rem;color:var(--sub);line-height:1.7">計算中…</div>
@@ -397,26 +409,35 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
           <div class="lbl">慣性預測</div>
           <div id="inertia-predict" style="font-size:.72rem;color:var(--sub);line-height:1.7">—</div>
         </div>
-        <!-- Scoring Definition -->
-        <div style="margin-top:1.2rem;padding-top:.9rem;border-top:.5px solid var(--border)">
-          <div class="lbl">評分定義</div>
-          <div style="display:flex;flex-direction:column;gap:6px;font-size:.68rem;color:var(--sub);line-height:1.6">
-            <div style="display:flex;gap:7px;align-items:baseline">
-              <span style="width:10px;height:10px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:2px"></span>
-              <span><strong style="color:var(--text)">意志力透支</strong>：情緒/戰力加權均值低於 55%，但任務完成率高於 83%。預測 <span id="lag-predict-days">1–3</span> 天後戰力下行。</span>
-            </div>
-            <div style="display:flex;gap:7px;align-items:baseline">
-              <span style="width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0;margin-top:2px"></span>
-              <span><strong style="color:var(--text)">狀態對齊</strong>：完成率與狀態分數落差 &lt; 28%。行為輸出與內在資源匹配，可持續。</span>
-            </div>
-            <div style="display:flex;gap:7px;align-items:baseline">
-              <span style="width:10px;height:10px;border-radius:50%;background:var(--info);flex-shrink:0;margin-top:2px"></span>
-              <span><strong style="color:var(--text)">低輸出</strong>：狀態分數高於 60%，但完成率低於 32%。能量未被有效轉化，確認外在阻力或優先順序。</span>
-            </div>
-            <div style="margin-top:3px;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);font-size:.65rem;color:var(--faint)">
-              散點 Y 軸 = 完成率 × 10（與情緒分同尺度比較）<br>折線 = 每日情緒分（wellness journal）
-            </div>
+      </div>
+    </div>
+    <!-- Definitions block -->
+    <div class="corr-defs">
+      <div class="lbl" style="margin-bottom:.65rem">資料說明 & 評分定義</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:.67rem;color:var(--sub);line-height:1.65">
+        <div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:3px">Y 軸尺度（統一 0–10）</div>
+          <div>情緒分：wellness journal 原始值（0–10）</div>
+          <div>睡眠戰力：原始分（0–100）÷ 10，圖上 7 = 戰力 70</div>
+          <div>完成度點：完成率（0–1）× 10，圖上 7 = 完成 70%</div>
+          <div style="margin-top:5px;color:var(--faint)">⚠ 三條線數值可對齊比較，但語意不同，用於觀察趨勢相關性。</div>
+          <div style="margin-top:4px;color:var(--faint)">睡眠戰力歷史僅保留近 7 天，超出範圍顯示為空白。</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:3px">完成度點分類邏輯</div>
+          <div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px">
+            <span style="width:9px;height:9px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:2px;display:inline-block"></span>
+            <span><strong style="color:var(--text)">意志力透支</strong>：情緒/戰力均值 &lt; 55，但完成率 &gt; 83%</span>
           </div>
+          <div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px">
+            <span style="width:9px;height:9px;border-radius:50%;background:var(--ok);flex-shrink:0;margin-top:2px;display:inline-block"></span>
+            <span><strong style="color:var(--text)">狀態對齊</strong>：完成率與狀態分落差 &lt; 28%</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:baseline">
+            <span style="width:9px;height:9px;border-radius:50%;background:var(--info);flex-shrink:0;margin-top:2px;display:inline-block"></span>
+            <span><strong style="color:var(--text)">低輸出</strong>：狀態 &gt; 60 但完成率 &lt; 32%，能量未轉化</span>
+          </div>
+          <div style="margin-top:5px;color:var(--faint)">透支預測：狀態下滑後約 <span id="lag-predict-days">1–3</span> 天行為表現跟著下降（滯後效應）。</div>
         </div>
       </div>
     </div>
@@ -732,25 +753,37 @@ for(var _i=0;_i<25;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI)+.3
 for(var _i=0;_i<5;_i++)PM.push(Math.round((5+3.5*Math.sin(((24+_i)/18)*2*Math.PI))*10)/10);
 
 /* CORRELATION CHART */
+var corrRange=14;
+function setCorrRange(n){
+  corrRange=n;
+  document.querySelectorAll('.corr-range-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  rebuildCorrChart();
+}
 function rebuildCorrChart(){
   var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
-  // Build combat power history from sas_sleep_latest.trend7 (last 7 nights)
   var combatMap={};
   try{
     var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
     (sl.trend7||[]).forEach(function(n){
       var dp=Math.min(n.deepP/18*100,100);
       var rp=Math.min(n.remP/22.5*100,100);
-      combatMap[n.date]=(dp*0.7+rp*0.3)/10; // normalize to 0-10
+      combatMap[n.date]=(dp*0.7+rp*0.3)/10;
     });
   }catch(e){}
   var labels=[],moodLine=[],compLine=[],compColors=[],compRadius=[],combatLine=[];
-  for(var i=13;i>=0;i--){
+  var moodArr=[],pairedArr=[];
+  var over=0,under=0,ok=0;
+  for(var i=corrRange-1;i>=0;i--){
     var d=new Date();d.setDate(d.getDate()-i);
-    var k=dkey(d);labels.push((d.getMonth()+1)+'/'+(d.getDate()));
+    var k=dkey(d);
+    labels.push((d.getMonth()+1)+'/'+(d.getDate()));
     var ms=moodMap[k]!==undefined?moodMap[k]:null;
+    var cs=combatMap[k]!==undefined?combatMap[k]:null;
     moodLine.push(ms);
-    combatLine.push(combatMap[k]!==undefined?parseFloat(combatMap[k].toFixed(1)):null);
+    combatLine.push(cs!==null?parseFloat(cs.toFixed(1)):null);
+    if(ms!==null)moodArr.push(ms);
+    if(ms!==null&&cs!==null)pairedArr.push({mood:ms,combat:cs*10});
     var rev=getReview(k);
     if(rev&&ms!==null){
       var items=rev.items||[];
@@ -758,40 +791,79 @@ function rebuildCorrChart(){
         var dr=items.filter(t=>t.status==='done').length/items.length;
         var cls=alignClass(ms,_combat||50,dr);
         compLine.push(parseFloat((dr*10).toFixed(1)));
-        compColors.push(cls==='over'?'rgba(192,57,43,.85)':cls==='under'?'rgba(78,110,138,.85)':'rgba(39,174,96,.85)');
-        compRadius.push(8);
+        var cc=cls==='over'?'rgba(192,57,43,.85)':cls==='under'?'rgba(78,110,138,.85)':'rgba(39,174,96,.85)';
+        compColors.push(cc);compRadius.push(8);
+        if(cls==='over')over++;else if(cls==='under')under++;else ok++;
       }else{compLine.push(null);compColors.push('transparent');compRadius.push(0);}
     }else{compLine.push(null);compColors.push('transparent');compRadius.push(0);}
   }
+  var maxTicks=corrRange<=7?7:corrRange<=14?8:corrRange<=30?10:12;
   mk('corr-chart',{type:'line',data:{labels,datasets:[
     {label:'情緒',data:moodLine,borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.08)',tension:.4,pointRadius:3,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:2,spanGaps:true,order:2},
     {label:'戰力',data:combatLine,borderColor:'#5c7a96',backgroundColor:'transparent',tension:.4,pointRadius:2,pointBackgroundColor:'#5c7a96',borderWidth:1.5,borderDash:[4,3],spanGaps:false,order:3},
     {label:'完成度',data:compLine,borderWidth:0,showLine:false,pointRadius:compRadius,pointBackgroundColor:compColors,pointBorderWidth:0,order:1}
   ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw||'—'):ctx.datasetIndex===1?ctx.raw!=null?'戰力: '+Math.round(ctx.raw*10):null:ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
-    scales:{x:{ticks:{color:LC,font:{size:9},maxTicksLimit:8},grid:{display:false}},y:{min:0,max:10,ticks:{color:LC,font:{size:9},maxTicksLimit:4},grid:{color:TC}}}}});
-  var over=compColors.filter(c=>c.includes('192,57')).length;
-  var under=compColors.filter(c=>c.includes('78,110')).length;
-  var ok=compColors.filter(c=>c.includes('39,174')).length;
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw!=null?ctx.raw:'—'):ctx.datasetIndex===1?ctx.raw!=null?'戰力: '+Math.round(ctx.raw*10):null:ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
+    scales:{x:{ticks:{color:LC,font:{size:9},maxTicksLimit:maxTicks},grid:{display:false}},y:{min:0,max:10,ticks:{color:LC,font:{size:9},maxTicksLimit:4},grid:{color:TC}}}}});
+
+  // ── 洞察摘要（展開版）──
   var ins=$('corr-insights');
   if(ins){
-    var tags=[];
-    if(over>0)tags.push('<span class="xa-tag align-over">⚡ 意志力透支 '+over+' 天</span>');
-    if(under>0)tags.push('<span class="xa-tag align-under">💭 低輸出 '+under+' 天</span>');
-    if(ok>0)tags.push('<span class="xa-tag align-ok">✓ 對齊 '+ok+' 天</span>');
-    if(!over&&!under&&!ok)tags.push('<span style="font-size:.7rem;color:var(--faint)">紀錄不足，繼續記錄後查看</span>');
-    ins.innerHTML=tags.join('');
+    var total=over+under+ok;
+    // 1. Pattern tags
+    var tagsHtml='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    if(over>0)tagsHtml+='<span class="xa-tag align-over">⚡ 透支 '+over+' 天</span>';
+    if(under>0)tagsHtml+='<span class="xa-tag align-under">💭 低輸出 '+under+' 天</span>';
+    if(ok>0)tagsHtml+='<span class="xa-tag align-ok">✓ 對齊 '+ok+' 天</span>';
+    if(!total)tagsHtml+='<span style="font-size:.7rem;color:var(--faint)">紀錄不足，繼續記錄後查看</span>';
+    tagsHtml+='</div>';
+
+    // 2. Mood trend (first half vs second half)
+    var trendHtml='';
+    if(moodArr.length>=4){
+      var half=Math.floor(moodArr.length/2);
+      var early=moodArr.slice(0,half).reduce((a,b)=>a+b,0)/half;
+      var late=moodArr.slice(-half).reduce((a,b)=>a+b,0)/half;
+      var diff=late-early;
+      var tc=diff>0.3?'var(--ok)':diff<-0.3?'var(--danger)':'var(--faint)';
+      var ti=diff>0.3?'↗':diff<-0.3?'↘':'→';
+      var tt=diff>0.3?'情緒上升中':diff<-0.3?'情緒下降中':'情緒平穩';
+      trendHtml='<div style="font-size:.7rem;color:'+tc+';margin-top:6px">'+ti+' '+tt+'（'+( diff>=0?'+':'')+diff.toFixed(1)+' 分，近'+moodArr.length+'筆）</div>';
+    }
+
+    // 3. Combat vs mood gap (when paired data ≥ 3)
+    var gapHtml='';
+    if(pairedArr.length>=3){
+      var avgM=pairedArr.reduce((a,p)=>a+p.mood,0)/pairedArr.length;
+      var avgC=pairedArr.reduce((a,p)=>a+p.combat,0)/pairedArr.length;
+      var gap=avgC-avgM*10; // both 0-100
+      if(gap>15)gapHtml='<div style="font-size:.7rem;color:var(--sub);margin-top:5px">🔋 睡眠戰力均值（'+avgC.toFixed(0)+'）高於情緒（'+( avgM*10).toFixed(0)+'），生理能量尚未完全反映為主觀感受。</div>';
+      else if(gap<-15)gapHtml='<div style="font-size:.7rem;color:var(--warn);margin-top:5px">⚡ 情緒狀態高於睡眠戰力，意志力在支撐輸出，需留意補眠避免透支。</div>';
+    }
+
+    // 4. Dominant pattern recommendation
+    var recHtml='';
+    if(total>=2){
+      var dom=over>=under&&over>=ok?'over':under>=ok?'under':'ok';
+      var domN=dom==='over'?over:dom==='under'?under:ok;
+      var domPct=Math.round(domN/total*100);
+      if(dom==='over'&&over>=2)recHtml='<div class="corr-rec">透支模式佔 '+domPct+'%，建議主動縮減任務密度 1–2 天，讓生理與情緒資源補回後再全力輸出。<br>若連續透支 3 天以上，今日任務請砍半。</div>';
+      else if(dom==='under'&&under>=2)recHtml='<div class="corr-rec">低輸出模式佔 '+domPct+'%，狀態資源有但行為轉化偏低。<br>確認是否有外在阻礙（等待/卡關）或任務優先順序混亂，嘗試先完成一件最小有意義的事。</div>';
+      else if(dom==='ok'&&ok>=2)recHtml='<div class="corr-rec">對齊模式佔 '+domPct+'%，資源與行為輸出高度匹配。<br>可適度在對齊日提高 1–2 件挑戰性任務的密度，趁窗口期放大成果。</div>';
+    }
+    ins.innerHTML=tagsHtml+trendHtml+gapHtml+recHtml;
   }
-  var lag=calcLag(moods);
-  _lag=lag;
+
+  var lag=calcLag(moods);_lag=lag;
   var lagEl=$('lag-days');if(lagEl)lagEl.textContent=lag?'平均'+lag+'天後':'積累中';
   var lagExp=$('lag-explain');
   if(lagExp)lagExp.innerHTML=lag?'歷史模式：狀態下滑後，行為完成率平均延遲 <strong>'+lag+' 天</strong>才跟著下降。':'持續記錄後自動計算滯後天數。';
   var lpd=$('lag-predict-days');if(lpd)lpd.textContent=lag?lag:'1–3';
   var ip=$('inertia-predict');
   if(ip){
-    var rec=moods.slice(-3);var avg3=rec.length?rec.reduce((a,m)=>a+m.score,0)/rec.length:null;
-    if(avg3&&avg3<5)ip.innerHTML='近3天情緒均值 <strong>'+avg3.toFixed(1)+'</strong> 分，處於低谷。預測 <strong>'+(_lag||'1–3')+' 天</strong>後行為表現明顯下滑。建議啟動防禦模式。';
+    var rec3=moods.slice(-3);var avg3=rec3.length?rec3.reduce((a,m)=>a+m.score,0)/rec3.length:null;
+    if(avg3&&avg3<5)ip.innerHTML='近3天情緒均值 <strong>'+avg3.toFixed(1)+'</strong> 分，處於低谷。<br>預測 <strong>'+(_lag||'1–3')+' 天</strong>後行為表現明顯下滑。建議啟動防禦模式。';
+    else if(avg3&&avg3>=7)ip.innerHTML='近3天情緒均值 <strong>'+avg3.toFixed(1)+'</strong> 分，狀態良好。<br>若睡眠戰力同步在線，當前輸出節奏可維持或適度加速。';
     else ip.textContent='目前狀態平穩，無立即下行風險。';
   }
 }
