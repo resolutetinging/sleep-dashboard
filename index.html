@@ -733,12 +733,23 @@ for(var _i=0;_i<5;_i++)PM.push(Math.round((5+3.5*Math.sin(((24+_i)/18)*2*Math.PI
 /* CORRELATION CHART */
 function rebuildCorrChart(){
   var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
-  var labels=[],moodLine=[],compLine=[],compColors=[],compRadius=[];
+  // Build combat power history from sas_sleep_latest.trend7 (last 7 nights)
+  var combatMap={};
+  try{
+    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
+    (sl.trend7||[]).forEach(function(n){
+      var dp=Math.min(n.deepP/18*100,100);
+      var rp=Math.min(n.remP/22.5*100,100);
+      combatMap[n.date]=(dp*0.7+rp*0.3)/10; // normalize to 0-10
+    });
+  }catch(e){}
+  var labels=[],moodLine=[],compLine=[],compColors=[],compRadius=[],combatLine=[];
   for(var i=13;i>=0;i--){
     var d=new Date();d.setDate(d.getDate()-i);
     var k=dkey(d);labels.push((d.getMonth()+1)+'/'+(d.getDate()));
     var ms=moodMap[k]!==undefined?moodMap[k]:null;
     moodLine.push(ms);
+    combatLine.push(combatMap[k]!==undefined?parseFloat(combatMap[k].toFixed(1)):null);
     var rev=getReview(k);
     if(rev&&ms!==null){
       var items=rev.items||[];
@@ -753,9 +764,10 @@ function rebuildCorrChart(){
   }
   mk('corr-chart',{type:'line',data:{labels,datasets:[
     {label:'情緒',data:moodLine,borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.08)',tension:.4,pointRadius:3,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:2,spanGaps:true,order:2},
+    {label:'戰力',data:combatLine,borderColor:'#5c7a96',backgroundColor:'transparent',tension:.4,pointRadius:2,pointBackgroundColor:'#5c7a96',borderWidth:1.5,borderDash:[4,3],spanGaps:false,order:3},
     {label:'完成度',data:compLine,borderWidth:0,showLine:false,pointRadius:compRadius,pointBackgroundColor:compColors,pointBorderWidth:0,order:1}
   ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw||'—'):ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw||'—'):ctx.datasetIndex===1?ctx.raw!=null?'戰力: '+Math.round(ctx.raw*10):null:ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
     scales:{x:{ticks:{color:LC,font:{size:9},maxTicksLimit:8},grid:{display:false}},y:{min:0,max:10,ticks:{color:LC,font:{size:9},maxTicksLimit:4},grid:{color:TC}}}}});
   var over=compColors.filter(c=>c.includes('192,57')).length;
   var under=compColors.filter(c=>c.includes('78,110')).length;
