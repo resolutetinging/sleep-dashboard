@@ -514,14 +514,15 @@
       </div>
       <div id="debtBars" style="display:flex;flex-direction:column;gap:8px"></div>
       <div id="debtSummary" style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
+      <div id="weekBank" style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
     </div>
 
     <!-- COMBAT POWER INDEX -->
     <div class="panel">
       <div class="panel-header">
         <div>
-          <div class="panel-title">⚡ 戰力指數 · 昨晚</div>
-          <div class="panel-sub">Deep×0.7 + REM×0.3，含睡眠債調節</div>
+          <div class="panel-title">⚡ 戰力指數 · 3夜加權</div>
+          <div class="panel-sub">3夜加權 Deep×0.7 + REM×0.3，含睡眠債調節</div>
         </div>
       </div>
       <div id="combatScore" style="text-align:center;padding:16px 0 8px">
@@ -593,6 +594,7 @@
       </div>
     </div>
     <div class="chart-wrap"><canvas id="pctTrendChart" height="120"></canvas></div>
+    <div id="personalBaseline" style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
   </div>
 
   <!-- BOTTOM ROW -->
@@ -635,15 +637,32 @@
 
   </div>
 
-  <!-- BEDTIME TREND -->
+  <!-- EFFICIENCY TREND -->
   <div class="panel">
     <div class="panel-header">
       <div>
-        <div class="panel-title">入睡 & 起床時間趨勢</div>
-        <div class="panel-sub">作息規律性分析</div>
+        <div class="panel-title">睡眠效率趨勢</div>
+        <div class="panel-sub">入睡時間 / 在床時間（%），基準線 85%</div>
+      </div>
+      <div class="range-btns">
+        <button class="eff-range-btn range-btn" onclick="setEffRange(14)">2週</button>
+        <button class="eff-range-btn range-btn active" onclick="setEffRange(30)">30天</button>
+        <button class="eff-range-btn range-btn" onclick="setEffRange(90)">90天</button>
+        <button class="eff-range-btn range-btn" onclick="setEffRange(9999)">全部</button>
       </div>
     </div>
-    <div class="chart-wrap"><canvas id="bedtimeChart" height="100"></canvas></div>
+    <div class="chart-wrap"><canvas id="effChart" height="100"></canvas></div>
+  </div>
+
+  <!-- REGULARITY CARD (replaces bedtime trend) -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">作息規律性分析</div>
+        <div class="panel-sub">入睡 & 起床時間標準差（越低越規律）</div>
+      </div>
+    </div>
+    <div id="regularityContent"></div>
   </div>
 
 </main>
@@ -656,9 +675,10 @@ const COLORS = {
   deep: '#5c7a96', rem: '#8b7898', core: '#5e8f7e', awake: '#b08d62'
 };
 
-let trendChart, donutChart, bedtimeChart, hypnoChart, pctTrendChart;
+let trendChart, donutChart, hypnoChart, pctTrendChart, effChart;
 let currentRange = 90;
 let currentPctRange = 90;
+let currentEffRange = 30;
 let nightIdx = 0;
 
 function minToHm(m) {
@@ -885,65 +905,63 @@ function updateDonut(data) {
   `).join('');
 }
 
-function updateBedtime(data) {
-  const DOW = ['日','一','二','三','四','五','六'];
-  // Bedtime after noon → negative offset from midnight for intuitive y-axis
-  // e.g. 23:00 → -60, 00:30 → 30. Wake times normal: 07:00 → 420
-  function bedToPlot(t) {
+function updateRegularity(data) {
+  function bedToMins(t) {
     let [h, m] = t.split(':').map(Number);
     let mins = h * 60 + m;
-    if (mins > 720) mins = mins - 1440;
+    if (mins > 720) mins -= 1440;
     return mins;
   }
-  function wakeToPlot(t) {
+  function wakeToMins(t) {
     let [h, m] = t.split(':').map(Number);
     return h * 60 + m;
   }
-  const labels = data.map(d => {
-    const dow = DOW[new Date(d.date + 'T12:00:00').getDay()];
-    return d.date.slice(5) + '（' + dow + '）';
-  });
-  const bed = data.map(d => bedToPlot(d.bedtime));
-  const wake = data.map(d => wakeToPlot(d.wake));
-  const tickColor = '#4a4540';
-  const gridColor = '#cdc8c033';
-
-  const cfg = {
-    type: 'line',
-    data: { labels, datasets: [
-      { label:'入睡', data:bed, borderColor:COLORS.deep, borderWidth:1.5, pointRadius:0, tension:0.3, fill:false },
-      { label:'起床', data:wake, borderColor:COLORS.rem, borderWidth:1.5, pointRadius:0, tension:0.3, fill:false },
-    ]},
-    options: {
-      responsive:true, animation:{duration:300},
-      plugins:{ legend:{ labels:{ color:tickColor, boxWidth:12, font:{size:11, weight:'bold'} } }, tooltip:{callbacks:{
-        title: i => {
-          const d = data[i[0].dataIndex];
-          const dow = DOW[new Date(d.date + 'T12:00:00').getDay()];
-          return d.date + '（週' + dow + '）';
-        },
-        label: i => {
-          let v = i.raw;
-          if (v < 0) v += 1440;
-          return ` ${i.dataset.label}: ${minutesToTime(v)}`;
-        }
-      }}},
-      scales:{
-        x:{ ticks:{ color:tickColor, maxTicksLimit:14, font:{size:10, weight:'bold'} }, grid:{color:gridColor} },
-        y:{
-          reverse: false,
-          ticks:{ color:tickColor, font:{size:10, weight:'bold'}, stepSize:60,
-            callback: v => { let m = v < 0 ? v + 1440 : v; return minutesToTime(m); }
-          },
-          grid:{color:gridColor},
-          title:{ display:true, text:'↑ 早上       晚上 ↓', color:'#7a7268', font:{size:9} }
-        }
-      }
-    }
-  };
-
-  if (bedtimeChart) { bedtimeChart.data = cfg.data; bedtimeChart.options = cfg.options; bedtimeChart.update(); }
-  else bedtimeChart = new Chart(document.getElementById('bedtimeChart'), cfg);
+  function stdDev(arr) {
+    const n = arr.length;
+    if (n < 2) return 0;
+    const mean = arr.reduce((a, b) => a + b, 0) / n;
+    return Math.sqrt(arr.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n);
+  }
+  const recent = data.slice(-30);
+  const bedMins = recent.map(d => bedToMins(d.bedtime));
+  const wakeMins = recent.map(d => wakeToMins(d.wake));
+  const bedSD = stdDev(bedMins);
+  const wakeSD = stdDev(wakeMins);
+  const bedMean = bedMins.reduce((a, b) => a + b, 0) / bedMins.length;
+  const wakeMean = wakeMins.reduce((a, b) => a + b, 0) / wakeMins.length;
+  function sdColor(sd) {
+    if (sd < 30) return '#5e8f7e';
+    if (sd < 60) return '#e67e22';
+    return '#c0392b';
+  }
+  function sdLabel(sd) {
+    if (sd < 30) return '穩定';
+    if (sd < 60) return '稍不規律';
+    return '高度不規律';
+  }
+  const el = document.getElementById('regularityContent');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:14px">
+      <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:10px">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">⏰ 入睡時間</div>
+        <div style="font-size:32px;font-weight:700;font-family:'DM Mono',monospace;color:${sdColor(bedSD)}">${Math.round(bedSD)}<span style="font-size:14px;font-weight:400"> min</span></div>
+        <div style="font-size:12px;font-weight:600;color:${sdColor(bedSD)};margin:4px 0">${sdLabel(bedSD)}</div>
+        <div style="font-size:10px;color:var(--text-dim)">平均 ${minutesToTime(((Math.round(bedMean) % 1440) + 1440) % 1440)}　近 ${recent.length} 夜</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:10px">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">☀️ 起床時間</div>
+        <div style="font-size:32px;font-weight:700;font-family:'DM Mono',monospace;color:${sdColor(wakeSD)}">${Math.round(wakeSD)}<span style="font-size:14px;font-weight:400"> min</span></div>
+        <div style="font-size:12px;font-weight:600;color:${sdColor(wakeSD)};margin:4px 0">${sdLabel(wakeSD)}</div>
+        <div style="font-size:10px;color:var(--text-dim)">平均 ${minutesToTime(Math.round(wakeMean))}　近 ${recent.length} 夜</div>
+      </div>
+    </div>
+    <div style="padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7">
+      <strong style="color:var(--text)">標準差說明</strong>：
+      <span style="color:#5e8f7e">●</span> &lt; 30 分鐘 穩定 &nbsp;
+      <span style="color:#e67e22">●</span> 30–60 分鐘 稍不規律 &nbsp;
+      <span style="color:#c0392b">●</span> &gt; 60 分鐘 作息混亂
+    </div>`;
 }
 
 // HYPNOGRAM — sleep stage line chart
@@ -1102,6 +1120,7 @@ function setPctRange(range) {
   event.target.classList.add('active');
   const data = getFilteredData(currentPctRange);
   updatePctTrend(data);
+  updatePersonalBaseline();
 }
 
 function updatePctTrend(data) {
@@ -1201,17 +1220,128 @@ function updatePctTrend(data) {
   pctTrendChart = new Chart(document.getElementById('pctTrendChart'), { ...cfg, plugins:[refBandPlugin] });
 }
 
+function setEffRange(range) {
+  currentEffRange = range;
+  document.querySelectorAll('.eff-range-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  updateEffTrend(getFilteredData(currentEffRange));
+}
+
+function updateEffTrend(data) {
+  const DOW = ['日','一','二','三','四','五','六'];
+  const labels = data.map(d => {
+    const dow = DOW[new Date(d.date + 'T12:00:00').getDay()];
+    return d.date.slice(5) + '（' + dow + '）';
+  });
+  const effs = data.map(d => d.efficiency);
+  const tickColor = '#4a4540';
+  const gridColor = '#cdc8c033';
+  const pointR = data.length > 60 ? 0 : 3;
+  const refLinePlugin = {
+    id: 'refLine85',
+    beforeDraw(chart) {
+      const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+      const yPx = y.getPixelForValue(85);
+      ctx.save();
+      ctx.strokeStyle = '#e67e2288';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(left, yPx); ctx.lineTo(right, yPx); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#e67e22';
+      ctx.font = '9px DM Mono, monospace';
+      ctx.fillText('85%', right - 28, yPx - 3);
+      ctx.restore();
+    }
+  };
+  const cfg = {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: '睡眠效率', data: effs,
+      borderColor: '#5c7a96', backgroundColor: '#5c7a9618',
+      borderWidth: 1.5, pointRadius: pointR, pointHoverRadius: 4,
+      tension: 0.3, fill: true
+    }]},
+    options: {
+      responsive: true, animation: { duration: 300 },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          title: i => { const d = data[i[0].dataIndex]; const dow = DOW[new Date(d.date+'T12:00:00').getDay()]; return d.date+'（週'+dow+'）'; },
+          label: i => ` 效率: ${i.raw}%`
+        }}
+      },
+      scales: {
+        x: { ticks: { color: tickColor, maxTicksLimit: 14, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor } },
+        y: { min: 60, max: 100, ticks: { color: tickColor, callback: v => v+'%', font: { size: 10, weight: 'bold' }, stepSize: 10 }, grid: { color: gridColor } }
+      }
+    }
+  };
+  if (effChart) { effChart.destroy(); effChart = null; }
+  effChart = new Chart(document.getElementById('effChart'), { ...cfg, plugins: [refLinePlugin] });
+}
+
+function updatePersonalBaseline() {
+  const all = RAW.summary;
+  const el = document.getElementById('personalBaseline');
+  if (!el || all.length < 5) return;
+  function stagePctArr(key) {
+    return all.map(d => {
+      const total = d.deep_min + d.rem_min + d.core_min;
+      return total > 0 ? d[key] / total * 100 : 0;
+    }).filter(v => v > 0);
+  }
+  function median(arr) {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  const deepPcts = stagePctArr('deep_min');
+  const remPcts  = stagePctArr('rem_min');
+  const deepMed  = median(deepPcts);
+  const remMed   = median(remPcts);
+  const last = all[all.length - 1];
+  const lastTotal = last.deep_min + last.rem_min + last.core_min;
+  const lastDeepPct = lastTotal > 0 ? last.deep_min / lastTotal * 100 : 0;
+  const lastRemPct  = lastTotal > 0 ? last.rem_min  / lastTotal * 100 : 0;
+  function diffTag(val, med) {
+    const diff = val - med;
+    const color = Math.abs(diff) < 2 ? '#5e8f7e' : diff > 0 ? '#5c7a96' : '#e67e22';
+    return `<span style="color:${color};font-family:DM Mono,monospace;font-size:10px">${diff>=0?'+':''}${diff.toFixed(1)}%</span>`;
+  }
+  el.innerHTML = `
+    <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">個人歷史基準（${all.length} 夜中位數）</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:10px;color:var(--deep);font-weight:600;margin-bottom:4px">■ Deep 基礎能量</div>
+        <div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace">中位數 ${deepMed.toFixed(1)}%</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:3px">昨晚 ${lastDeepPct.toFixed(1)}% ${diffTag(lastDeepPct, deepMed)}</div>
+      </div>
+      <div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:10px;color:var(--rem);font-weight:600;margin-bottom:4px">■ REM 邏輯輸出</div>
+        <div style="font-size:20px;font-weight:700;font-family:DM Mono,monospace">中位數 ${remMed.toFixed(1)}%</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:3px">昨晚 ${lastRemPct.toFixed(1)}% ${diffTag(lastRemPct, remMed)}</div>
+      </div>
+    </div>`;
+}
+
 function updateDailySummary(totalDebt) {
   const last = RAW.summary[RAW.summary.length - 1];
   if (!last) return;
 
-  // --- Recalculate combat score ---
+  // --- Recalculate combat score (3-night weighted) ---
+  const nights3 = RAW.summary.slice(-3);
+  function nightRawDS(d) {
+    const ts = d.deep_min + d.rem_min + d.core_min;
+    if (!ts) return 0;
+    return Math.min(d.deep_min / ts * 100 / 18 * 100, 100) * 0.7 + Math.min(d.rem_min / ts * 100 / 22.5 * 100, 100) * 0.3;
+  }
+  const scoresDS = nights3.map(nightRawDS);
+  const wtsDS = nights3.length >= 3 ? [0.1, 0.3, 0.6] : nights3.length === 2 ? [0.4, 0.6] : [1.0];
+  const rawScore = scoresDS.reduce((sum, s, i) => sum + s * wtsDS[i], 0);
   const totalSleep = last.deep_min + last.rem_min + last.core_min;
   const remPct  = pctNum(last.rem_min,  totalSleep);
   const deepPct = pctNum(last.deep_min, totalSleep);
-  const remScore  = Math.min(remPct  / 22.5 * 100, 100);
-  const deepScore = Math.min(deepPct / 18   * 100, 100);
-  const rawScore  = deepScore * 0.7 + remScore * 0.3;
   const debtHours = (totalDebt || 0) / 60;
   const debtPenalty = Math.max(0, debtHours - 3) * 2;
   const score = Math.round(Math.max(0, rawScore - debtPenalty));
@@ -1438,27 +1568,60 @@ function updateSleepDebt(allData) {
   const debtColor = totalDebt > 0 ? '#a05858' : '#5e8f7e';
   const debtSign = totalDebt > 0 ? '累積欠債' : '睡眠盈餘';
   document.getElementById('debtSummary').innerHTML =
-    `7 天合計：<strong style="color:${debtColor}">${debtSign} ${minToHm(Math.abs(totalDebt))}</strong>　
-     低睡眠日（< 6.5h）：<strong>${lowDays} 天</strong>　
+    `7 天合計：<strong style="color:${debtColor}">${debtSign} ${minToHm(Math.abs(totalDebt))}</strong>
+     低睡眠日（< 6.5h）：<strong>${lowDays} 天</strong>
      ${ highRisk ? '<strong style="color:#a05858">⚠ 建議近期補眠並降低高強度工作安排</strong>' : '整體睡眠狀況尚可' }`;
+
+  // Weekly sleep bank (本週 Mon-Sun, 49h target)
+  const now = new Date();
+  const dow = now.getDay();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  const weekStart = startOfWeek.toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
+  let weekTotal = 0, weekDays = 0;
+  RAW.summary.forEach(d => {
+    if (d.date >= weekStart && d.date <= today) { weekTotal += d.total_min; weekDays++; }
+  });
+  const WEEK_TARGET = 49 * 60;
+  const weekRemaining = Math.max(0, WEEK_TARGET - weekTotal);
+  const weekPct = Math.min(weekTotal / WEEK_TARGET * 100, 100);
+  const weekColor = weekPct >= 90 ? '#5e8f7e' : weekPct >= 70 ? '#5c7a96' : '#e67e22';
+  const weekEl = document.getElementById('weekBank');
+  if (weekEl) weekEl.innerHTML =
+    `<div style="margin-bottom:6px">📅 本週睡眠存款（目標 49h / 7×7h）</div>` +
+    `<div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px">` +
+    `<div style="width:${weekPct.toFixed(1)}%;height:100%;background:${weekColor};border-radius:4px"></div></div>` +
+    `<span style="font-family:DM Mono,monospace;font-weight:700;color:${weekColor}">${(weekTotal/60).toFixed(1)}h</span>` +
+    ` / 49h（${weekDays} 天）` +
+    (weekRemaining > 0 ? `　還差 <strong style="color:#a05858">${(weekRemaining/60).toFixed(1)}h</strong>` : `　<strong style="color:#5e8f7e">本週目標達成！</strong>`);
 
   return totalDebt; // for combat power debt adjustment
 }
 
 function updateCombatPower(totalDebt) {
-  const last = RAW.summary[RAW.summary.length - 1];
-  if (!last) return;
+  const nights = RAW.summary.slice(-3);
+  if (!nights.length) return;
+  const last = nights[nights.length - 1];
 
+  function nightRaw(d) {
+    const ts = d.deep_min + d.rem_min + d.core_min;
+    if (!ts) return 0;
+    const rp = d.rem_min / ts * 100;
+    const dp = d.deep_min / ts * 100;
+    return Math.min(dp / 18 * 100, 100) * 0.7 + Math.min(rp / 22.5 * 100, 100) * 0.3;
+  }
+  const scores = nights.map(nightRaw);
+  // 3-night weights: oldest 10%, middle 30%, latest 60%
+  const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
+  const rawScore = scores.reduce((sum, s, i) => sum + s * wts[i], 0);
+
+  // For display bars, use last night only
   const totalSleep = last.deep_min + last.rem_min + last.core_min;
   const remPct  = pctNum(last.rem_min,  totalSleep);
   const deepPct = pctNum(last.deep_min, totalSleep);
-
-  // Normalize to recommended range: REM 20-25%, Deep 13-23%
   const remScore  = Math.min(remPct  / 22.5 * 100, 100);
   const deepScore = Math.min(deepPct / 18   * 100, 100);
-
-  // Raw score: Deep 70% + REM 30%
-  const rawScore = deepScore * 0.7 + remScore * 0.3;
 
   // Debt adjustment: 3-hour buffer, -2 pts per extra hour of debt
   const debtHours = (totalDebt || 0) / 60;
@@ -1507,7 +1670,12 @@ function updateCombatPower(totalDebt) {
   const penaltyNote = debtPenalty > 0
     ? `<br><span style="color:#e67e22;font-size:10px">⚠ 睡眠債扣分 −${debtPenalty.toFixed(1)}（原始分 ${Math.round(rawScore)}）</span>`
     : '';
-  document.getElementById('combatSub').innerHTML = `基於 ${last.date}（${dow}）睡眠數據${penaltyNote}`;
+  const n0 = nights.length >= 3 ? nights[0].date.slice(5) : null;
+  const n1 = nights.length >= 2 ? nights[nights.length-2].date.slice(5) : null;
+  const weightNote = nights.length >= 3
+    ? `<br><span style="font-size:10px;color:var(--text-dim)">${n0}×10% + ${n1}×30% + ${last.date.slice(5)}×60%</span>`
+    : '';
+  document.getElementById('combatSub').innerHTML = `基於 ${last.date}（${dow}）昨晚數據${penaltyNote}${weightNote}`;
 
   document.getElementById('combatBars').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:6px">
@@ -1546,8 +1714,10 @@ function refreshAll() {
   updateMetrics(data);
   updateTrend(data);
   updatePctTrend(getFilteredData(currentPctRange));
+  updatePersonalBaseline();
   updateDonut(data);
-  updateBedtime(data);
+  updateRegularity(data);
+  updateEffTrend(getFilteredData(currentEffRange));
   const totalDebt = updateSleepDebt(data);
   updateCombatPower(totalDebt);
   updateDailySummary(totalDebt);
