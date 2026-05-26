@@ -421,9 +421,9 @@
       <div class="stat-sub" id="card-deep-sub"></div>
     </div>
     <div class="stat-card amber">
-      <div class="stat-label">平均睡眠效率</div>
-      <div class="stat-val" id="card-eff">—<span class="stat-unit">%</span></div>
-      <div class="stat-sub" id="card-eff-sub"></div>
+      <div class="stat-label">7日單夜戰力均值</div>
+      <div class="stat-val" id="card-combat7">—</div>
+      <div class="stat-sub" id="card-combat7-sub"></div>
     </div>
   </div>
 
@@ -653,45 +653,6 @@
     <div id="jetlagAdvice" class="advice-box" style="margin-top:14px">計算中...</div>
   </div>
 
-  <!-- BOTTOM ROW -->
-  <div class="two-col">
-
-    <!-- SINGLE NIGHT HYPNOGRAM -->
-    <div class="panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">單夜睡眠分期折線圖</div>
-          <div class="panel-sub" id="timelineLabel">最近 90 天可選</div>
-        </div>
-        <div class="night-selector">
-          <button class="night-btn" onclick="changeNight(-1)">‹</button>
-          <span class="night-date" id="nightDate">—</span>
-          <button class="night-btn" onclick="changeNight(1)">›</button>
-        </div>
-      </div>
-      <div class="hypno-wrap"><canvas id="hypnoChart" height="130"></canvas></div>
-      <div id="nightNoData" style="display:none;text-align:center;padding:24px 0 8px;color:var(--text-dim);font-size:11px;line-height:1.7">
-        此數據來自 Health Auto Export 每日彙總，不含逐段分期紀錄。<br>如需折線圖請定期匯入原始 export.xml。
-      </div>
-      <div id="nightStats" style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
-      <div id="nightCycleInfo" style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
-    </div>
-
-    <!-- COMPOSITION DONUT -->
-    <div class="panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">睡眠結構分佈</div>
-          <div class="panel-sub" id="donutLabel">當前範圍平均</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:24px">
-        <div style="width:160px;flex-shrink:0"><canvas id="donutChart"></canvas></div>
-        <div id="donutLegend" style="flex:1;display:flex;flex-direction:column;gap:10px"></div>
-      </div>
-    </div>
-
-  </div>
 
   <!-- EFFICIENCY TREND -->
   <div class="panel">
@@ -777,8 +738,15 @@ function updateCards(data) {
   document.getElementById('card-rem-sub').textContent = pct(avg.rem, avg.total) + ' 佔比';
   document.getElementById('card-deep').innerHTML = `${avg.deep}<span class="stat-unit">min</span>`;
   document.getElementById('card-deep-sub').textContent = pct(avg.deep, avg.total) + ' 佔比';
-  document.getElementById('card-eff').innerHTML = `${avg.eff}<span class="stat-unit">%</span>`;
-  document.getElementById('card-eff-sub').textContent = avg.eff >= 85 ? '✓ 良好' : avg.eff >= 75 ? '⚠ 一般' : '✗ 需改善';
+  const last7 = RAW.summary.slice(-7);
+  const combat7 = Math.round(last7.reduce((sum, d) => {
+    const ts = d.deep_min + d.rem_min + d.core_min;
+    if (!ts) return sum;
+    const dp = d.deep_min / ts * 100, rp = d.rem_min / ts * 100;
+    return sum + Math.min(dp / 18 * 100, 100) * 0.7 + Math.min(rp / 22.5 * 100, 100) * 0.3;
+  }, 0) / last7.length);
+  document.getElementById('card-combat7').textContent = combat7;
+  document.getElementById('card-combat7-sub').textContent = combat7 >= 75 ? '近況良好' : combat7 >= 60 ? '近況普通' : '近況偏弱';
 }
 
 function updateMetrics(data) {
@@ -1863,13 +1831,11 @@ function refreshAll() {
   const excludeWE = document.getElementById('excludeWeekend').checked;
   document.getElementById('dateRangeLabel').textContent =
     `${first} ～ ${last}，共 ${data.length} 夜${excludeWE ? '（已排除週末）' : ''}`;
-  document.getElementById('donutLabel').textContent = `${data.length} 夜平均分佈`;
   updateCards(data);
   updateMetrics(data);
   updateTrend(data);
   updatePctTrend(getFilteredData(currentPctRange));
   updatePersonalBaseline();
-  updateDonut(data);
   updateRegularity(data);
   updateEffTrend(getFilteredData(currentEffRange));
   const totalDebt = updateSleepDebt(data);
@@ -1916,8 +1882,6 @@ function saveSleepToLocalStorage() {
 }
 
 // Init
-nightIdx = RAW.detail.length - 1;
-updateNight();
 refreshAll();
 saveSleepToLocalStorage();
 </script>
