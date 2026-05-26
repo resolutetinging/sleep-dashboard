@@ -1743,7 +1743,7 @@ function updateCombatPower(totalDebt) {
 
   document.getElementById('combatNum').textContent = score;
   document.getElementById('combatNum').style.color = color;
-  try{localStorage.setItem('sas_combat',String(score));}catch(e){}
+  try{localStorage.setItem('sas_combat',String(score));localStorage.setItem('sas_combat_weighted',String(score));}catch(e){}
 
   // 單夜顯示
   const singleColor = singleScore>=80?'#5e8f7e':singleScore>=70?'#5c7a96':singleScore>=60?'#e67e22':'#c0392b';
