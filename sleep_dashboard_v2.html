@@ -738,7 +738,7 @@ function updateCards(data) {
   document.getElementById('card-rem-sub').textContent = pct(avg.rem, avg.total) + ' 佔比';
   document.getElementById('card-deep').innerHTML = `${avg.deep}<span class="stat-unit">min</span>`;
   document.getElementById('card-deep-sub').textContent = pct(avg.deep, avg.total) + ' 佔比';
-  const last7 = RAW.summary.slice(-7);
+  const last7 = getFilteredData(7);
   const combat7 = Math.round(last7.reduce((sum, d) => {
     const ts = d.deep_min + d.rem_min + d.core_min;
     if (!ts) return sum;
