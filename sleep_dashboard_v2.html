@@ -527,18 +527,45 @@
     <div class="panel">
       <div class="panel-header">
         <div>
-          <div class="panel-title">⚡ 戰力指數 · 3夜加權</div>
-          <div class="panel-sub">3夜加權 Deep×0.7 + REM×0.3，含睡眠債調節</div>
+          <div class="panel-title">⚡ 戰力指數 · 單夜 vs 3夜加權</div>
+          <div class="panel-sub">單夜昨晚表現 vs 三夜動能加權，含睡眠債調節</div>
         </div>
       </div>
-      <div id="combatScore" style="text-align:center;padding:16px 0 8px">
-        <div id="combatNum" style="font-size:56px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
-        <div id="combatLabel" style="font-size:13px;font-weight:600;margin:6px 0 2px">—</div>
-        <div id="combatSub" style="font-size:11px;color:var(--text-dim)">—</div>
+      <!-- 雙欄數值 -->
+      <div style="display:flex;margin:12px 0 6px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="flex:1;text-align:center;padding:14px 8px;border-right:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">單夜</div>
+          <div id="combatSingle" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">昨晚表現</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:14px 8px;">
+          <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">3夜加權</div>
+          <div id="combatNum" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">近期動能</div>
+        </div>
       </div>
+      <!-- 差距解讀 -->
+      <div id="combatGap" style="text-align:center;padding:7px 12px;background:var(--surface2);border-radius:8px;font-size:11px;line-height:1.6;margin-bottom:8px;">—</div>
+      <div id="combatLabel" style="font-size:13px;font-weight:600;margin:4px 0 2px;text-align:center;">—</div>
+      <div id="combatSub" style="font-size:11px;color:var(--text-dim);text-align:center;">—</div>
       <div id="combatEndurance" style="margin-top:6px;font-size:11.5px;text-align:center;font-weight:500;">—</div>
       <div id="combatBars" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
       <div id="combatTasks" style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.8"></div>
+      <!-- 定義說明 -->
+      <details style="margin-top:12px;">
+        <summary style="font-size:11px;color:var(--text-dim);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px;">
+          <span style="font-size:9px;">▸</span> 公式說明 &amp; 差距解讀定義
+        </summary>
+        <div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:10.5px;color:var(--text-dim);line-height:1.9;">
+          <div><b style="color:var(--text);">單夜戰力</b> = 昨晚 deep% ÷ 18 × 0.7 + rem% ÷ 22.5 × 0.3 → 反映單次睡眠品質，敏感、即時</div>
+          <div><b style="color:var(--text);">3夜加權</b> = 今晚×60% + 昨晚×30% + 前晚×10% → 反映近期睡眠動能，較穩定</div>
+          <div style="margin-top:6px;"><b style="color:var(--text);">差距解讀：</b></div>
+          <div>· 差距 &lt; 5：睡眠穩定，兩值一致，任一為準</div>
+          <div>· 單夜 &gt; 加權（+5 ~ +15）：昨晚有回彈，身體仍在追回前幾天虧損 → 以加權值為今日依據</div>
+          <div>· 單夜 &gt;&gt; 加權（&gt;+15）：昨晚異常佳，前兩天虧損較深 → 今日體力比感覺的低，勿透支</div>
+          <div>· 加權 &gt; 單夜：今晚下滑，但近期底子仍在 → 今晚優先恢復</div>
+        </div>
+      </details>
     </div>
 
   </div>
@@ -1693,7 +1720,9 @@ function updateCombatPower(totalDebt) {
     return Math.min(dp / 18 * 100, 100) * 0.7 + Math.min(rp / 22.5 * 100, 100) * 0.3;
   }
   const scores = nights.map(nightRaw);
-  // 3-night weights: oldest 10%, middle 30%, latest 60%
+  // 單夜：只取最後一晚
+  const singleRaw = scores[scores.length - 1];
+  // 3夜加權：oldest 10%, middle 30%, latest 60%
   const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
   const rawScore = scores.reduce((sum, s, i) => sum + s * wts[i], 0);
 
@@ -1708,6 +1737,7 @@ function updateCombatPower(totalDebt) {
   const debtHours = (totalDebt || 0) / 60;
   const debtPenalty = Math.max(0, debtHours - 3) * 2;
   const score = Math.round(Math.max(0, rawScore - debtPenalty));
+  const singleScore = Math.round(Math.max(0, singleRaw - debtPenalty));
 
   // Thresholds: <60 Critical, <70 Caution, 70-79 Stable, ≥80 Peak
   let label, color, tasks;
@@ -1732,6 +1762,35 @@ function updateCombatPower(totalDebt) {
   document.getElementById('combatNum').textContent = score;
   document.getElementById('combatNum').style.color = color;
   try{localStorage.setItem('sas_combat',String(score));}catch(e){}
+
+  // 單夜顯示
+  const singleColor = singleScore>=80?'#5e8f7e':singleScore>=70?'#5c7a96':singleScore>=60?'#e67e22':'#c0392b';
+  document.getElementById('combatSingle').textContent = singleScore;
+  document.getElementById('combatSingle').style.color = singleColor;
+  try{localStorage.setItem('sas_combat_single',String(singleScore));}catch(e){}
+
+  // 差距解讀
+  const diff = singleScore - score;
+  let gapText, gapColor;
+  if(Math.abs(diff) < 5){
+    gapText = '差距 &lt; 5 · 睡眠穩定，兩值一致 → 任一為今日依據';
+    gapColor = '#5e8f7e';
+  } else if(diff > 15){
+    gapText = `單夜 ＋${diff} › 加權 · 昨晚異常佳，前兩天虧損較深 → 今日體力比感覺的低，勿透支`;
+    gapColor = '#c0392b';
+  } else if(diff > 0){
+    gapText = `單夜 ＋${diff} › 加權 · 昨晚有回彈，身體仍追回前幾天虧損 → 以加權值為今日依據`;
+    gapColor = '#e67e22';
+  } else if(diff < -10){
+    gapText = `加權 ＋${-diff} › 單夜 · 今晚明顯下滑 → 今日以加權值為準，今晚務必補眠`;
+    gapColor = '#c0392b';
+  } else {
+    gapText = `加權 ＋${-diff} › 單夜 · 今晚小幅下滑，近期底子仍在 → 今晚優先恢復`;
+    gapColor = '#5c7a96';
+  }
+  const gapEl = document.getElementById('combatGap');
+  gapEl.innerHTML = gapText;
+  gapEl.style.color = gapColor;
 
   // 體能續航：0分=8:00止、100分=22:00止，線性映射
   const endHour = 8 + (score / 100) * 14;
