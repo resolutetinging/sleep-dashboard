@@ -1758,23 +1758,26 @@ function updateCombatPower(totalDebt) {
 
   // 差距解讀
   const diff = singleScore - score;
-  let gapText, gapColor;
+  let gapColor, dirLabel, interpText;
+  const arrow = Math.abs(diff) < 5 ? '→' : diff > 0 ? '↗' : '↘';
+  const diffSign = diff > 0 ? `+${diff}` : String(diff);
   if(Math.abs(diff) < 5){
-    gapText = '差距 &lt; 5 · 睡眠穩定，兩值一致 → 任一為今日依據';
-    gapColor = '#5e8f7e';
+    dirLabel = '持平'; gapColor = '#5e8f7e';
+    interpText = '兩值一致，任一為今日依據';
   } else if(diff > 15){
-    gapText = `單夜 ＋${diff} › 加權 · 昨晚異常佳，前兩天虧損較深 → 今日體力比感覺的低，勿透支`;
-    gapColor = '#c0392b';
+    dirLabel = '單夜急彈'; gapColor = '#c0392b';
+    interpText = '昨晚異常佳，前兩天虧損較深 → 今日體力比感覺的低，勿透支';
   } else if(diff > 0){
-    gapText = `單夜 ＋${diff} › 加權 · 昨晚有回彈，身體仍追回前幾天虧損 → 以加權值為今日依據`;
-    gapColor = '#e67e22';
+    dirLabel = '昨晚回彈'; gapColor = '#e67e22';
+    interpText = '昨晚有回彈，身體仍在追回前幾天虧損 → 以加權值為今日依據';
   } else if(diff < -10){
-    gapText = `加權 ＋${-diff} › 單夜 · 今晚明顯下滑 → 今日以加權值為準，今晚務必補眠`;
-    gapColor = '#c0392b';
+    dirLabel = '明顯下滑'; gapColor = '#c0392b';
+    interpText = '今晚明顯下滑 → 今日以加權值為準，今晚務必補眠';
   } else {
-    gapText = `加權 ＋${-diff} › 單夜 · 今晚小幅下滑，近期底子仍在 → 今晚優先恢復`;
-    gapColor = '#5c7a96';
+    dirLabel = '小幅下滑'; gapColor = '#5c7a96';
+    interpText = '今晚小幅下滑，近期底子仍在 → 今晚優先恢復';
   }
+  const gapText = `<div style="display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:5px;"><span style="font-size:15px;line-height:1;">${arrow}</span><span style="font-weight:700;font-size:12.5px;">${dirLabel}</span><span style="font-size:10px;color:var(--text-dim);">差距 ${diffSign} 分</span></div><div style="font-size:10.5px;color:var(--text-dim);margin-bottom:4px;">昨晚 <b style="color:${gapColor};">${singleScore}</b> 分 &nbsp;·&nbsp; 3夜加權 <b style="color:var(--text);">${score}</b> 分</div><div style="font-size:10.5px;">${interpText}</div>`;
   const gapEl = document.getElementById('combatGap');
   gapEl.innerHTML = gapText;
   gapEl.style.color = gapColor;
