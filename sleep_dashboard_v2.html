@@ -248,12 +248,6 @@
     /* Two-col panels */
     .two-col { grid-template-columns:1fr; gap:12px; }
 
-    /* Jetlag panel: stack */
-    #jetlagContent {
-      grid-template-columns:1fr !important;
-      gap:16px !important;
-    }
-
     /* Combat power score */
     #combatNum { font-size:44px !important; }
 
@@ -262,9 +256,6 @@
 
     /* Toggle row */
     .toggle-wrap { margin-top:4px; }
-
-    /* Social jetlag legend */
-    #jetlagContent > div { font-size:11px; }
   }
 </style>
 </head>
@@ -624,11 +615,12 @@
 
   <!-- REGULARITY CARD -->
   <div class="panel">
-    <div class="panel-header">
+    <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
         <div class="panel-title">作息規律性分析</div>
         <div class="panel-sub">入睡 & 起床時間標準差（越低越規律）</div>
       </div>
+      <div id="jetlagInline" style="font-size:11px;line-height:1.5;text-align:right;flex-shrink:0;margin-left:12px"></div>
     </div>
     <div id="regularityContent"></div>
     <div id="regularityAdvice" style="margin-top:12px"></div>
@@ -637,22 +629,6 @@
       <div class="chart-wrap"><canvas id="regularityTrendChart" height="100"></canvas></div>
     </div>
   </div>
-
-  <!-- SOCIAL JETLAG + REGULARITY -->
-  <div class="panel">
-    <div class="panel-header">
-      <div>
-        <div class="panel-title">🕐 社交時差 & 作息規律性</div>
-        <div class="panel-sub">平日 vs 週末生理時鐘偏移量</div>
-      </div>
-    </div>
-    <div id="jetlagContent" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-      <div id="jetlagLeft"></div>
-      <div id="jetlagRight"></div>
-    </div>
-    <div id="jetlagAdvice" class="advice-box" style="margin-top:14px">計算中...</div>
-  </div>
-
 
   <!-- EFFICIENCY TREND -->
   <div class="panel">
@@ -936,6 +912,35 @@ function updateRegularity(data) {
     const mean = arr.reduce((a, b) => a + b, 0) / n;
     return Math.sqrt(arr.reduce((sum, v) => sum + (v - mean) ** 2, 0) / n);
   }
+  function midSleep(bt, total_min) {
+    let [h, m] = bt.split(':').map(Number);
+    let mins = h * 60 + m;
+    if (h < 12) mins += 1440;
+    return mins + total_min / 2;
+  }
+  function median(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    const n = s.length;
+    return n % 2 === 0 ? (s[n/2-1] + s[n/2]) / 2 : s[Math.floor(n/2)];
+  }
+
+  // Social Jetlag inline badge
+  const wkdayMid = [], wkendMid = [];
+  RAW.summary.forEach(d => {
+    const dow = new Date(d.date + 'T12:00:00').getDay();
+    const ms = midSleep(d.bedtime, d.total_min);
+    if (dow === 0 || dow === 6) wkendMid.push(ms);
+    else wkdayMid.push(ms);
+  });
+  const inlineEl = document.getElementById('jetlagInline');
+  if (inlineEl && wkdayMid.length >= 3 && wkendMid.length >= 3) {
+    const jetlagHr = Math.abs(median(wkendMid) - median(wkdayMid)) / 60;
+    const safe = jetlagHr <= 1.0;
+    const color = safe ? '#5e8f7e' : (jetlagHr <= 2.0 ? '#e07030' : '#b05858');
+    const label = safe ? '安全範圍' : '⚠️ 偏高';
+    inlineEl.innerHTML = `<span style="color:var(--text-dim)">週末補眠指數</span><br><span style="font-family:'DM Mono',monospace;font-weight:700;color:${color}">${jetlagHr.toFixed(1)}h</span> <span style="color:${color}">(${label})</span>`;
+  }
+
   const recent = data.slice(-30);
   const bedMins = recent.map(d => bedToMins(d.bedtime));
   const wakeMins = recent.map(d => wakeToMins(d.wake));
@@ -1841,7 +1846,6 @@ function refreshAll() {
   const totalDebt = updateSleepDebt(data);
   updateCombatPower(totalDebt);
   updateDailySummary(totalDebt);
-  updateSocialJetlag();
 }
 
 // Write processed sleep data to localStorage so Control Center can read without CORS
