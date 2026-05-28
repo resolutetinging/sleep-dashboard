@@ -1446,6 +1446,15 @@ function updateSleepDebt(allData) {
   return totalDebt; // for combat power debt adjustment
 }
 
+// Module-level helper — used by updateCombatPower AND saveSleepToLocalStorage
+function nightRawScore(r) {
+  const tot = r.deep_min + r.rem_min + r.core_min;
+  if (!tot) return 0;
+  const deep = Math.min(r.deep_min / tot * 100 / 18   * 100, 100);
+  const rem  = Math.min(r.rem_min  / tot * 100 / 22.5 * 100, 100);
+  return Math.round(deep * 0.7 + rem * 0.3);
+}
+
 function updateCombatPower(totalDebt) {
   const last = RAW.summary[RAW.summary.length - 1];
   if (!last) return;
@@ -1535,15 +1544,6 @@ function updateCombatPower(totalDebt) {
   document.getElementById('combatTasks').innerHTML = tasks;
 
   // ── 單夜 vs 3夜加權比較 ──
-  // helper：計算單夜原始戰力分（不含睡眠債，純睡眠品質信號）
-  function nightRawScore(r) {
-    const tot = r.deep_min + r.rem_min + r.core_min;
-    if (!tot) return 0;
-    const deep = Math.min(r.deep_min / tot * 100 / 18   * 100, 100);
-    const rem  = Math.min(r.rem_min  / tot * 100 / 22.5 * 100, 100);
-    return Math.round(deep * 0.7 + rem * 0.3);
-  }
-
   const allN = RAW.summary;
   const nn = allN.length;
   // 取最近 3 夜（index: -1, -2, -3），越近的權重越大
@@ -1616,20 +1616,29 @@ function refreshAll() {
 // Write processed sleep data to localStorage so Control Center can read without CORS
 function saveSleepToLocalStorage() {
   try {
-    const last = RAW.summary[RAW.summary.length - 1];
+    const allN = RAW.summary;
+    const nn = allN.length;
+    const last = allN[nn - 1];
     if (!last) return;
+
     const totalSleep = last.deep_min + last.rem_min + last.core_min || 1;
     const t = last.total_min || 1;
-    const deepPct = last.deep_min / totalSleep * 100;
-    const remPct  = last.rem_min  / totalSleep * 100;
-    const corePct = last.core_min / totalSleep * 100;
+    const deepPct  = last.deep_min  / totalSleep * 100;
+    const remPct   = last.rem_min   / totalSleep * 100;
+    const corePct  = last.core_min  / totalSleep * 100;
     const awakePct = last.awake_min / t * 100;
-    const remScore  = Math.min(remPct  / 22.5 * 100, 100);
-    const deepScore = Math.min(deepPct / 18   * 100, 100);
-    const rawScore  = deepScore * 0.7 + remScore * 0.3;
-    // Use integer combat score (without debt, same base formula as combatNum display fallback)
-    const score = Math.round(rawScore);
-    const last7 = RAW.summary.slice(-7).map(n => {
+
+    // 單夜 & 三夜加權原始戰力（不含睡眠債，純睡眠品質信號）
+    const combatSingle = nightRawScore(last);
+    const recentNights = [allN[nn-1], nn>=2?allN[nn-2]:null, nn>=3?allN[nn-3]:null].filter(Boolean);
+    const W = [0.5, 0.3, 0.2].slice(0, recentNights.length);
+    const sumW = W.reduce((a,b)=>a+b, 0);
+    const combatWeighted = sumW > 0
+      ? Math.round(recentNights.reduce((acc,r,i) => acc + nightRawScore(r)*W[i], 0) / sumW)
+      : combatSingle;
+    const nightsWeighted = recentNights.length;
+
+    const last7 = allN.slice(-7).map(n => {
       const ts = n.deep_min + n.rem_min + n.core_min || 1;
       return {
         date: n.date,
@@ -1638,15 +1647,24 @@ function saveSleepToLocalStorage() {
         remP:  Math.round(n.rem_min  / ts * 100)
       };
     });
+
     localStorage.setItem('sas_sleep_latest', JSON.stringify({
-      date: last.date,
-      deepP: Math.round(deepPct),
-      remP:  Math.round(remPct),
-      coreP: Math.round(corePct),
-      awakeP: Math.round(awakePct),
+      date:     last.date,
+      bedtime:  last.bedtime  || null,
+      wake:     last.wake     || null,
+      totalMin: last.total_min || null,
+      deepP:    Math.round(deepPct),
+      remP:     Math.round(remPct),
+      coreP:    Math.round(corePct),
+      awakeP:   Math.round(awakePct),
+      combatSingle,
+      combatWeighted,
+      nightsWeighted,
       trend7: last7
     }));
-    // sas_combat is set after debt is known, written by updateCombatPower
+    // 單獨寫 sas_combat_single 供 CC 相容讀取
+    try { localStorage.setItem('sas_combat_single', String(combatSingle)); } catch(e) {}
+    // sas_combat（含睡眠債）由 updateCombatPower 寫入
   } catch(e) {}
 }
 

@@ -1854,20 +1854,19 @@ function refreshAll() {
 // Write processed sleep data to localStorage so Control Center can read without CORS
 function saveSleepToLocalStorage() {
   try {
-    const last = RAW.summary[RAW.summary.length - 1];
+    const allN = RAW.summary;
+    const nn = allN.length;
+    const last = allN[nn - 1];
     if (!last) return;
+
     const totalSleep = last.deep_min + last.rem_min + last.core_min || 1;
     const t = last.total_min || 1;
-    const deepPct = last.deep_min / totalSleep * 100;
-    const remPct  = last.rem_min  / totalSleep * 100;
-    const corePct = last.core_min / totalSleep * 100;
+    const deepPct  = last.deep_min  / totalSleep * 100;
+    const remPct   = last.rem_min   / totalSleep * 100;
+    const corePct  = last.core_min  / totalSleep * 100;
     const awakePct = last.awake_min / t * 100;
-    const remScore  = Math.min(remPct  / 22.5 * 100, 100);
-    const deepScore = Math.min(deepPct / 18   * 100, 100);
-    const rawScore  = deepScore * 0.7 + remScore * 0.3;
-    // Use integer combat score (without debt, same base formula as combatNum display fallback)
-    const score = Math.round(rawScore);
-    const last7 = RAW.summary.slice(-7).map(n => {
+
+    const last7 = allN.slice(-7).map(n => {
       const ts = n.deep_min + n.rem_min + n.core_min || 1;
       return {
         date: n.date,
@@ -1876,15 +1875,27 @@ function saveSleepToLocalStorage() {
         remP:  Math.round(n.rem_min  / ts * 100)
       };
     });
+
+    // 讀取 updateCombatPower 已寫入的分數（refreshAll 在前，此函式在後）
+    const combatSingle   = parseInt(localStorage.getItem('sas_combat_single')  ||'0')||null;
+    const combatWeighted = parseInt(localStorage.getItem('sas_combat')         ||'0')||null;
+    const nightsWeighted = Math.min(nn, 3);
+
     localStorage.setItem('sas_sleep_latest', JSON.stringify({
-      date: last.date,
-      deepP: Math.round(deepPct),
-      remP:  Math.round(remPct),
-      coreP: Math.round(corePct),
-      awakeP: Math.round(awakePct),
+      date:     last.date,
+      bedtime:  last.bedtime  || null,
+      wake:     last.wake     || null,
+      totalMin: last.total_min || null,
+      deepP:    Math.round(deepPct),
+      remP:     Math.round(remPct),
+      coreP:    Math.round(corePct),
+      awakeP:   Math.round(awakePct),
+      combatSingle,
+      combatWeighted,
+      nightsWeighted,
       trend7: last7
     }));
-    // sas_combat is set after debt is known, written by updateCombatPower
+    // sas_combat 與 sas_combat_single 由 updateCombatPower 寫入
   } catch(e) {}
 }
 
