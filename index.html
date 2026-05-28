@@ -491,7 +491,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- SLEEP -->
 <div class="view-frame" id="v-sl">
-  <div class="frame-bar"><div><div class="frame-title">Sleep Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">生理油錶 · 睡眠品質分析</div></div><a href="./sleep_dashboard.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
+  <div class="frame-bar"><div><div class="frame-title">Sleep Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">生理油錶 · 睡眠品質分析</div></div><a href="./sleep_dashboard_v2.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
   <div class="frame-wrap"><div class="frame-loading" id="sl-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="sl-frame" src="about:blank" title="Sleep Dashboard"></iframe></div>
 </div>
 
@@ -527,7 +527,7 @@ tick();setInterval(tick,30000);
 var $=id=>document.getElementById(id);
 
 /* FRAMES */
-var frameSrcs={sl:'./sleep_dashboard.html',mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html',op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html',rf:'https://resolutetinging.github.io/control-center/refueler.html'};
+var frameSrcs={sl:'./sleep_dashboard_v2.html',mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html',op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html',rf:'https://resolutetinging.github.io/control-center/refueler.html'};
 function frameLoaded(k){var el=$(k+'-loading');if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',320);}}
 ['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
 function go(id){
