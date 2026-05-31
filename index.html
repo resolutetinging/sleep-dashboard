@@ -574,6 +574,10 @@ function updateCombat(score,skipAnim){
 }
 
 function readCombat(){
+  // Primary: read 3-night weighted from localStorage (written by sleep_dashboard_v2)
+  var stored=parseInt(localStorage.getItem('sas_combat_weighted')||'0');
+  if(stored>0&&stored!==_combat)updateCombat(stored,true);
+  // Secondary: sync real-time from iframe
   try{
     var f=$('sl-frame');if(!f||!f.contentDocument)return;
     var doc=f.contentDocument;

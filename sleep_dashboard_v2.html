@@ -553,6 +553,23 @@
 
   </div>
 
+  <!-- WEIGHTED COMBAT TREND CHART -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">📈 三夜加權戰力走勢</div>
+        <div class="panel-sub">連續性睡眠動能趨勢（今晚×60%＋昨晚×30%＋前晚×10%）</div>
+      </div>
+      <div class="range-btns">
+        <button class="range-btn w-range-btn" onclick="setWeightedRange(7,this)">7D</button>
+        <button class="range-btn w-range-btn active" onclick="setWeightedRange(30,this)">30D</button>
+        <button class="range-btn w-range-btn" onclick="setWeightedRange(9999,this)">ALL</button>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="weightedChart" height="120"></canvas></div>
+    <div id="weightedAIOut" style="margin-top:10px;padding:10px 13px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-dim);line-height:1.75;min-height:36px;">—</div>
+  </div>
+
   <!-- TREND CHART -->
   <div class="panel">
     <div class="panel-header">
@@ -1899,9 +1916,106 @@ function saveSleepToLocalStorage() {
   } catch(e) {}
 }
 
+// ── WEIGHTED COMBAT TREND CHART ──
+let _wChart = null, _wHistory = [], _wRange = 30, _wAIBusy = false;
+
+function _nightRawW(d) {
+  const ts = d.deep_min + d.rem_min + d.core_min;
+  if (!ts) return 0;
+  return Math.min(d.deep_min / ts * 100 / 18 * 100, 100) * 0.7
+       + Math.min(d.rem_min  / ts * 100 / 22.5 * 100, 100) * 0.3;
+}
+
+function buildWeightedHistory() {
+  const s = RAW.summary;
+  _wHistory = s.map((d, i) => {
+    const nights = s.slice(Math.max(0, i - 2), i + 1);
+    const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
+    const raw = nights.reduce((sum, n, wi) => sum + _nightRawW(n) * wts[wi], 0);
+    const prev7 = s.slice(Math.max(0, i - 6), i + 1);
+    const avgTot = prev7.reduce((a, n) => a + (n.deep_min + n.rem_min + n.core_min), 0) / prev7.length;
+    const penalty = Math.max(0, (Math.max(0, 480 - avgTot) / 60 - 3) * 2);
+    return { date: d.date, score: Math.round(Math.max(0, raw - penalty)) };
+  });
+}
+
+function setWeightedRange(days, btn) {
+  _wRange = days;
+  document.querySelectorAll('.w-range-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderWeightedChart();
+  runWeightedAI();
+}
+
+function renderWeightedChart() {
+  const slice = _wRange === 9999 ? _wHistory : _wHistory.slice(-_wRange);
+  if (!slice.length) return;
+  const labels = slice.map(d => d.date.slice(5));
+  const scores = slice.map(d => d.score);
+  const ptColors = scores.map(s => s >= 80 ? '#5e8f7e' : s >= 70 ? '#5c7a96' : s >= 60 ? '#e67e22' : '#c0392b');
+  if (_wChart) _wChart.destroy();
+  const ctx = document.getElementById('weightedChart').getContext('2d');
+  _wChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      data: scores, borderColor: '#5c7a96',
+      backgroundColor: 'rgba(92,122,150,0.07)', fill: true, tension: 0.35,
+      pointRadius: 3, pointBackgroundColor: ptColors, pointBorderWidth: 0, borderWidth: 2
+    }]},
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => `戰力 ${c.raw}` },
+          backgroundColor: 'rgba(252,251,248,.96)', titleColor: '#2a2520', bodyColor: '#2a2520',
+          borderColor: 'rgba(0,0,0,.08)', borderWidth: 1 }},
+      scales: {
+        y: { min: 0, max: 100, grid: { color: 'rgba(0,0,0,.05)' },
+             ticks: { font: { size: 10 }, color: 'var(--text-dim)', stepSize: 20 }},
+        x: { grid: { display: false },
+             ticks: { maxTicksLimit: 8, font: { size: 10 }, color: 'var(--text-dim)' }}
+      }
+    }
+  });
+}
+
+async function runWeightedAI() {
+  if (_wAIBusy) return;
+  const key = localStorage.getItem('groq_key') || '';
+  const el = document.getElementById('weightedAIOut');
+  if (!key) { el.textContent = '設定 Groq Key 後可啟用 AI 趨勢分析'; return; }
+  const slice = _wRange === 9999 ? _wHistory : _wHistory.slice(-_wRange);
+  if (slice.length < 3) { el.textContent = '資料不足'; return; }
+  const scores = slice.map(d => d.score);
+  const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const std = Math.round(Math.sqrt(scores.reduce((a, b) => a + (b - avg) ** 2, 0) / scores.length));
+  const recent7 = scores.slice(-7);
+  const trend = recent7[recent7.length - 1] - recent7[0];
+  const label = _wRange === 9999 ? '全部期間' : `近 ${_wRange} 天`;
+  _wAIBusy = true;
+  el.textContent = '分析中…';
+  try {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content:
+          `你是睡眠分析師。三夜加權戰力（${label}）：均值${avg}，標準差${std}，近7天趨勢${trend > 0 ? '+' : ''}${trend}。序列（最新14筆）：${scores.slice(-14).join('、')}。\n用繁體中文2句話：①趨勢與規律性現況；②最關鍵行動建議。直擊痛點，無廢話。` }],
+        max_tokens: 120, temperature: 0.5
+      })
+    });
+    const json = await resp.json();
+    el.textContent = json.choices?.[0]?.message?.content?.trim() || '分析失敗';
+  } catch (e) { el.textContent = '無法連線 Groq'; }
+  _wAIBusy = false;
+}
+
 // Init
 refreshAll();
 saveSleepToLocalStorage();
+buildWeightedHistory();
+renderWeightedChart();
+runWeightedAI();
 </script>
 </body>
 </html>
