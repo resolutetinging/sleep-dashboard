@@ -2041,7 +2041,9 @@ async function runWeightedAI() {
       })
     });
     const json = await resp.json();
-    el.textContent = json.choices?.[0]?.message?.content?.trim() || '分析失敗';
+    const txt = json.choices?.[0]?.message?.content?.trim() || '分析失敗';
+    const parts = txt.split(/(?=②)/);
+    el.innerHTML = parts.map(p => `<div>${p.trim()}</div>`).join('');
   } catch (e) { el.textContent = '無法連線 Groq'; }
   _wAIBusy = false;
 }
