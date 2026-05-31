@@ -561,9 +561,10 @@
         <div class="panel-sub">連續性睡眠動能趨勢（今晚×60%＋昨晚×30%＋前晚×10%）</div>
       </div>
       <div class="range-btns">
-        <button class="range-btn w-range-btn" onclick="setWeightedRange(7,this)">7D</button>
-        <button class="range-btn w-range-btn active" onclick="setWeightedRange(30,this)">30D</button>
-        <button class="range-btn w-range-btn" onclick="setWeightedRange(9999,this)">ALL</button>
+        <button class="range-btn w-range-btn" onclick="setWeightedRange(7,this)">7days</button>
+        <button class="range-btn w-range-btn" onclick="setWeightedRange(14,this)">14days</button>
+        <button class="range-btn w-range-btn active" onclick="setWeightedRange(30,this)">month</button>
+        <button class="range-btn w-range-btn" onclick="setWeightedRange(9999,this)">all</button>
       </div>
     </div>
     <div class="chart-wrap"><canvas id="weightedChart" height="120"></canvas></div>
@@ -1947,25 +1948,60 @@ function setWeightedRange(days, btn) {
   runWeightedAI();
 }
 
+function _linRegression(arr) {
+  const n = arr.length, xm = (n - 1) / 2;
+  const ym = arr.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  arr.forEach((y, i) => { num += (i - xm) * (y - ym); den += (i - xm) ** 2; });
+  const slope = den ? num / den : 0, intercept = ym - slope * xm;
+  return arr.map((_, i) => Math.max(0, Math.min(100, Math.round(intercept + slope * i))));
+}
+
+const _verticalDropPlugin = {
+  id: 'verticalDrop',
+  afterDatasetsDraw(chart) {
+    const meta = chart.getDatasetMeta(0);
+    const { ctx, chartArea } = chart;
+    ctx.save();
+    ctx.setLineDash([3, 5]);
+    ctx.strokeStyle = 'rgba(160,160,160,0.35)';
+    ctx.lineWidth = 0.8;
+    meta.data.forEach(pt => {
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+      ctx.lineTo(pt.x, chartArea.bottom);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+};
+
 function renderWeightedChart() {
   const slice = _wRange === 9999 ? _wHistory : _wHistory.slice(-_wRange);
   if (!slice.length) return;
   const labels = slice.map(d => d.date.slice(5));
   const scores = slice.map(d => d.score);
+  const trendLine = _linRegression(scores);
   const ptColors = scores.map(s => s >= 80 ? '#5e8f7e' : s >= 70 ? '#5c7a96' : s >= 60 ? '#e67e22' : '#c0392b');
   if (_wChart) _wChart.destroy();
   const ctx = document.getElementById('weightedChart').getContext('2d');
   _wChart = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [{
-      data: scores, borderColor: '#5c7a96',
-      backgroundColor: 'rgba(92,122,150,0.07)', fill: true, tension: 0.35,
-      pointRadius: 3, pointBackgroundColor: ptColors, pointBorderWidth: 0, borderWidth: 2
-    }]},
+    data: { labels, datasets: [
+      { data: scores, borderColor: '#5c7a96',
+        backgroundColor: 'rgba(92,122,150,0.07)', fill: true, tension: 0.35,
+        pointRadius: 3, pointBackgroundColor: ptColors, pointBorderWidth: 0, borderWidth: 2,
+        order: 1 },
+      { data: trendLine, borderColor: 'rgba(180,100,80,0.6)',
+        borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false,
+        tension: 0, order: 2, label: 'trend' }
+    ]},
+    plugins: [_verticalDropPlugin],
     options: {
       responsive: true,
       plugins: { legend: { display: false },
-        tooltip: { callbacks: { label: c => `戰力 ${c.raw}` },
+        tooltip: { filter: i => i.datasetIndex === 0,
+          callbacks: { label: c => `戰力 ${c.raw}` },
           backgroundColor: 'rgba(252,251,248,.96)', titleColor: '#2a2520', bodyColor: '#2a2520',
           borderColor: 'rgba(0,0,0,.08)', borderWidth: 1 }},
       scales: {
