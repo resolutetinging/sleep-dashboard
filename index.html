@@ -628,6 +628,8 @@ function readCombat(){
   }catch(e){}
 }
 setInterval(readCombat,2000);
+/* CHART REGISTRY — 必須在 IIFE 之前初始化，避免 hoisting 導致 CI 為 undefined */
+var CI={};var TC='rgba(40,38,32,.07)',LC='#a8a39b';
 // 啟動時立即從 localStorage 初始化，不等 iframe，避免橘色閃爍
 (function(){var s=parseInt(localStorage.getItem('sas_combat_weighted')||'0');if(s>0)updateCombat(s,true);})();
 
@@ -773,8 +775,8 @@ function calcLag(moods){
 }
 
 /* CHART HELPERS */
-var CI={};var TC='rgba(40,38,32,.07)',LC='#a8a39b';
-function mk(id,cfg){if(CI[id])CI[id].destroy();var el=$(id);if(!el)return;CI[id]=new Chart(el,cfg);}
+/* CI/TC/LC 已在 IIFE 前定義，此處僅保留 mk */
+function mk(id,cfg){if(!CI)return;if(CI[id])CI[id].destroy();var el=$(id);if(!el)return;CI[id]=new Chart(el,cfg);}
 var D30=[],RM=[],PM=[];
 for(var _i=0;_i<30;_i++){var _d=new Date();_d.setDate(_d.getDate()-29+_i);D30.push((_d.getMonth()+1)+'/'+(_d.getDate()));}
 for(var _i=0;_i<25;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI)+.3*(Math.random()-.5))*10)/10);
