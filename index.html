@@ -415,6 +415,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
           <div class="corr-action-lbl">🛌 睡前跨界行為指引</div>
           <div id="corr-bedguide" class="corr-action-body">—</div>
         </div>
+        <div class="corr-action-block">
+          <div class="corr-action-lbl">🧠 配速對齊校正</div>
+          <div id="corr-align" class="corr-action-body">—</div>
+        </div>
       </div>
     </div>
     <!-- Definitions block -->
@@ -909,11 +913,36 @@ function rebuildCorrChart(){
     bedEl.innerHTML=bgHtml;
   }
 
+  // 4. 配速對齊校正（獨立函式，避免 var 污染 rebuildCorrChart 作用域）
+  try{renderPipeAlign();}catch(e){}
+
   // 保留滯後計算（供頁面其他區塊使用）
   var lag=calcLag(moods);_lag=lag;
   var lagEl=$('lag-days');if(lagEl)lagEl.textContent=lag?'平均'+lag+'天後':'積累中';
   var lpd=$('lag-predict-days');if(lpd)lpd.textContent=lag?lag:'1–3';
 }
+function renderPipeAlign(){
+  var el=$('corr-align');if(!el)return;
+  var pr={};try{pr=JSON.parse(localStorage.getItem('sas_pipe_review')||'{}');}catch(e){}
+  var todayStr=dkey(new Date());
+  if(!pr.items||!pr.items.length){
+    el.textContent=pr.date===todayStr?'今日無配速警告事件，模型無需校正。':'尚無今日資料（請在 Daily Optimizer 點「✦ 生成 AI 反饋」後自動更新）。';
+    return;
+  }
+  if(pr.date!==todayStr){el.textContent='資料來自 '+pr.date+'，請今日覆盤後重新整頁。';return;}
+  var consistent=pr.items.filter(function(i){return i.verdict==='consistent';});
+  var inconsistent=pr.items.filter(function(i){return i.verdict==='inconsistent';});
+  var parts=[];
+  if(pr.depletedAt)parts.push('⚡ 能量低點 <strong>'+pr.depletedAt+'</strong>（有效工作續航結束時刻）。');
+  if(consistent.length)parts.push('✓ <strong>防禦配速準確</strong>：'
+    +consistent.map(function(i){return'「'+i.task+'」';}).join('')
+    +'在低能/休息時段未完成，印證當日配速策略正確，請繼續順應身體節奏排程。');
+  if(inconsistent.length)parts.push('⚡ <strong>模型校正信號</strong>：'
+    +inconsistent.map(function(i){return'「'+i.task+'」';}).join('')
+    +'在預測低能時段完成，可能為心流驅動或疲勞滯後延遲，建議觀察後續狀態，納入下次戰力推論的修正依據。');
+  el.innerHTML=parts.join('<br><br>');
+}
+
 function buildTaskTaxonomy(){
   var counts={logic:0,social:0,input:0,other:0};
   var done_counts={logic:0,social:0,input:0,other:0};
