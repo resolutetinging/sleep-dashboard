@@ -1867,6 +1867,9 @@ function refreshAll() {
   const totalDebt = updateSleepDebt(data);
   updateCombatPower(totalDebt);
   updateDailySummary(totalDebt);
+  buildWeightedHistory();
+  renderWeightedChart();
+  runWeightedAI();
 }
 
 // Write processed sleep data to localStorage so Control Center can read without CORS
@@ -1928,7 +1931,8 @@ function _nightRawW(d) {
 }
 
 function buildWeightedHistory() {
-  const s = RAW.summary;
+  const excludeWE = document.getElementById('excludeWeekend').checked;
+  const s = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
   _wHistory = s.map((d, i) => {
     const nights = s.slice(Math.max(0, i - 2), i + 1);
     const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
