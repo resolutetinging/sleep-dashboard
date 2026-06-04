@@ -72,9 +72,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .chw{grid-column:1/13;grid-row:4}     /* week view */
 .clw{grid-column:1/13;grid-row:5}     /* last week recap */
 .cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
-.ctx{grid-column:1/13;grid-row:7}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:8}     /* HD AI */
-.cdta{grid-column:1/13;grid-row:9}    /* dual-track beta */
+.cdta{grid-column:1/13;grid-row:7}    /* dual-track beta */
+.ctx{grid-column:1/13;grid-row:8}     /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:9}     /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -466,49 +466,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
   </div>
 
-  <!-- 任務屬性熱點 -->
-  <div class="card ctx">
-    <div class="lbl">📊 任務屬性熱點 × 狀態匹配建議</div>
-    <div class="ctx-inner">
-      <div>
-        <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">本週任務分佈</div>
-        <div id="tax-bars">—</div>
-      </div>
-      <div>
-        <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">狀態匹配建議</div>
-        <div id="tax-insights" style="display:flex;flex-direction:column;gap:8px"></div>
-      </div>
-    </div>
-    <!-- Category mapping table -->
-    <div style="margin-top:1rem;padding-top:.85rem;border-top:.5px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;flex-wrap:wrap;gap:6px">
-        <div class="lbl" style="margin-bottom:0">關鍵字對照表 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--faint)">— 點擊關鍵字可刪除，右側可新增</span></div>
-        <button onclick="saveCatMap()" style="font-size:.65rem;padding:3px 10px;border-radius:20px;background:var(--text);color:var(--card);border:none;cursor:pointer">儲存</button>
-      </div>
-      <div id="cat-map-table" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
-    </div>
-  </div>
-
-  <!-- 人類圖 AI -->
-  <div class="card cha">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.7rem">
-      <div class="lbl" style="margin-bottom:0">🌟 人類圖 AI 深度解析</div>
-      <button class="hd-btn" id="hd-analyze-btn" onclick="analyzeHD()">
-        <div class="hd-spinner-inline" id="hd-spinner"></div><span id="hd-btn-text">生成今日解析</span>
-      </button>
-    </div>
-    <div class="hd-ai-grid">
-      <div>
-        <div class="lbl">已載入人類圖資訊</div>
-        <div class="hd-profile-box" id="hd-profile-display">請前往 Mental Dashboard 設定人類圖資料。</div>
-      </div>
-      <div>
-        <div class="lbl">AI 解析結果</div>
-        <div class="hd-result" id="hd-result">點擊「生成今日解析」，AI 將根據你的人類圖設定給出今日行動策略。</div>
-      </div>
-    </div>
-  </div>
-
   <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
   <div class="card cdta" id="dta-card" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
     <div class="lbl" style="margin-bottom:1.1rem">
@@ -556,6 +513,51 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       ⚠ Beta 觀察期：數據視窗尚短，趨勢需累積 2–4 週以上方具統計意義。Deep/REM score = 睡眠各分期比例除以目標比例，滿分 100。
     </div>
   </div>
+
+  <!-- 任務屬性熱點 -->
+  <div class="card ctx">
+    <div class="lbl">📊 任務屬性熱點 × 狀態匹配建議</div>
+    <div class="ctx-inner">
+      <div>
+        <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">本週任務分佈</div>
+        <div id="tax-bars">—</div>
+      </div>
+      <div>
+        <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">狀態匹配建議</div>
+        <div id="tax-insights" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+    <!-- Category mapping table -->
+    <div style="margin-top:1rem;padding-top:.85rem;border-top:.5px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;flex-wrap:wrap;gap:6px">
+        <div class="lbl" style="margin-bottom:0">關鍵字對照表 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--faint)">— 點擊關鍵字可刪除，右側可新增</span></div>
+        <button onclick="saveCatMap()" style="font-size:.65rem;padding:3px 10px;border-radius:20px;background:var(--text);color:var(--card);border:none;cursor:pointer">儲存</button>
+      </div>
+      <div id="cat-map-table" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+    </div>
+  </div>
+
+  <!-- 人類圖 AI -->
+  <div class="card cha">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.7rem">
+      <div class="lbl" style="margin-bottom:0">🌟 人類圖 AI 深度解析</div>
+      <button class="hd-btn" id="hd-analyze-btn" onclick="analyzeHD()">
+        <div class="hd-spinner-inline" id="hd-spinner"></div><span id="hd-btn-text">生成今日解析</span>
+      </button>
+    </div>
+    <div class="hd-ai-grid">
+      <div>
+        <div class="lbl">已載入人類圖資訊</div>
+        <div class="hd-profile-box" id="hd-profile-display">請前往 Mental Dashboard 設定人類圖資料。</div>
+      </div>
+      <div>
+        <div class="lbl">AI 解析結果</div>
+        <div class="hd-result" id="hd-result">點擊「生成今日解析」，AI 將根據你的人類圖設定給出今日行動策略。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
 
 </div><!-- /bento -->
 </div><!-- /overview -->
