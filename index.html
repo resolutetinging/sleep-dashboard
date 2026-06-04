@@ -1727,9 +1727,7 @@ function renderDualTrackCard(){
   setDiag('dta-diag-defense',diagDF);
 
   var noteEl=$('dta-matrix-note');
-  if(noteEl){
-    noteEl.textContent='視窗 '+(em.windowDays||0)+' 日 · 鈍感平穩 '+(counts['Physical-Only']||0)+' 日 · 混合中間態 '+(counts['Mixed']||0)+' 日';
-  }
+  if(noteEl) noteEl.style.display='none';
 
   // ── 決策相關性 ──
   var raw=rc.raw||[];
