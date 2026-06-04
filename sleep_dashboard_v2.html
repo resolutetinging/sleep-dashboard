@@ -396,7 +396,7 @@
     </div>
 
     <!-- MIDDLE：雙軌能耗現況 -->
-    <div style="padding:0 20px;border-right:1px solid var(--border);">
+    <div style="padding:0 20px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;">
       <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">雙軌能耗現況</div>
       <!-- 物理續航 -->
       <div class="ds-track-row">
@@ -530,10 +530,8 @@
 
   </div>
 
-  <!-- SLEEP DEBT + COMBAT POWER ROW -->
+  <!-- SLEEP DEBT ROW -->
   <div class="two-col">
-
-    <!-- SLEEP DEBT -->
     <div class="panel" id="debtPanel">
       <div class="panel-header">
         <div>
@@ -549,28 +547,42 @@
       <div id="debtSummary" style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
       <div id="weekBank" style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
     </div>
+  </div>
 
-    <!-- COMBAT POWER INDEX -->
-    <div class="panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">⚡ 戰力指數 · 單夜 vs 3夜加權</div>
-          <div class="panel-sub">單夜昨晚表現 vs 三夜動能加權，含睡眠債調節</div>
-        </div>
+  <!-- COMBAT POWER INDEX（全寬） -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">⚡ 雙軌戰力</div>
+        <div class="panel-sub">動能指數（單夜 / 3夜加權）＋ 雙軌能耗（物理續航 / 認知應變）</div>
       </div>
-      <!-- 雙欄數值 -->
-      <div style="display:flex;margin:12px 0 6px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-        <div style="flex:1;text-align:center;padding:14px 8px;border-right:1px solid var(--border);">
-          <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">單夜</div>
-          <div id="combatSingle" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">昨晚表現</div>
-        </div>
-        <div style="flex:1;text-align:center;padding:14px 8px;">
-          <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">3夜加權</div>
-          <div id="combatNum" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">近期動能</div>
-        </div>
+    </div>
+    <!-- 第一行：單夜 / 3夜加權 -->
+    <div style="display:flex;margin:12px 0 0;border:1px solid var(--border);border-radius:10px 10px 0 0;overflow:hidden;">
+      <div style="flex:1;text-align:center;padding:14px 8px;border-right:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">單夜</div>
+        <div id="combatSingle" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">昨晚表現</div>
       </div>
+      <div style="flex:1;text-align:center;padding:14px 8px;">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">3夜加權</div>
+        <div id="combatNum" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">近期動能</div>
+      </div>
+    </div>
+    <!-- 第二行：物理續航 / 認知應變 -->
+    <div style="display:flex;margin:0 0 6px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;">
+      <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid var(--border);background:rgba(92,122,150,.06);">
+        <div style="font-size:10px;color:var(--deep);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">🔋 物理續航</div>
+        <div id="card-deep" style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;color:var(--deep);">—</div>
+        <div style="font-size:9.5px;color:var(--text-dim);margin-top:4px;">Deep 基礎能量</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:12px 8px;background:rgba(139,120,152,.06);">
+        <div style="font-size:10px;color:var(--rem);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">🧠 認知應變</div>
+        <div id="card-rem" style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;color:var(--rem);">—</div>
+        <div style="font-size:9.5px;color:var(--text-dim);margin-top:4px;">REM 邏輯輸出</div>
+      </div>
+    </div>
       <!-- 差距解讀 -->
       <div id="combatGap" style="text-align:center;padding:7px 12px;background:var(--surface2);border-radius:8px;font-size:11px;line-height:1.6;margin-bottom:8px;">—</div>
       <div id="combatLabel" style="font-size:13px;font-weight:600;margin:4px 0 2px;text-align:center;">—</div>
@@ -604,8 +616,6 @@
         </div>
       </details>
     </div>
-
-  </div>
 
   <!-- WEIGHTED COMBAT TREND CHART -->
   <div class="panel">
@@ -1893,6 +1903,9 @@ function updateCombatPower(totalDebt) {
   if(dBEl){ const[bc,bt]=_trackBadge(ds); dBEl.className='ds-badge '+bc; dBEl.textContent=bt; }
   if(rEl){ rEl.textContent=rs; }
   if(rBEl){ const[bc,bt]=_trackBadge(rs); rBEl.className='ds-badge '+bc; rBEl.textContent=bt; }
+  const cdEl=document.getElementById('card-deep'), crEl=document.getElementById('card-rem');
+  if(cdEl) cdEl.textContent=ds;
+  if(crEl) crEl.textContent=rs;
 
   document.getElementById('combatLabel').textContent = label;
   document.getElementById('combatLabel').style.color = color;
