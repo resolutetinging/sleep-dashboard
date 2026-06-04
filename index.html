@@ -140,7 +140,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .week-ai-result{font-size:.85rem;line-height:1.75;color:var(--sub)}
 
 /* CORRELATION */
-.cco-inner{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start;margin-top:.5rem}
+.cco-inner{display:flex;flex-direction:column;gap:14px;margin-top:.5rem}
+.cco-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .corr-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:.6rem}
 .corr-leg-item{display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--sub)}
 .xa-insight{display:flex;flex-wrap:wrap;gap:7px;margin-top:.75rem}
@@ -213,7 +214,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
-  .cco-inner,.ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
+  .ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
+  .cco-action-grid{grid-template-columns:1fr}
   .corr-legend{gap:8px}
   .week-days{gap:5px}
   .day-score-ring{width:30px;height:30px;font-size:.68rem}
@@ -225,10 +227,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .gw{gap:.5rem}
   /* Week days compact */
   .day-factor-tag{font-size:.5rem}
-  /* Corr chart taller on mobile since sidebar panel moves below */
-  .cco-inner{gap:12px}
   .cco{overflow:visible}
-  .cco-inner>div:first-child{min-width:0;width:100%}
 }
 </style>
 </head>
@@ -428,20 +427,20 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--info);display:inline-block"></span>低輸出</span>
         </div>
       </div>
-      <div>
-        <div class="corr-action-block">
+      <div class="cco-action-grid">
+        <div class="corr-action-block" style="margin-bottom:0">
           <div class="corr-action-lbl">🎯 今日配速熔斷機制</div>
           <div id="corr-throttle" class="corr-action-body">計算中…</div>
         </div>
-        <div class="corr-action-block">
+        <div class="corr-action-block" style="margin-bottom:0">
           <div class="corr-action-lbl">⏳ 債務拆彈預警（精準日期）</div>
           <div id="corr-debtbomb" class="corr-action-body">—</div>
         </div>
-        <div class="corr-action-block">
+        <div class="corr-action-block" style="margin-bottom:0">
           <div class="corr-action-lbl">🛌 睡前跨界行為指引</div>
           <div id="corr-bedguide" class="corr-action-body">—</div>
         </div>
-        <div class="corr-action-block">
+        <div class="corr-action-block" style="margin-bottom:0">
           <div class="corr-action-lbl">🧠 配速對齊校正</div>
           <div id="corr-align" class="corr-action-body">—</div>
         </div>
@@ -1757,6 +1756,30 @@ function renderDualTrackCard(){
     if(bodyVal) bodyVal.textContent='—';
   }
 }
+
+// Chrome 縮放偵測：devicePixelRatio 變化時重繪所有 Chart.js 圖表
+(function(){
+  var lastDPR=window.devicePixelRatio;
+  function onDPRChange(){
+    lastDPR=window.devicePixelRatio;
+    if(window.CI){Object.values(window.CI).forEach(function(c){try{c.resize();}catch(e){}});}
+    try{rebuildCorrChart();}catch(e){}
+  }
+  // matchMedia 可精確偵測 devicePixelRatio 變化（包含 Chrome 縮放）
+  function watchDPR(){
+    var mq=window.matchMedia('(resolution: '+lastDPR+'dppx)');
+    mq.addEventListener('change',function(){onDPRChange();watchDPR();},{once:true});
+  }
+  watchDPR();
+  // 備援：resize 事件
+  var resizeTimer;
+  window.addEventListener('resize',function(){
+    clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(function(){
+      if(window.CI){Object.values(window.CI).forEach(function(c){try{c.resize();}catch(e){}});}
+    },150);
+  });
+})();
 
 /* INIT */
 window._catMap=loadCatMap();
