@@ -1411,11 +1411,177 @@ ${hd.ziYear?'流年：'+hd.ziYear:''}
   btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
 }
 
+// ══════════════════════════════════════════════════════════════
+//  雙軌制綜觀聚合管線（純後端，不操作任何既有 DOM）
+//  輸出：localStorage.sas_dta  → { energyMatrix, debtDynamics, reviewCorrelation }
+// ══════════════════════════════════════════════════════════════
+function buildDualTrackAggregation() {
+  var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+  var trend7=sl.trend7||[];
+  var REST_BRICKS=['💤 午休蓄能','🌿 傍晚充能','🔋 快充小憩'];
+
+  // ── 1. 能量矩陣分佈（Energy Matrix） ──────────────────────
+  // 每日依 deepScore / remScore 分類（以 trend7 為資料視窗）
+  var MATRIX_LABELS={
+    'High-Brain-Overclock':'高效超頻日',
+    'Full-Charge':'全面充能日',
+    'Total-Defense':'低能耗防禦日',
+    'Physical-Only':'鈍感平穩日',
+    'Mixed':'混合中間態'
+  };
+  var matrixCounts={'High-Brain-Overclock':0,'Full-Charge':0,'Total-Defense':0,'Physical-Only':0,'Mixed':0};
+  var matrixDays=[];
+  trend7.forEach(function(n){
+    var deep=Math.min((n.deepP||0)/18*100,100);
+    var rem =Math.min((n.remP ||0)/22.5*100,100);
+    var cat;
+    if(deep<40&&rem>80)       cat='High-Brain-Overclock';
+    else if(deep>60&&rem>60)  cat='Full-Charge';
+    else if(deep<40&&rem<40)  cat='Total-Defense';
+    else if(deep>60&&rem<40)  cat='Physical-Only';
+    else                      cat='Mixed';
+    matrixCounts[cat]++;
+    matrixDays.push({date:n.date,deep:Math.round(deep),rem:Math.round(rem),cat:cat,label:MATRIX_LABELS[cat]});
+  });
+  var energyMatrix={windowDays:trend7.length,counts:matrixCounts,labels:MATRIX_LABELS,days:matrixDays};
+
+  // ── 2. 睡眠債動態追蹤（Debt Dynamics） ─────────────────────
+  // 以 trend7 計算累積債務；Critical 門檻 600min（10h）
+  // 「恢復行動」代理指標：durH >= 7.5（無法直接讀 bedtime 歷史）
+  var debtByDay=trend7.map(function(n){
+    var sleptMin=Math.round((n.durH||0)*60);
+    return{date:n.date,sleptMin:sleptMin,debtMin:Math.max(0,480-sleptMin),recovered:sleptMin>=450};
+  });
+  var totalDebtMin=debtByDay.reduce(function(acc,d){return acc+d.debtMin;},0);
+  var isCritical=totalDebtMin>600;
+  // 若目前是 Critical，統計視窗內實際落實「充分睡眠 ≥ 7.5h」的天數
+  var complianceWindow=isCritical?debtByDay.filter(function(d){return d.recovered;}).length:null;
+  var complianceTotal =isCritical?debtByDay.length:null;
+  var complianceRate  =complianceTotal>0?Math.round(complianceWindow/complianceTotal*100):null;
+  // 計算債務斜率（線性回歸，正值=惡化，負值=恢復中）
+  var debtSlope=null;
+  if(debtByDay.length>=3){
+    var n=debtByDay.length,sumX=0,sumY=0,sumXY=0,sumX2=0;
+    debtByDay.forEach(function(d,i){sumX+=i;sumY+=d.debtMin;sumXY+=i*d.debtMin;sumX2+=i*i;});
+    var denom=n*sumX2-sumX*sumX;
+    if(denom!==0) debtSlope=Math.round((n*sumXY-sumX*sumY)/denom*10)/10;
+  }
+  var debtDynamics={
+    totalDebtMin:Math.round(totalDebtMin),
+    isCritical:isCritical,
+    slopeMinPerDay:debtSlope,    // 正值惡化 / 負值恢復
+    slopeTrend:debtSlope===null?'insufficient':debtSlope>5?'deteriorating':debtSlope<-5?'recovering':'stable',
+    earlyBedCompliance:{         // ≥7.5h 代理「23:00前入睡」
+      rate:complianceRate,
+      achieved:complianceWindow,
+      total:complianceTotal,
+      note:'代理指標：durH≥7.5h；bedtime 歷史需由 sleep dashboard 擴充'
+    },
+    byDay:debtByDay
+  };
+
+  // ── 3. 雙軌與覆盤結果相關性（Review Correlation） ─────────
+  // 跨越最近 30 天的 review_* key，計算：
+  //   • 各 REM 分段（high/mid/low）下，pipe 壓力 ≥3（🔥 超載）的頻率
+  //   • 各 REM 分段下，覆盤主動停損（status==='skip'）的分佈比例
+  // deepScore/remScore 只在 trend7 視窗內有效，7天外補 null
+  var sleepByDate={};
+  trend7.forEach(function(n){
+    sleepByDate[n.date]={
+      deep:Math.min((n.deepP||0)/18*100,100),
+      rem :Math.min((n.remP ||0)/22.5*100,100)
+    };
+  });
+
+  var corrRows=[];
+  var todayD=new Date();
+  for(var i=29;i>=0;i--){
+    var d=new Date(todayD);d.setDate(todayD.getDate()-i);
+    var k=dkey(d);
+    var rev=null;try{rev=JSON.parse(localStorage.getItem('review_'+k)||'null');}catch(e){}
+    if(!rev)continue;
+
+    // REM score（僅 trend7 視窗內有效）
+    var sc=sleepByDate[k]||null;
+    var remSc=sc?Math.round(sc.rem):null;
+
+    // 計算該日最高 pipe 壓力分
+    var pipes=rev.pipes||[];
+    var assigns=rev.pipeAssignments||{};
+    var skipT=rev.skipTasks||[];
+    var maxPressure=0;
+    Object.keys(assigns).forEach(function(pi){
+      var tasks=(assigns[pi]||[]).filter(function(t){return!REST_BRICKS.includes(t);});
+      var pType=(pipes[parseInt(pi)]||{}).type||'';
+      var ps=tasks.reduce(function(s,t){return s+(skipT.includes(t)?2:1);},0);
+      if((pType==='low'||pType==='rest')&&tasks.length>2) ps+=2;
+      if(ps>maxPressure) maxPressure=ps;
+    });
+
+    // 覆盤停損統計
+    var items=rev.reviewItems||[];
+    var totalIt=items.length;
+    var skipIt=items.filter(function(it){return it.status==='skip';}).length;
+    var doneIt=items.filter(function(it){return it.status==='done';}).length;
+
+    corrRows.push({
+      date:k,
+      remScore:remSc,
+      maxPipePressure:maxPressure,
+      isOverloaded:maxPressure>=3,
+      totalItems:totalIt,
+      skipCount:skipIt,
+      doneCount:doneIt,
+      stopLossRate:totalIt>0?Math.round(skipIt/totalIt*100):0
+    });
+  }
+
+  // 按 REM 分段彙總
+  var tiers={high:{n:0,overloaded:0,stopLossSum:0},mid:{n:0,overloaded:0,stopLossSum:0},low:{n:0,overloaded:0,stopLossSum:0}};
+  corrRows.forEach(function(r){
+    if(r.remScore===null)return;
+    var t=r.remScore>=70?'high':r.remScore>=40?'mid':'low';
+    tiers[t].n++;
+    if(r.isOverloaded)tiers[t].overloaded++;
+    tiers[t].stopLossSum+=r.stopLossRate;
+  });
+  Object.keys(tiers).forEach(function(t){
+    var ti=tiers[t];
+    ti.overloadRate=ti.n>0?Math.round(ti.overloaded/ti.n*100):null;
+    ti.avgStopLossRate=ti.n>0?Math.round(ti.stopLossSum/ti.n):null;
+  });
+  var reviewCorrelation={
+    windowDays:30,
+    remTiers:{
+      high:{label:'REM 高檔（≥70）', ...tiers.high},
+      mid :{label:'REM 一般（40–69）',...tiers.mid },
+      low :{label:'REM 低迷（<40）',  ...tiers.low }
+    },
+    insight:{
+      overloadAtHighREM:tiers.high.overloadRate,
+      stopLossAtLowREM :tiers.low.avgStopLossRate,
+      note:'overloadRate=pipe壓力≥3的天數%；stopLossRate=reviewItems中skip%'
+    },
+    raw:corrRows
+  };
+
+  // ── 寫入 sas_dta ─────────────────────────────────────────
+  var result={
+    generatedAt:new Date().toISOString(),
+    energyMatrix:energyMatrix,
+    debtDynamics:debtDynamics,
+    reviewCorrelation:reviewCorrelation
+  };
+  try{localStorage.setItem('sas_dta',JSON.stringify(result));}catch(e){}
+  return result;
+}
+
 /* INIT */
 window._catMap=loadCatMap();
 renderCatMapTable();
 renderOv();
 initFrames();
+try{buildDualTrackAggregation();}catch(e){}
 </script>
 </body>
 </html>
