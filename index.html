@@ -74,6 +74,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
 .ctx{grid-column:1/13;grid-row:7}     /* taxonomy — full width */
 .cha{grid-column:1/13;grid-row:8}     /* HD AI */
+.cdta{grid-column:1/13;grid-row:9}    /* dual-track beta */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -196,7 +197,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .cco-inner,.ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -509,7 +510,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
-  <div class="card" id="dta-card" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
+  <div class="card cdta" id="dta-card" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
     <div class="lbl" style="margin-bottom:1.1rem">
       🧪 雙軌綜觀與行為相關性分析
       <span class="beta-badge">Beta</span>
