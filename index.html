@@ -152,6 +152,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-action-block:last-child{margin-bottom:0}
 .corr-action-lbl{font-size:.65rem;font-weight:800;color:var(--text);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.35rem}
 .corr-action-body{font-size:.72rem;color:var(--sub);line-height:1.7}
+/* BETA CARD */
+.beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
+.em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:.6rem 0}
+.em-cell{background:var(--bg2);border-radius:var(--rsm);padding:.6rem .7rem;text-align:center}
+.em-count{font-size:1.6rem;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
+.em-label{font-size:.65rem;color:var(--faint);margin-top:4px;line-height:1.4}
+.corr-row{display:flex;align-items:center;gap:10px;padding:.55rem .65rem;background:var(--bg2);border-radius:var(--rsm);margin-bottom:6px}
+.corr-row:last-child{margin-bottom:0}
+.corr-icon{font-size:1rem;flex-shrink:0;width:24px;text-align:center}
+.corr-body{flex:1;font-size:.72rem;color:var(--sub);line-height:1.6}
+.corr-val{font-size:.9rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0}
 
 /* TAXONOMY */
 .ctx-inner{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:.5rem}
@@ -494,6 +505,54 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div class="lbl">AI 解析結果</div>
         <div class="hd-result" id="hd-result">點擊「生成今日解析」，AI 將根據你的人類圖設定給出今日行動策略。</div>
       </div>
+    </div>
+  </div>
+
+  <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
+  <div class="card" id="dta-card" style="border:1px dashed rgba(139,120,152,.4);background:var(--card)">
+    <div class="lbl" style="margin-bottom:.9rem">
+      🧪 雙軌綜觀與行為相關性分析
+      <span class="beta-badge">Beta</span>
+    </div>
+
+    <!-- 能量矩陣 -->
+    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.3rem">⬡ 能量矩陣分佈（近 7 日）</div>
+    <div class="em-grid">
+      <div class="em-cell">
+        <div class="em-count" id="dta-overclock" style="color:var(--rem)">—</div>
+        <div class="em-label">🧠💥 高效超頻日<br>物理低迷＋認知高檔</div>
+      </div>
+      <div class="em-cell">
+        <div class="em-count" id="dta-fullcharge" style="color:var(--ok)">—</div>
+        <div class="em-label">⚡ 全面充能日<br>物理＋認知雙高</div>
+      </div>
+      <div class="em-cell">
+        <div class="em-count" id="dta-defense" style="color:var(--faint)">—</div>
+        <div class="em-label">🛡️ 低能耗防禦日<br>物理＋認知雙低</div>
+      </div>
+    </div>
+    <div id="dta-matrix-note" style="font-size:.65rem;color:var(--faint);margin-bottom:.9rem;line-height:1.5"></div>
+
+    <!-- 決策相關性 -->
+    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.45rem">🔬 決策相關性追蹤（近 30 日）</div>
+    <div class="corr-row">
+      <div class="corr-icon">🧠</div>
+      <div class="corr-body">
+        <div style="font-size:.65rem;font-weight:700;color:var(--text);margin-bottom:2px">大腦超頻日（REM &gt; 80）· Pipe 🔥 超載頻率</div>
+        <div id="dta-corr-brain">—</div>
+      </div>
+      <div class="corr-val" id="dta-corr-brain-val" style="color:var(--warn)">—</div>
+    </div>
+    <div class="corr-row">
+      <div class="corr-icon">🔋</div>
+      <div class="corr-body">
+        <div style="font-size:.65rem;font-weight:700;color:var(--text);margin-bottom:2px">肉體低迷日（Deep &lt; 40）· 覆盤主動停損率</div>
+        <div id="dta-corr-body">—</div>
+      </div>
+      <div class="corr-val" id="dta-corr-body-val" style="color:var(--info)">—</div>
+    </div>
+    <div style="margin-top:.6rem;font-size:.62rem;color:var(--faint);line-height:1.6">
+      ⚠ Beta 觀察期：數據視窗尚短，趨勢需累積 2–4 週以上方具統計意義。Deep/REM score = 睡眠各分期比例除以目標比例，滿分 100。
     </div>
   </div>
 
@@ -1503,7 +1562,8 @@ function buildDualTrackAggregation() {
 
     // REM score（僅 trend7 視窗內有效）
     var sc=sleepByDate[k]||null;
-    var remSc=sc?Math.round(sc.rem):null;
+    var remSc =sc?Math.round(sc.rem ):null;
+    var deepSc=sc?Math.round(sc.deep):null;
 
     // 計算該日最高 pipe 壓力分
     var pipes=rev.pipes||[];
@@ -1527,6 +1587,7 @@ function buildDualTrackAggregation() {
     corrRows.push({
       date:k,
       remScore:remSc,
+      deepScore:deepSc,
       maxPipePressure:maxPressure,
       isOverloaded:maxPressure>=3,
       totalItems:totalIt,
@@ -1576,12 +1637,59 @@ function buildDualTrackAggregation() {
   return result;
 }
 
+function renderDualTrackCard(){
+  var dta={};try{dta=JSON.parse(localStorage.getItem('sas_dta')||'{}');}catch(e){}
+  var em=dta.energyMatrix||{};
+  var rc=dta.reviewCorrelation||{};
+
+  // ── 能量矩陣 ──
+  var counts=em.counts||{};
+  var set=function(id,v){var el=$(id);if(el)el.textContent=v!==undefined?v:'—';};
+  set('dta-overclock',counts['High-Brain-Overclock']||0);
+  set('dta-fullcharge',counts['Full-Charge']||0);
+  set('dta-defense',counts['Total-Defense']||0);
+  var noteEl=$('dta-matrix-note');
+  if(noteEl){
+    var days=em.days||[];
+    var other=(em.windowDays||0)-(counts['High-Brain-Overclock']||0)-(counts['Full-Charge']||0)-(counts['Total-Defense']||0)-(counts['Physical-Only']||0);
+    noteEl.textContent='視窗 '+em.windowDays+' 日 · 鈍感平穩 '+(counts['Physical-Only']||0)+' 日 · 混合中間態 '+(counts['Mixed']||0)+' 日';
+  }
+
+  // ── 決策相關性 ──
+  var raw=rc.raw||[];
+
+  // 1. 🧠>80：計算 pipe 超載率
+  var brainRows=raw.filter(function(r){return r.remScore!==null&&r.remScore>80&&r.totalItems>0;});
+  var brainEl=$('dta-corr-brain'),brainVal=$('dta-corr-brain-val');
+  if(brainRows.length>=1){
+    var overloadedN=brainRows.filter(function(r){return r.isOverloaded;}).length;
+    var pct=Math.round(overloadedN/brainRows.length*100);
+    if(brainEl) brainEl.textContent='共 '+brainRows.length+' 天 REM>80，其中 '+overloadedN+' 天觸發 🔥 超載';
+    if(brainVal){ brainVal.textContent=pct+'%'; brainVal.style.color=pct>=50?'var(--danger)':pct>=25?'var(--warn)':'var(--ok)';}
+  }else{
+    if(brainEl) brainEl.textContent='近 30 日內 REM>80 天數不足（需 ≥1 天含覆盤資料）';
+    if(brainVal) brainVal.textContent='—';
+  }
+
+  // 2. 🔋<40：計算覆盤停損率
+  var bodyRows=raw.filter(function(r){return r.deepScore!==null&&r.deepScore<40&&r.totalItems>0;});
+  var bodyEl=$('dta-corr-body'),bodyVal=$('dta-corr-body-val');
+  if(bodyRows.length>=1){
+    var avgStop=Math.round(bodyRows.reduce(function(a,r){return a+r.stopLossRate;},0)/bodyRows.length);
+    if(bodyEl) bodyEl.textContent='共 '+bodyRows.length+' 天 Deep<40，覆盤平均停損率';
+    if(bodyVal){ bodyVal.textContent=avgStop+'%'; bodyVal.style.color=avgStop>=40?'var(--ok)':avgStop>=20?'var(--warn)':'var(--faint)';}
+  }else{
+    if(bodyEl) bodyEl.textContent='近 30 日內 Deep<40 天數不足（需 ≥1 天含覆盤資料）';
+    if(bodyVal) bodyVal.textContent='—';
+  }
+}
+
 /* INIT */
 window._catMap=loadCatMap();
 renderCatMapTable();
 renderOv();
 initFrames();
-try{buildDualTrackAggregation();}catch(e){}
+try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
 </script>
 </body>
 </html>
