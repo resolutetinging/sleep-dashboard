@@ -379,43 +379,45 @@
   </div>
 
   <!-- DAILY SUMMARY BANNER -->
-  <div id="dailySummary" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;align-items:stretch;margin-bottom:4px">
+  <div id="dailySummary" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:flex;align-items:stretch;gap:0;margin-bottom:4px">
 
-    <!-- LEFT：動能指標 -->
-    <div style="padding-right:20px;border-right:1px solid var(--border);display:flex;align-items:center;gap:0;">
+    <!-- 左叢：單夜 | 3夜加權 | 雙軌能耗 -->
+    <div style="display:flex;align-items:center;gap:0;flex-shrink:0;">
+      <!-- 單夜 -->
       <div style="padding-right:14px;border-right:1px solid var(--border);text-align:center;">
         <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">單夜</div>
         <div id="ds-single" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
         <div style="font-size:9.5px;color:var(--text-dim);margin-top:4px">昨晚</div>
       </div>
-      <div style="padding-left:14px;text-align:center;">
+      <!-- 3夜加權 -->
+      <div style="padding:0 14px;border-right:1px solid var(--border);text-align:center;">
         <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">3夜加權</div>
         <div id="ds-score" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
         <div id="ds-label" style="font-size:9.5px;font-weight:600;margin-top:4px">—</div>
       </div>
-    </div>
-
-    <!-- MIDDLE：雙軌能耗現況 -->
-    <div style="padding:0 20px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;">
-      <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">雙軌能耗現況</div>
-      <!-- 物理續航 -->
-      <div class="ds-track-row">
-        <span class="ds-track-icon">🔋</span>
-        <div class="ds-track-label">物理續航<br><span style="font-size:9px;">Deep + 時長</span></div>
-        <div id="ds-deep" class="ds-track-score" style="color:var(--deep)">—</div>
-        <span id="ds-deep-badge" class="ds-badge">—</span>
-      </div>
-      <!-- 認知應變 -->
-      <div class="ds-track-row">
-        <span class="ds-track-icon">🧠</span>
-        <div class="ds-track-label">認知應變<br><span style="font-size:9px;">REM + 穩定</span></div>
-        <div id="ds-rem" class="ds-track-score" style="color:var(--rem)">—</div>
-        <span id="ds-rem-badge" class="ds-badge">—</span>
+      <!-- 雙軌能耗 -->
+      <div style="padding-left:14px;display:flex;flex-direction:column;justify-content:center;">
+        <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">雙軌能耗</div>
+        <div class="ds-track-row">
+          <span class="ds-track-icon">🔋</span>
+          <div class="ds-track-label">物理續航<br><span style="font-size:9px;">Deep</span></div>
+          <div id="ds-deep" class="ds-track-score" style="color:var(--deep)">—</div>
+          <span id="ds-deep-badge" class="ds-badge">—</span>
+        </div>
+        <div class="ds-track-row">
+          <span class="ds-track-icon">🧠</span>
+          <div class="ds-track-label">認知應變<br><span style="font-size:9px;">REM</span></div>
+          <div id="ds-rem" class="ds-track-score" style="color:var(--rem)">—</div>
+          <span id="ds-rem-badge" class="ds-badge">—</span>
+        </div>
       </div>
     </div>
 
-    <!-- RIGHT：戰術診斷 -->
-    <div style="padding-left:20px;display:flex;flex-direction:column;justify-content:center;">
+    <!-- 彈性空白 -->
+    <div style="flex:1;"></div>
+
+    <!-- 右欄：戰術診斷 -->
+    <div style="border-left:1px solid var(--border);padding-left:20px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;min-width:160px;">
       <div class="ds-right-item">
         <div class="ds-right-key">⏳ 體能續航</div>
         <div id="ds-endurance-right" class="ds-right-val">—</div>
@@ -1881,7 +1883,7 @@ function updateCombatPower(totalDebt) {
     dirLabel = '小幅下滑'; gapColor = '#5c7a96';
     interpText = '今晚小幅下滑，近期底子仍在 → 今晚優先恢復';
   }
-  const gapText = `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;"><span style="font-size:15px;line-height:1;">${arrow}</span><span style="font-weight:700;font-size:12.5px;">${dirLabel}</span><span style="font-size:10px;color:var(--text-dim);">差距 ${diffSign} 分</span></div><div style="font-size:10.5px;color:var(--text-dim);margin-bottom:4px;">昨晚 <b style="color:${gapColor};">${singleScore}</b> 分 &nbsp;·&nbsp; 3夜加權 <b style="color:var(--text);">${score}</b> 分</div><div style="font-size:10.5px;">${interpText}</div>`;
+  const gapText = `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;"><span style="font-size:15px;line-height:1;">${arrow}</span><span style="font-weight:600;font-size:13px;">${dirLabel}</span><span style="font-size:10px;color:var(--text-dim);">差距 ${diffSign} 分</span></div><div style="font-size:10.5px;color:var(--text-dim);margin-bottom:4px;">昨晚 <b style="color:${gapColor};">${singleScore}</b> 分 &nbsp;·&nbsp; 3夜加權 <b style="color:var(--text);">${score}</b> 分</div><div style="font-size:10.5px;">${interpText}</div>`;
   const gapEl = document.getElementById('combatGap');
   gapEl.innerHTML = gapText;
   gapEl.style.color = gapColor;
