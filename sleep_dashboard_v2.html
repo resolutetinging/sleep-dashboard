@@ -1624,8 +1624,9 @@ function updateSocialJetlag() {
 }
 
 function updateSleepDebt(allData) {
-  // Use last 7 days from full summary (not filtered)
-  const last7 = RAW.summary.slice(-7);
+  const excludeWE = document.getElementById('excludeWeekend').checked;
+  const base = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
+  const last7 = base.slice(-7);
   const TARGET = 480; // 8 hours in minutes
   const TARGET_MIN = 390; // 6.5 hours
 
@@ -1694,7 +1695,7 @@ function updateSleepDebt(allData) {
   const weekStart = startOfWeek.toISOString().slice(0, 10);
   const today = now.toISOString().slice(0, 10);
   let weekTotal = 0, weekDays = 0;
-  RAW.summary.forEach(d => {
+  base.forEach(d => {
     if (d.date >= weekStart && d.date <= today) { weekTotal += d.total_min; weekDays++; }
   });
   const WEEK_TARGET = 49 * 60;
@@ -1939,8 +1940,8 @@ function buildWeightedHistory() {
     const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
     const raw = nights.reduce((sum, n, wi) => sum + _nightRawW(n) * wts[wi], 0);
     const prev7 = s.slice(Math.max(0, i - 6), i + 1);
-    const avgTot = prev7.reduce((a, n) => a + (n.deep_min + n.rem_min + n.core_min), 0) / prev7.length;
-    const penalty = Math.max(0, (Math.max(0, 480 - avgTot) / 60 - 3) * 2);
+    const totalDebt = prev7.reduce((a, n) => a + Math.max(0, 480 - (n.deep_min + n.rem_min + n.core_min)), 0);
+    const penalty = Math.max(0, (totalDebt / 60 - 3) * 2);
     return { date: d.date, score: Math.round(Math.max(0, raw - penalty)) };
   });
 }
