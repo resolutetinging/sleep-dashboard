@@ -2186,6 +2186,8 @@ saveSleepToLocalStorage();
 buildWeightedHistory();
 renderWeightedChart();
 runWeightedAI();
+// Chart.js 縮放重繪（DPR 變化偵測）
+(function(){var lastDPR=window.devicePixelRatio;function redrawCharts(){if(window.Chart&&window.Chart.instances){Object.values(window.Chart.instances).forEach(function(c){try{c.resize();}catch(e){}});}}function watchDPR(){var mq=window.matchMedia('(resolution: '+lastDPR+'dppx)');mq.addEventListener('change',function(){lastDPR=window.devicePixelRatio;redrawCharts();watchDPR();},{once:true});}watchDPR();var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(redrawCharts,150);});})();
 </script>
 </body>
 </html>
