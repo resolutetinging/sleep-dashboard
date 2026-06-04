@@ -531,8 +531,7 @@
   </div>
 
   <!-- SLEEP DEBT ROW -->
-  <div class="two-col">
-    <div class="panel" id="debtPanel">
+  <div class="panel" id="debtPanel">
       <div class="panel-header">
         <div>
           <div class="panel-title">睡眠債 · 過去 7 天</div>
@@ -547,7 +546,6 @@
       <div id="debtSummary" style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
       <div id="weekBank" style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7"></div>
     </div>
-  </div>
 
   <!-- COMBAT POWER INDEX（全寬） -->
   <div class="panel">
@@ -574,17 +572,19 @@
     <div style="display:flex;margin:0 0 6px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;">
       <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid var(--border);background:rgba(92,122,150,.06);">
         <div style="font-size:10px;color:var(--deep);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">🔋 物理續航</div>
-        <div id="card-deep" style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;color:var(--deep);">—</div>
+        <div id="combat-deep-score" style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;color:var(--deep);">—</div>
         <div style="font-size:9.5px;color:var(--text-dim);margin-top:4px;">Deep 基礎能量</div>
       </div>
       <div style="flex:1;text-align:center;padding:12px 8px;background:rgba(139,120,152,.06);">
         <div style="font-size:10px;color:var(--rem);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">🧠 認知應變</div>
-        <div id="card-rem" style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;color:var(--rem);">—</div>
+        <div id="combat-rem-score" style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;color:var(--rem);">—</div>
         <div style="font-size:9.5px;color:var(--text-dim);margin-top:4px;">REM 邏輯輸出</div>
       </div>
     </div>
       <!-- 差距解讀 -->
       <div id="combatGap" style="text-align:center;padding:7px 12px;background:var(--surface2);border-radius:8px;font-size:11px;line-height:1.6;margin-bottom:8px;">—</div>
+      <!-- 四值綜合分析 -->
+      <div id="combatQuadAnalysis" style="margin-bottom:8px;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.8;"></div>
       <div id="combatLabel" style="font-size:13px;font-weight:600;margin:4px 0 2px;text-align:center;">—</div>
       <div id="combatSub" style="font-size:11px;color:var(--text-dim);text-align:center;">—</div>
       <div id="combatEndurance" style="margin-top:6px;font-size:11.5px;text-align:center;font-weight:500;">—</div>
@@ -1903,9 +1903,30 @@ function updateCombatPower(totalDebt) {
   if(dBEl){ const[bc,bt]=_trackBadge(ds); dBEl.className='ds-badge '+bc; dBEl.textContent=bt; }
   if(rEl){ rEl.textContent=rs; }
   if(rBEl){ const[bc,bt]=_trackBadge(rs); rBEl.className='ds-badge '+bc; rBEl.textContent=bt; }
-  const cdEl=document.getElementById('card-deep'), crEl=document.getElementById('card-rem');
+  const cdEl=document.getElementById('combat-deep-score'), crEl=document.getElementById('combat-rem-score');
   if(cdEl) cdEl.textContent=ds;
   if(crEl) crEl.textContent=rs;
+
+  // 四值綜合分析
+  const qaEl=document.getElementById('combatQuadAnalysis');
+  if(qaEl){
+    const single=singleScore, weighted=score, deep=ds, rem=rs;
+    const lines=[];
+    // 動能狀態
+    if(weighted>=70&&single>=70) lines.push('動能指數雙穩定：加權與單夜均在水位線以上，今日可全力輸出。');
+    else if(single>weighted+15) lines.push(`單夜急彈（${single} vs 加權${weighted}）：昨晚短暫回彈，前兩天虧損仍在——實際體力比感覺的低，勿透支。`);
+    else if(single>weighted+4) lines.push(`單夜回彈（${single} vs 加權${weighted}）：身體在追回虧損，以加權${weighted}為今日真實底力。`);
+    else if(weighted>single+4) lines.push(`動能下滑（單夜${single} vs 加權${weighted}）：昨晚表現不如近期均值，今晚優先補眠。`);
+    else lines.push(`動能持平（${weighted}）：近期睡眠穩定，今日以加權值為準。`);
+    // 雙軌解讀
+    if(deep>=70&&rem>=70) lines.push('🔋🧠 雙軌齊備：體能與認知同時在線，適合高強度任務。');
+    else if(deep<40&&rem>=70) lines.push(`🔋↓🧠↑ 體虛腦清：物理續航低（${deep}），肌肉/代謝疲勞明顯；但 REM 充足（${rem}），邏輯應變仍可依賴——優先坐姿腦力任務，迴避體力消耗。`);
+    else if(deep>=70&&rem<40) lines.push(`🔋↑🧠↓ 體能充電腦欠費：深度睡眠到位（${deep}），肉體疲勞已消；但 REM 不足（${rem}），語言組織與即時應變退化——迴避高壓表達任務（面試、簡報），以閱讀/整理性工作為主。`);
+    else if(deep<40&&rem<40) lines.push(`🔋↓🧠↓ 雙軌低迷（物理${deep} / 認知${rem}）：今日進入保守模式，以最低耗能任務為主，強制排入午休。`);
+    else if(deep<55) lines.push(`🔋 物理續航偏低（${deep}）：下午可能出現身體沉重感，建議安排短暫午休。`);
+    else if(rem<55) lines.push(`🧠 認知應變偏弱（${rem}）：語言與應變稍微退化，重要決策建議早上完成。`);
+    qaEl.innerHTML=lines.map(l=>`<div>・${l}</div>`).join('');
+  }
 
   document.getElementById('combatLabel').textContent = label;
   document.getElementById('combatLabel').style.color = color;
