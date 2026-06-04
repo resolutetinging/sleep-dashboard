@@ -143,6 +143,21 @@
   .toggle input:checked + .toggle-slider { background:var(--accent); }
   .toggle input:checked + .toggle-slider::before { transform:translateX(16px); }
 
+  /* DUAL-TRACK BADGES */
+  .ds-badge { display:inline-block; font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:10px; letter-spacing:.03em; margin-left:6px; }
+  .ds-badge-low  { background:rgba(192,57,43,.13); color:#c0392b; }
+  .ds-badge-mid  { background:rgba(122,114,104,.12); color:#7a7268; }
+  .ds-badge-high { background:rgba(94,143,126,.15); color:#3a7060; }
+  .ds-track-row  { display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); }
+  .ds-track-row:last-child { border-bottom:none; }
+  .ds-track-icon { font-size:16px; flex-shrink:0; }
+  .ds-track-label{ font-size:10px; color:var(--text-dim); flex:1; line-height:1.4; }
+  .ds-track-score{ font-size:26px; font-weight:700; font-family:'DM Mono',monospace; line-height:1; }
+  .ds-right-item { padding:7px 0; border-bottom:1px solid var(--border); }
+  .ds-right-item:last-child { border-bottom:none; }
+  .ds-right-key  { font-size:9.5px; font-family:'DM Mono',monospace; letter-spacing:.07em; text-transform:uppercase; color:var(--text-dim); margin-bottom:3px; }
+  .ds-right-val  { font-size:12px; font-weight:600; line-height:1.5; }
+
   /* METRICS PANEL */
   .metrics-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   .metric-card {
@@ -207,15 +222,11 @@
       padding:14px 16px !important;
     }
     #dailySummary > div:first-child,
-    #dailySummary > div:last-child {
-      border:none !important;
-      padding:0 !important;
-      text-align:left !important;
-    }
-    #dailySummary > div:first-child {
-      display:flex; align-items:center; gap:14px;
-    }
-    #ds-score, #ds-single { font-size:36px !important; line-height:1 !important; }
+    #dailySummary { grid-template-columns:1fr !important; gap:14px !important; }
+    #ds-score, #ds-single { font-size:34px !important; line-height:1 !important; }
+    .ds-dual-col { display:flex; gap:12px; }
+    .ds-track-row { gap:6px !important; }
+    .ds-track-score { font-size:22px !important; }
 
     /* Stat cards: 2 col */
     .stats-row { grid-template-columns:repeat(2,1fr); gap:10px; }
@@ -368,30 +379,62 @@
   </div>
 
   <!-- DAILY SUMMARY BANNER -->
-  <div id="dailySummary" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;margin-bottom:4px">
-    <!-- Combat score dual -->
-    <div style="text-align:center;padding-right:20px;border-right:1px solid var(--border);display:flex;gap:0;align-items:center;">
-      <div style="padding-right:14px;border-right:1px solid var(--border);">
-        <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">單夜</div>
+  <div id="dailySummary" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;align-items:stretch;margin-bottom:4px">
+
+    <!-- LEFT：動能指標 -->
+    <div style="padding-right:20px;border-right:1px solid var(--border);display:flex;align-items:center;gap:0;">
+      <div style="padding-right:14px;border-right:1px solid var(--border);text-align:center;">
+        <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">單夜</div>
         <div id="ds-single" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px">昨晚</div>
+        <div style="font-size:9.5px;color:var(--text-dim);margin-top:4px">昨晚</div>
       </div>
-      <div style="padding-left:14px;">
-        <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">3夜加權</div>
+      <div style="padding-left:14px;text-align:center;">
+        <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">3夜加權</div>
         <div id="ds-score" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
-        <div id="ds-label" style="font-size:10px;font-weight:600;margin-top:4px">—</div>
+        <div id="ds-label" style="font-size:9.5px;font-weight:600;margin-top:4px">—</div>
       </div>
     </div>
-    <!-- Main message -->
-    <div style="padding:0 4px">
-      <div id="ds-alert" style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">—</div>
-      <div id="ds-action" style="font-size:12px;color:var(--text-dim);line-height:1.6">—</div>
+
+    <!-- MIDDLE：雙軌能耗現況 -->
+    <div style="padding:0 20px;border-right:1px solid var(--border);">
+      <div style="font-size:9.5px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">雙軌能耗現況</div>
+      <!-- 物理續航 -->
+      <div class="ds-track-row">
+        <span class="ds-track-icon">🔋</span>
+        <div class="ds-track-label">物理續航<br><span style="font-size:9px;">Deep + 時長</span></div>
+        <div id="ds-deep" class="ds-track-score" style="color:var(--deep)">—</div>
+        <span id="ds-deep-badge" class="ds-badge">—</span>
+      </div>
+      <!-- 認知應變 -->
+      <div class="ds-track-row">
+        <span class="ds-track-icon">🧠</span>
+        <div class="ds-track-label">認知應變<br><span style="font-size:9px;">REM + 穩定</span></div>
+        <div id="ds-rem" class="ds-track-score" style="color:var(--rem)">—</div>
+        <span id="ds-rem-badge" class="ds-badge">—</span>
+      </div>
     </div>
-    <!-- Date -->
-    <div style="text-align:right;padding-left:20px;border-left:1px solid var(--border)">
-      <div style="font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">數據日期</div>
-      <div id="ds-date" style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace">—</div>
-      <div id="ds-dow" style="font-size:11px;color:var(--text-dim);margin-top:2px">—</div>
+
+    <!-- RIGHT：戰術診斷 -->
+    <div style="padding-left:20px;display:flex;flex-direction:column;justify-content:center;">
+      <div class="ds-right-item">
+        <div class="ds-right-key">⏳ 體能續航</div>
+        <div id="ds-endurance-right" class="ds-right-val">—</div>
+      </div>
+      <div class="ds-right-item">
+        <div class="ds-right-key">💳 累積睡眠債</div>
+        <div id="ds-debt-right" class="ds-right-val">—</div>
+      </div>
+      <div class="ds-right-item">
+        <div class="ds-right-key">🌙 今晚方針</div>
+        <div id="ds-action" style="font-size:11.5px;color:var(--text-dim);line-height:1.55">—</div>
+      </div>
+    </div>
+
+    <!-- hidden: keep IDs alive for updateDailySummary -->
+    <div style="display:none">
+      <div id="ds-alert">—</div>
+      <div id="ds-date">—</div>
+      <div id="ds-dow">—</div>
     </div>
   </div>
 
@@ -541,7 +584,17 @@
           <span style="font-size:9px;">▸</span> 公式說明 &amp; 差距解讀定義
         </summary>
         <div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:10.5px;color:var(--text-dim);line-height:1.9;">
-          <div><b style="color:var(--text);">單夜戰力</b> = 昨晚 deep% ÷ 18 × 0.7 + rem% ÷ 22.5 × 0.3 → 反映單次睡眠品質，敏感、即時</div>
+          <!-- 雙軌定義 -->
+          <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+            <div style="margin-bottom:4px;"><b style="color:var(--deep);">🔋 物理續航力（Deep 基礎能量）</b></div>
+            <div>修復物理肉體與代謝。Deep 睡眠不足 → 肌肉疲勞無法消除、免疫系統修復受阻、白天身體沉重。數值低代表肉體疲憊，即使精神尚可也容易在下午崩潰。</div>
+          </div>
+          <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+            <div style="margin-bottom:4px;"><b style="color:var(--rem);">🧠 認知應變力（REM 邏輯輸出）</b></div>
+            <div>主導邏輯、語言與高壓應變。REM 是大腦整合記憶、維持情緒穩定的核心階段。若此值高檔，代表大腦具備超頻代償實力，能順利通關高認知任務（如面試、開發）。REM 不足時語言組織與即時應變明顯退化。</div>
+          </div>
+          <!-- 公式 -->
+          <div><b style="color:var(--text);">單夜戰力</b> = deep% ÷ 18 × 0.7 + rem% ÷ 22.5 × 0.3 → 反映單次睡眠品質，敏感、即時</div>
           <div><b style="color:var(--text);">3夜加權</b> = 今晚×60% + 昨晚×30% + 前晚×10% → 反映近期睡眠動能，較穩定</div>
           <div style="margin-top:6px;"><b style="color:var(--text);">差距解讀：</b></div>
           <div>· 差距 &lt; 5：睡眠穩定，兩值一致，任一為準</div>
@@ -1504,6 +1557,19 @@ function updateDailySummary(totalDebt) {
 
   document.getElementById('ds-date').textContent = last.date;
   document.getElementById('ds-dow').textContent = `星期${dow}`;
+
+  // 右欄：累積睡眠債
+  const drEl = document.getElementById('ds-debt-right');
+  if(drEl){
+    const debtMin = Math.round(totalDebt);
+    const debtAbs = Math.abs(debtMin);
+    const dh = Math.floor(debtAbs/60), dm = debtAbs%60;
+    const debtStr = dh>0 ? `${dh}h ${dm}m` : `${dm}m`;
+    const debtColor = debtMin>300?'#c0392b':debtMin>0?'#e67e22':'#5e8f7e';
+    drEl.innerHTML = debtMin>0
+      ? `<span style="color:${debtColor}">−${debtStr}</span>`
+      : `<span style="color:#5e8f7e">+${debtStr} 盈餘</span>`;
+  }
 }
 
 function updateSocialJetlag() {
@@ -1811,6 +1877,22 @@ function updateCombatPower(totalDebt) {
   try{localStorage.setItem('sas_endurance', endTimeStr);}catch(e){}
   document.getElementById('combatEndurance').textContent = `體能續航至 ${endTimeStr}`;
   document.getElementById('combatEndurance').style.color = endColor;
+  // 右欄續航
+  const erEl = document.getElementById('ds-endurance-right');
+  if(erEl){ erEl.textContent = `至 ${endTimeStr}`; erEl.style.color = endColor; }
+  // 雙軌分數
+  function _trackBadge(s){
+    if(s>=70) return ['ds-badge-high','🔥 高檔'];
+    if(s>=40) return ['ds-badge-mid','→ 一般'];
+    return ['ds-badge-low','⚠️ 低迷'];
+  }
+  const dEl=document.getElementById('ds-deep'), dBEl=document.getElementById('ds-deep-badge');
+  const rEl=document.getElementById('ds-rem'),  rBEl=document.getElementById('ds-rem-badge');
+  const ds=Math.round(deepScore), rs=Math.round(remScore);
+  if(dEl){ dEl.textContent=ds; }
+  if(dBEl){ const[bc,bt]=_trackBadge(ds); dBEl.className='ds-badge '+bc; dBEl.textContent=bt; }
+  if(rEl){ rEl.textContent=rs; }
+  if(rBEl){ const[bc,bt]=_trackBadge(rs); rBEl.className='ds-badge '+bc; rBEl.textContent=bt; }
 
   document.getElementById('combatLabel').textContent = label;
   document.getElementById('combatLabel').style.color = color;
