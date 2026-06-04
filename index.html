@@ -156,9 +156,22 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 /* BETA CARD */
 .beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
 .em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.75rem 0 1rem}
-.em-cell{background:var(--bg2);border-radius:var(--rsm);padding:1rem .9rem;text-align:center}
+.em-cell{background:var(--bg2);border-radius:var(--rsm);padding:1rem .9rem;text-align:center;display:flex;flex-direction:column}
 .em-count{font-size:2rem;font-weight:700;font-family:'DM Mono',monospace;line-height:1;margin-bottom:6px}
-.em-label{font-size:.68rem;color:var(--faint);line-height:1.55}
+.em-label{font-size:.68rem;color:var(--faint);line-height:1.55;margin-bottom:auto}
+.em-diag{margin-top:.65rem;padding:.45rem .6rem;border-radius:6px;font-size:.64rem;line-height:1.55;text-align:left;background:rgba(40,38,32,.05);color:var(--sub)}
+/* accordion */
+.dta-acc-btn{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:.68rem;color:var(--faint);padding:.25rem 0;font-family:inherit;margin-top:.3rem}
+.dta-acc-btn:hover{color:var(--sub)}
+.dta-acc-arrow{display:inline-block;transition:transform .25s ease;font-style:normal;font-size:.6rem}
+.dta-acc-btn.open .dta-acc-arrow{transform:rotate(90deg)}
+.dta-acc-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.dta-acc-body.open{max-height:600px}
+.dta-def-item{padding:.6rem 0;border-bottom:.5px solid var(--border)}
+.dta-def-item:last-child{border-bottom:none;padding-bottom:0}
+.dta-def-title{font-size:.73rem;font-weight:700;color:var(--text);margin-bottom:.35rem}
+.dta-def-row{font-size:.68rem;color:var(--sub);line-height:1.65;display:flex;gap:6px}
+.dta-def-key{font-weight:700;color:var(--faint);flex-shrink:0;min-width:52px}
 .corr-row{display:flex;align-items:flex-start;gap:12px;padding:.75rem .85rem;background:var(--bg2);border-radius:var(--rsm);margin-bottom:8px}
 .corr-row:last-child{margin-bottom:0}
 .corr-icon{font-size:1.1rem;flex-shrink:0;width:26px;text-align:center;padding-top:1px}
@@ -479,17 +492,44 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="em-cell">
         <div class="em-count" id="dta-overclock" style="color:var(--rem)">—</div>
         <div class="em-label">🧠💥 高效超頻日<br>物理低迷＋認知高檔</div>
+        <div class="em-diag" id="dta-diag-overclock"></div>
       </div>
       <div class="em-cell">
         <div class="em-count" id="dta-fullcharge" style="color:var(--ok)">—</div>
         <div class="em-label">⚡ 全面充能日<br>物理＋認知雙高</div>
+        <div class="em-diag" id="dta-diag-fullcharge"></div>
       </div>
       <div class="em-cell">
         <div class="em-count" id="dta-defense" style="color:var(--faint)">—</div>
         <div class="em-label">🛡️ 低能耗防禦日<br>物理＋認知雙低</div>
+        <div class="em-diag" id="dta-diag-defense"></div>
       </div>
     </div>
-    <div id="dta-matrix-note" style="font-size:.65rem;color:var(--faint);margin-bottom:.9rem;line-height:1.5"></div>
+    <div id="dta-matrix-note" style="font-size:.65rem;color:var(--faint);margin-bottom:.5rem;line-height:1.5"></div>
+
+    <!-- Accordion：定義說明與健康模式 -->
+    <button class="dta-acc-btn" id="dta-acc-btn" onclick="dtaToggleAcc()">
+      <i class="dta-acc-arrow">▶</i> 📖 查看雙軌分類定義與健康模式建議
+    </button>
+    <div class="dta-acc-body" id="dta-acc-body">
+      <div style="padding:.7rem 0 .3rem">
+        <div class="dta-def-item">
+          <div class="dta-def-title">🧠💥 高效超頻日（物理低迷 ＋ 認知高檔）</div>
+          <div class="dta-def-row"><span class="dta-def-key">分類意義</span>「軟體強行代償硬體」，Deep 雖低但 REM 飽和，大腦 CPU 具備高強度戰鬥（面試/開發）的超頻實力。</div>
+          <div class="dta-def-row" style="margin-top:.3rem"><span class="dta-def-key">健康模式</span>7 天內上限 3–4 天。超頻完成後後半天水管必須主動減載，讓大腦軟體退火。</div>
+        </div>
+        <div class="dta-def-item">
+          <div class="dta-def-title">⚡ 全面充能日（物理 ＋ 認知雙高）</div>
+          <div class="dta-def-row"><span class="dta-def-key">分類意義</span>「黃金產能期」，肉體與大腦同步充飽電，產線承載力與意志力最高。</div>
+          <div class="dta-def-row" style="margin-top:.3rem"><span class="dta-def-key">健康模式</span>一週理想目標 2–3 天。此日適合攻堅積木池中最高能耗的「大魔王任務」。</div>
+        </div>
+        <div class="dta-def-item">
+          <div class="dta-def-title">🛡️ 低能耗防禦日（物理 ＋ 認知雙低）</div>
+          <div class="dta-def-row"><span class="dta-def-key">分類意義</span>「系統強制全面減載」，通常在連續超頻或高額睡眠債（>10h）後觸發，機台過熱。</div>
+          <div class="dta-def-row" style="margin-top:.3rem"><span class="dta-def-key">健康模式</span>一週理想目標 1–2 天（不該為 0 天）。此日白天水管果斷啟動【🚫不做】，晚上 23:00 前躺平回補睡眠債。</div>
+        </div>
+      </div>
+    </div>
 
     <!-- 決策相關性 -->
     <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.6rem;margin-top:.2rem">🔬 決策相關性追蹤（近 30 日）</div>
@@ -1640,6 +1680,13 @@ function buildDualTrackAggregation() {
   return result;
 }
 
+function dtaToggleAcc(){
+  var btn=$('dta-acc-btn'),body=$('dta-acc-body');
+  if(!btn||!body)return;
+  var open=body.classList.toggle('open');
+  btn.classList.toggle('open',open);
+}
+
 function renderDualTrackCard(){
   var dta={};try{dta=JSON.parse(localStorage.getItem('sas_dta')||'{}');}catch(e){}
   var em=dta.energyMatrix||{};
@@ -1648,14 +1695,40 @@ function renderDualTrackCard(){
   // ── 能量矩陣 ──
   var counts=em.counts||{};
   var set=function(id,v){var el=$(id);if(el)el.textContent=v!==undefined?v:'—';};
-  set('dta-overclock',counts['High-Brain-Overclock']||0);
-  set('dta-fullcharge',counts['Full-Charge']||0);
-  set('dta-defense',counts['Total-Defense']||0);
+  var n_oc=counts['High-Brain-Overclock']||0;
+  var n_fc=counts['Full-Charge']||0;
+  var n_df=counts['Total-Defense']||0;
+  set('dta-overclock',n_oc);
+  set('dta-fullcharge',n_fc);
+  set('dta-defense',n_df);
+
+  // 診斷文字
+  function setDiag(id,html){var el=$(id);if(el){el.innerHTML=html;el.style.display=html?'block':'none';}}
+  // 高效超頻日
+  var diagOC = n_oc<=2
+    ? '🟢 負載安全：超頻天數在控制範圍內。'
+    : n_oc<=4
+      ? '⚠️ 高效衝刺：面試與研發順利，但已接近代償臨界點！今日任務完成後，後半天水管請務必徹底減載放空，避免大腦過熱。'
+      : '🚨 極端紅線：連續高密度超頻！腦霧風險極高，強烈建議本週下半段強制排入至少 1 天低能耗防禦日。';
+  setDiag('dta-diag-overclock',diagOC);
+  // 全面充能日
+  var diagFC = n_fc===0
+    ? '⚠️ 充能中斷：連續一週無雙高，肉體失去深層修復，需檢視睡前環境或焦慮源。'
+    : n_fc<=3
+      ? '⚖️ 戰力充電：多出現在放鬆日或週末，屬於珍貴的肉體修復期。'
+      : '🌟 產能爆發：雙軌電力滿格！適合優先把積木池裡最硬的大魔王任務排入今日水管通關。';
+  setDiag('dta-diag-fullcharge',diagFC);
+  // 低能耗防禦日
+  var diagDF = n_df===0
+    ? '🏎️ 零緩衝疾馳：本週完全沒有踩過煞車。配合高超頻天數，代表正在單向透支，急需安排防禦日補債。'
+    : n_df<=2
+      ? '🎯 精準緩衝：成功插入防禦日，屬於主動停損、保護長期產線不崩潰的優良調度。'
+      : '🛑 強制減載：大腦與肉體同步罷工。白天水管請果斷勾選【🚫不做】，晚上 23:00 前必須躺平。';
+  setDiag('dta-diag-defense',diagDF);
+
   var noteEl=$('dta-matrix-note');
   if(noteEl){
-    var days=em.days||[];
-    var other=(em.windowDays||0)-(counts['High-Brain-Overclock']||0)-(counts['Full-Charge']||0)-(counts['Total-Defense']||0)-(counts['Physical-Only']||0);
-    noteEl.textContent='視窗 '+em.windowDays+' 日 · 鈍感平穩 '+(counts['Physical-Only']||0)+' 日 · 混合中間態 '+(counts['Mixed']||0)+' 日';
+    noteEl.textContent='視窗 '+(em.windowDays||0)+' 日 · 鈍感平穩 '+(counts['Physical-Only']||0)+' 日 · 混合中間態 '+(counts['Mixed']||0)+' 日';
   }
 
   // ── 決策相關性 ──
