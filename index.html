@@ -73,9 +73,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .clw{grid-column:1/13;grid-row:5}     /* last week recap */
 .cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
 .cdta{grid-column:1/13;grid-row:7}    /* dual-track beta */
-.ctx{grid-column:1/13;grid-row:8}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:9}     /* HD AI */
-.csca{grid-column:1/13;grid-row:10}   /* sleep causal analysis */
+.csca{grid-column:1/13;grid-row:8}    /* sleep causal analysis */
+.ctx{grid-column:1/13;grid-row:9}     /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:10}    /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -166,6 +166,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .scr-panel{background:var(--bg2);border-radius:7px;padding:.75rem .9rem;margin-top:.65rem;font-size:.68rem;line-height:1.85;color:var(--sub);}
 .scr-panel-row{display:flex;gap:.5rem;}
 .scr-panel-k{color:var(--faint);flex-shrink:0;min-width:5em;}
+.scr-sec-hdr{font-weight:700;font-size:.72rem;color:var(--text);margin:.8rem 0 .25rem;}
+.scr-quote{border-left:2px solid var(--bstr);padding:.25rem 0 .25rem .65rem;margin:.15rem 0;font-size:.68rem;line-height:1.75;color:var(--sub);}
+.scr-quote-date{font-weight:600;font-size:.65rem;color:var(--text);margin-bottom:.1rem;}
 .em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.75rem 0 1rem}
 .em-cell{background:var(--bg2);border-radius:var(--rsm);padding:1rem .9rem;text-align:center;display:flex;flex-direction:column}
 .em-count{font-size:2rem;font-weight:700;font-family:'DM Mono',monospace;line-height:1;margin-bottom:6px}
@@ -564,6 +567,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
   </div>
 
+  <!-- 睡眠變異亮燈 / 因果回溯 -->
+  <div class="card csca" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
+    <div class="lbl" style="margin-bottom:1rem">
+      🔍 睡眠變異亮燈與因果回溯
+      <span class="beta-badge">Beta</span>
+    </div>
+    <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
+    <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
+    <div id="scr-panel" class="scr-panel" style="display:none"></div>
+  </div>
+
   <!-- 任務屬性熱點 -->
   <div class="card ctx">
     <div class="lbl">📊 任務屬性熱點 × 狀態匹配建議</div>
@@ -608,17 +622,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
-
-  <!-- 睡眠變異亮燈 / 因果回溯 -->
-  <div class="card csca" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
-    <div class="lbl" style="margin-bottom:1rem">
-      🔍 睡眠變異亮燈與因果回溯
-      <span class="beta-badge">Beta</span>
-    </div>
-    <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
-    <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
-    <div id="scr-panel" class="scr-panel" style="display:none"></div>
-  </div>
 
 </div><!-- /bento -->
 </div><!-- /overview -->
@@ -1819,28 +1822,34 @@ function renderDualTrackCard(){
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  function appendRow(parent,icon,key,val){
-    var row=document.createElement('div');
-    row.className='scr-panel-row';
-    var k=document.createElement('span');
-    k.className='scr-panel-k';
-    k.textContent=(icon?icon+' ':'')+key+'：';
-    var v=document.createElement('span');
-    v.textContent=val;
-    row.appendChild(k);row.appendChild(v);
-    parent.appendChild(row);
-  }
-
-  function appendSection(parent,title){
+  function appendSectionHdr(parent,title){
     var d=document.createElement('div');
-    d.style.cssText='font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin:.6rem 0 .2rem;';
+    d.className='scr-sec-hdr';
     d.textContent=title;
     parent.appendChild(d);
   }
 
+  function appendQuote(parent,dateStr,lines){
+    var block=document.createElement('div');
+    block.className='scr-quote';
+    if(dateStr){
+      var dl=document.createElement('div');
+      dl.className='scr-quote-date';
+      dl.textContent=dateStr;
+      block.appendChild(dl);
+    }
+    lines.forEach(function(line){
+      if(line==null||line==='') return;
+      var el=document.createElement('div');
+      el.textContent=String(line);
+      block.appendChild(el);
+    });
+    parent.appendChild(block);
+  }
+
   function appendNote(parent,msg){
     var d=document.createElement('div');
-    d.style.cssText='color:var(--faint);font-style:italic;padding-left:.3rem;';
+    d.style.cssText='color:var(--faint);font-style:italic;padding-left:.3rem;font-size:.67rem;margin-top:.3rem;';
     d.textContent=msg;
     parent.appendChild(d);
   }
@@ -1877,7 +1886,7 @@ function renderDualTrackCard(){
     title.textContent='📅 '+date+'  深睡 '+(entry.deepP||0)+'%  '+deltaStr+'  總時 '+(entry.durH||0)+'h';
     panel.appendChild(title);
 
-    // 入睡時刻：entry.bedtime 優先；最新一晚 fallback 到 sas_sleep_latest.bedtime
+    // ⏰ 入睡時刻
     var bedtime=entry.bedtime||null;
     if(!bedtime){
       try{
@@ -1885,12 +1894,12 @@ function renderDualTrackCard(){
         if(sl2.date===date) bedtime=sl2.bedtime||null;
       }catch(ex){}
     }
-    appendRow(panel,'⏰','入睡',bedtime||'需重新開啟 Sleep Dashboard 以同步');
+    appendSectionHdr(panel,'⏰ 入睡時刻');
+    appendQuote(panel,null,[bedtime||'需重新開啟 Sleep Dashboard 以同步']);
 
-    // 前 3 日行程安排
-    appendSection(panel,'📋 前 3 日行程安排');
+    // 📋 前 3 日行程安排
+    appendSectionHdr(panel,'📋 前 3 日行程安排');
     var hasOpt=false;
-    var anyRest=false;
     for(var i=1;i<=3;i++){
       var d=offsetDate(date,-i);
       var rev=null;
@@ -1898,25 +1907,21 @@ function renderDualTrackCard(){
       if(rev){
         hasOpt=true;
         if(rev.restMode){
-          anyRest=true;
-          appendRow(panel,'',d,'🌿 休假中'+(rev.restNote?' — '+rev.restNote:''));
+          appendQuote(panel,d,['🌿 休假中'+(rev.restNote?' — '+rev.restNote:'')]);
         } else {
           var items=rev.items||[];
           var done=items.filter(function(t){return t.status==='done';}).length;
-          var mode=rev.mode||'未知';var feel=rev.feel||'未知';
-          appendRow(panel,'',d,mode+' · '+feel+' · '+done+'/'+items.length+' 件');
+          appendQuote(panel,d,[
+            (rev.mode||'未知')+' · '+(rev.feel||'未知'),
+            done+'/'+items.length+' 件完成'
+          ]);
         }
       }
     }
-    if(!hasOpt){
-      // 全部無資料 — 提示可能為休假狀態
-      appendNote(panel,'[前 3 日無紀錄 — 高機率為離線或休假回程狀態]');
-    } else if(anyRest&&!hasOpt){
-      appendNote(panel,'[部分天數處於休假狀態]');
-    }
+    if(!hasOpt) appendNote(panel,'[前 3 日無紀錄 — 高機率為離線或休假回程狀態]');
 
-    // 前 3 日 Mental Dashboard 足跡
-    appendSection(panel,'📝 前 3 日心理日誌足跡');
+    // 📝 前 3 日心理日誌足跡
+    appendSectionHdr(panel,'📝 前 3 日心理日誌足跡');
     var mentalMap=getMentalByDate();
     var hasJournal=false;
     for(var i=1;i<=3;i++){
@@ -1925,36 +1930,18 @@ function renderDualTrackCard(){
       if(es.length){
         hasJournal=true;
         es.forEach(function(e){
-          // 日期標頭
-          var dateHdr=document.createElement('div');
-          dateHdr.style.cssText='font-size:.63rem;font-weight:700;color:var(--faint);margin-top:.4rem;';
-          dateHdr.textContent=d;
-          panel.appendChild(dateHdr);
-          // 心情分數
-          if(e.moodScore){
-            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;';
-            r.textContent='心情 '+e.moodScore+'/10';panel.appendChild(r);
-          }
-          // 情緒標籤
+          var lines=[];
+          if(e.moodScore) lines.push('心情 '+e.moodScore+'/10');
           var tags=(e.emotionTags||[]).filter(Boolean);
-          if(tags.length){
-            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;';
-            r.textContent=tags.join(' / ');panel.appendChild(r);
-          }
-          // 影響因子
+          if(tags.length) lines.push(tags.join(' / '));
           var factors=(e.impactFactors||[]).filter(function(f){return f&&(f.detail||f.name||typeof f==='string');});
           factors.forEach(function(f){
             var label=f.detail||f.name||(typeof f==='string'?f:'');
-            if(!label) return;
-            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;';
-            r.textContent=label;panel.appendChild(r);
+            if(label) lines.push(label);
           });
-          // 文字記錄
-          if(e.notes&&e.notes.trim()){
-            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;color:var(--faint);';
-            r.textContent=e.notes.trim().slice(0,80)+(e.notes.trim().length>80?'…':'');
-            panel.appendChild(r);
-          }
+          if(e.notes&&e.notes.trim())
+            lines.push(e.notes.trim().slice(0,80)+(e.notes.trim().length>80?'…':''));
+          appendQuote(panel,d,lines);
         });
       }
     }
