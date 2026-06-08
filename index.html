@@ -1876,7 +1876,36 @@ function renderDualTrackCard(){
   // ── 例外管理校正 helpers ──────────────────────────────────
 
   function getDepletedAt(dateStr){
-    try{var r=JSON.parse(localStorage.getItem('review_'+dateStr)||'null');return r?r.depleted_at||null:null;}catch(e){return null;}
+    try{
+      var r=JSON.parse(localStorage.getItem('review_'+dateStr)||'null');
+      if(!r) return null;
+      // energy_log 優先（取第一個 low 事件），fallback depleted_at
+      var log=r.energy_log||[];
+      var first=log.find(function(e){return e.type==='low';});
+      return first?first.time:(r.depleted_at||null);
+    }catch(e){return null;}
+  }
+
+  function getEnergyLog(dateStr){
+    try{
+      var r=JSON.parse(localStorage.getItem('review_'+dateStr)||'null');
+      if(!r) return null;
+      if(r.energy_log&&r.energy_log.length) return r.energy_log;
+      if(r.depleted_at) return [{time:r.depleted_at,label:'能量低點',type:'low'}];
+      return null;
+    }catch(e){return null;}
+  }
+
+  function detectRecovery(log){
+    if(!log||log.length<2) return false;
+    for(var i=0;i<log.length-1;i++){
+      if(log[i].type==='rest'){
+        for(var j=i+1;j<log.length;j++){
+          if(log[j].type==='recovery') return true;
+        }
+      }
+    }
+    return false;
   }
 
   function predictedEndurance(entry){
@@ -1995,24 +2024,47 @@ function renderDualTrackCard(){
     // 🛠️ 體能續航演算法校正狀態
     appendSectionHdr(panel,'🛠️ 體能續航演算法校正狀態');
     var depTime=getDepletedAt(date);
+    var log=getEnergyLog(date);
     var predEnd=predictedEndurance(entry);
-    if(depTime){
-      var delta=timeDeltaHours(depTime,predEnd);
-      var sign=delta>=0?'+':'';
-      appendQuote(panel,null,[
-        '⚡ 斷電時刻：'+depTime+'（預估 '+predEnd+'）',
-        '能耗時差 Δt = '+sign+delta.toFixed(1)+' h'+(delta<0?' ← 提早斷電':'')
-      ]);
+
+    if(log&&log.length){
+      // 完整事件時間軸
+      var eIcons={low:'⚡',rest:'🌿',recovery:'💚'};
+      var logLines=log.map(function(e){
+        return (eIcons[e.type]||'·')+' '+e.time+'  '+e.label;
+      });
+      appendQuote(panel,null,logLines);
+
+      // 能耗時差（基於第一個 low 事件）
+      if(depTime){
+        var delta=timeDeltaHours(depTime,predEnd);
+        var sign=delta>=0?'+':'';
+        appendQuote(panel,null,[
+          '預估斷電 '+predEnd+'　Δt = '+sign+delta.toFixed(1)+' h'+(delta<0?' ← 提早斷電':'')
+        ]);
+      }
+
+      // 💡 配速建議（偵測到「小休後恢復」模式）
+      if(detectRecovery(log)){
+        appendSectionHdr(panel,'💡 配速建議');
+        appendQuote(panel,null,[
+          '小休 15–20 分鐘對目前認知續航有高槓桿回血效益，',
+          '建議於 Optimizer 中保留此防禦空檔。'
+        ]);
+      }
+
+      // 演算法校正狀態
       var weights={};
       try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
       if(weights.lastCorrected){
+        appendSectionHdr(panel,'⚙️ 校正狀態');
         appendQuote(panel,null,[
           '【已校正】高強度任務係數 × '+((weights.highIntensity||1).toFixed(2)),
-          '校正觸發：連續 '+weights.trigger+' 天提早斷電',
-          '上次校正：'+weights.lastCorrected+' 　 累計 '+weights.correctionCount+' 次'
+          '觸發：連續 '+weights.trigger+' 天提早斷電　累計 '+weights.correctionCount+' 次',
+          '上次：'+weights.lastCorrected
         ]);
       } else {
-        appendNote(panel,'[演算法待校正 — 需連續 3+ 天提早斷電方觸發]');
+        appendNote(panel,'[演算法待校正 — 需連續 3+ 天提早斷電]');
       }
     } else {
       appendQuote(panel,null,['✅ 能耗預估達標（本日無斷電紀錄）']);
