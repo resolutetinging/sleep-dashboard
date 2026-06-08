@@ -1940,7 +1940,7 @@ function renderDualTrackCard(){
             if(label) lines.push(label);
           });
           if(e.notes&&e.notes.trim())
-            lines.push(e.notes.trim().slice(0,80)+(e.notes.trim().length>80?'…':''));
+            e.notes.trim().split('\n').forEach(function(l){if(l.trim())lines.push(l.trim());});
           appendQuote(panel,d,lines);
         });
       }
