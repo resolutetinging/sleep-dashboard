@@ -262,7 +262,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="cl-date" id="cl-date">—</div>
   </div>
   <nav class="sb-nav">
-    <button class="ni on" onclick="go('ov')" id="ni-ov" aria-current="page">
+    <button class="ni" onclick="go('ov')" id="ni-ov">
       <span class="ni-icon">🏠</span><span class="ni-label">Overview</span>
     </button>
     <button class="ni" onclick="go('sl')" id="ni-sl">
@@ -284,7 +284,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <main class="main">
 
 <!-- OVERVIEW -->
-<div class="view-ov on" id="v-ov">
+<div class="view-ov" id="v-ov">
 <div class="vh">
   <div><div class="vtitle">今日總覽</div><div class="vsub" id="ov-ds">—</div></div>
 </div>
@@ -2214,11 +2214,11 @@ function renderDualTrackCard(){
 /* INIT */
 window._catMap=loadCatMap();
 renderCatMapTable();
-renderOv();
+var _initTab=sessionStorage.getItem('sas_tab')||'ov';
+go(_initTab);
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
-(function(){var t=sessionStorage.getItem('sas_tab');if(t&&t!=='ov')go(t);})();
 </script>
 </body>
 </html>
