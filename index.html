@@ -1845,6 +1845,23 @@ function renderDualTrackCard(){
     parent.appendChild(d);
   }
 
+  function getMentalByDate(){
+    var map={};
+    try{
+      var raw=localStorage.getItem('wellness_v5')||localStorage.getItem('wellness_v4')||'{}';
+      var wdata=JSON.parse(raw);
+      (wdata.entries||[]).forEach(function(e){
+        var ts=e.timestamp||e.date||'';
+        if(!ts) return;
+        var d=new Date(ts);
+        var dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        if(!map[dk]) map[dk]=[];
+        map[dk].push(e);
+      });
+    }catch(ex){}
+    return map;
+  }
+
   function showPanel(entry){
     var panel=document.getElementById('scr-panel');
     if(!panel) return;
@@ -1860,8 +1877,15 @@ function renderDualTrackCard(){
     title.textContent='📅 '+date+'  深睡 '+(entry.deepP||0)+'%  '+deltaStr+'  總時 '+(entry.durH||0)+'h';
     panel.appendChild(title);
 
-    // 入睡時刻
-    appendRow(panel,'⏰','入睡',entry.bedtime||'—');
+    // 入睡時刻：entry.bedtime 優先；最新一晚 fallback 到 sas_sleep_latest.bedtime
+    var bedtime=entry.bedtime||null;
+    if(!bedtime){
+      try{
+        var sl2=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
+        if(sl2.date===date) bedtime=sl2.bedtime||null;
+      }catch(ex){}
+    }
+    appendRow(panel,'⏰','入睡',bedtime||'需重新開啟 Sleep Dashboard 以同步');
 
     // 前 3 日派工
     appendSection(panel,'📦 前 3 日派工狀態');
@@ -1880,20 +1904,28 @@ function renderDualTrackCard(){
     }
     if(!hasOpt) appendNote(panel,'[前 3 日無 Optimizer 派工紀錄，高機率為離線/休假回程狀態]');
 
-    // 前 3 日文字足跡
-    appendSection(panel,'📝 前 3 日文字足跡');
-    var hasNote=false;
+    // 前 3 日 Mental Dashboard 足跡
+    appendSection(panel,'📝 前 3 日心理日誌足跡');
+    var mentalMap=getMentalByDate();
+    var hasJournal=false;
     for(var i=1;i<=3;i++){
       var d=offsetDate(date,-i);
-      var note='';
-      try{note=localStorage.getItem('note_'+d)||'';}catch(e){}
-      if(note.trim()){
-        hasNote=true;
-        var snip=note.trim().slice(0,72)+(note.trim().length>72?'…':'');
-        appendRow(panel,'',d,snip);
+      var es=mentalMap[d]||[];
+      if(es.length){
+        hasJournal=true;
+        es.forEach(function(e){
+          var parts=[];
+          if(e.moodScore) parts.push('心情 '+e.moodScore+'/10');
+          var tags=(e.emotionTags||[]).filter(Boolean).slice(0,3);
+          if(tags.length) parts.push(tags.join(' / '));
+          var factors=(e.impactFactors||[]).map(function(f){return f.detail||f.name||f||'';}).filter(Boolean).slice(0,2);
+          if(factors.length) parts.push(factors.join('・'));
+          if(e.notes&&e.notes.trim()) parts.push(e.notes.trim().slice(0,40)+(e.notes.trim().length>40?'…':''));
+          appendRow(panel,'',d,parts.join('  ')||'有記錄但無細節');
+        });
       }
     }
-    if(!hasNote) appendNote(panel,'[前 3 日無文字足跡]');
+    if(!hasJournal) appendNote(panel,'[前 3 日無 Mental Dashboard 日誌記錄]');
   }
 
   window.buildSleepCausalSection=function(){
