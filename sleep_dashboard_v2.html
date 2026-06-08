@@ -2017,10 +2017,12 @@ function saveSleepToLocalStorage() {
     const last7 = allN.slice(-7).map(n => {
       const ts = n.deep_min + n.rem_min + n.core_min || 1;
       return {
-        date: n.date,
-        durH: +(n.total_min / 60).toFixed(1),
-        deepP: Math.round(n.deep_min / ts * 100),
-        remP:  Math.round(n.rem_min  / ts * 100)
+        date:    n.date,
+        bedtime: n.bedtime || null,
+        wake:    n.wake    || null,
+        durH:    +(n.total_min / 60).toFixed(1),
+        deepP:   Math.round(n.deep_min / ts * 100),
+        remP:    Math.round(n.rem_min  / ts * 100)
       };
     });
 

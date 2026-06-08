@@ -156,6 +156,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-action-body{font-size:.72rem;color:var(--sub);line-height:1.7}
 /* BETA CARD */
 .beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
+/* SCR: 睡眠變異亮燈 */
+.scr-bars-wrap{display:flex;align-items:flex-end;gap:3px;height:54px;}
+.scr-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;cursor:pointer;}
+.scr-bar-col:hover .scr-bar{opacity:.65;}
+.scr-bar{width:100%;border-radius:3px 3px 0 0;transition:opacity .15s;min-height:3px;}
+.scr-bar-date{font-size:.55rem;color:var(--faint);margin-top:2px;text-align:center;line-height:1.2;}
+.scr-panel{background:var(--bg2);border-radius:7px;padding:.75rem .9rem;margin-top:.65rem;font-size:.68rem;line-height:1.85;color:var(--sub);}
+.scr-panel-row{display:flex;gap:.5rem;}
+.scr-panel-k{color:var(--faint);flex-shrink:0;min-width:5em;}
 .em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.75rem 0 1rem}
 .em-cell{background:var(--bg2);border-radius:var(--rsm);padding:1rem .9rem;text-align:center;display:flex;flex-direction:column}
 .em-count{font-size:2rem;font-weight:700;font-family:'DM Mono',monospace;line-height:1;margin-bottom:6px}
@@ -573,6 +582,16 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <button onclick="saveCatMap()" style="font-size:.65rem;padding:3px 10px;border-radius:20px;background:var(--text);color:var(--card);border:none;cursor:pointer">儲存</button>
       </div>
       <div id="cat-map-table" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+    </div>
+
+    <!-- ── BETA：睡眠變異亮燈與行程回溯對照 ── -->
+    <div style="margin-top:1.4rem;padding-top:1rem;border-top:.5px dashed rgba(139,120,152,.3)">
+      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.55rem">
+        🔍 睡眠變異亮燈<span class="beta-badge">Beta</span>
+      </div>
+      <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
+      <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
+      <div id="scr-panel" class="scr-panel" style="display:none"></div>
     </div>
   </div>
 
@@ -1781,12 +1800,159 @@ function renderDualTrackCard(){
   });
 })();
 
+// ══════════════════════════════════════════════════════════
+//  BETA: 睡眠變異亮燈 + 行程回溯對照
+// ══════════════════════════════════════════════════════════
+(function(){
+  var _deepMed=0,_durMed=0;
+
+  function median(arr){
+    if(!arr.length) return 0;
+    var s=arr.slice().sort(function(a,b){return a-b;});
+    var m=Math.floor(s.length/2);
+    return s.length%2?s[m]:(s[m-1]+s[m])/2;
+  }
+
+  function offsetDate(dateStr,n){
+    var d=new Date(dateStr+'T12:00:00');
+    d.setDate(d.getDate()+n);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function appendRow(parent,icon,key,val){
+    var row=document.createElement('div');
+    row.className='scr-panel-row';
+    var k=document.createElement('span');
+    k.className='scr-panel-k';
+    k.textContent=(icon?icon+' ':'')+key+'：';
+    var v=document.createElement('span');
+    v.textContent=val;
+    row.appendChild(k);row.appendChild(v);
+    parent.appendChild(row);
+  }
+
+  function appendSection(parent,title){
+    var d=document.createElement('div');
+    d.style.cssText='font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin:.6rem 0 .2rem;';
+    d.textContent=title;
+    parent.appendChild(d);
+  }
+
+  function appendNote(parent,msg){
+    var d=document.createElement('div');
+    d.style.cssText='color:var(--faint);font-style:italic;padding-left:.3rem;';
+    d.textContent=msg;
+    parent.appendChild(d);
+  }
+
+  function showPanel(entry){
+    var panel=document.getElementById('scr-panel');
+    if(!panel) return;
+    panel.innerHTML='';
+    panel.style.display='block';
+
+    var date=entry.date||'';
+    var deepDelta=_deepMed>0?((entry.deepP-_deepMed)/_deepMed*100):null;
+    var deltaStr=deepDelta!==null?(deepDelta>=0?'▲+':'▼')+Math.abs(deepDelta).toFixed(0)+'% vs 中位數':'';
+
+    var title=document.createElement('div');
+    title.style.cssText='font-weight:700;font-size:.7rem;margin-bottom:.4rem;color:var(--text);';
+    title.textContent='📅 '+date+'  深睡 '+(entry.deepP||0)+'%  '+deltaStr+'  總時 '+(entry.durH||0)+'h';
+    panel.appendChild(title);
+
+    // 入睡時刻
+    appendRow(panel,'⏰','入睡',entry.bedtime||'—');
+
+    // 前 3 日派工
+    appendSection(panel,'📦 前 3 日派工狀態');
+    var hasOpt=false;
+    for(var i=1;i<=3;i++){
+      var d=offsetDate(date,-i);
+      var rev=null;
+      try{rev=JSON.parse(localStorage.getItem('review_'+d)||'null');}catch(e){}
+      if(rev){
+        hasOpt=true;
+        var items=rev.items||[];
+        var done=items.filter(function(t){return t.status==='done';}).length;
+        var mode=rev.mode||'未知';var feel=rev.feel||'未知';
+        appendRow(panel,'',d,mode+' · '+feel+' · '+done+'/'+items.length+' 件');
+      }
+    }
+    if(!hasOpt) appendNote(panel,'[前 3 日無 Optimizer 派工紀錄，高機率為離線/休假回程狀態]');
+
+    // 前 3 日文字足跡
+    appendSection(panel,'📝 前 3 日文字足跡');
+    var hasNote=false;
+    for(var i=1;i<=3;i++){
+      var d=offsetDate(date,-i);
+      var note='';
+      try{note=localStorage.getItem('note_'+d)||'';}catch(e){}
+      if(note.trim()){
+        hasNote=true;
+        var snip=note.trim().slice(0,72)+(note.trim().length>72?'…':'');
+        appendRow(panel,'',d,snip);
+      }
+    }
+    if(!hasNote) appendNote(panel,'[前 3 日無文字足跡]');
+  }
+
+  window.buildSleepCausalSection=function(){
+    var sl={};
+    try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+    var trend7=sl.trend7||[];
+    if(!trend7.length){
+      var wrap=document.getElementById('scr-bars-wrap');
+      if(wrap){var msg=document.createElement('div');msg.style.cssText='font-size:.68rem;color:var(--faint);';msg.textContent='請先開啟 Sleep Dashboard 以載入近 7 日資料';wrap.appendChild(msg);}
+      return;
+    }
+
+    var deepVals=trend7.map(function(n){return n.deepP||0;}).filter(Boolean);
+    var durVals =trend7.map(function(n){return n.durH ||0;}).filter(Boolean);
+    _deepMed=median(deepVals);
+    _durMed =median(durVals);
+
+    function isAnom(n){
+      var d=n.deepP||0,dur=n.durH||0;
+      if(_deepMed>0&&(d>_deepMed*1.3||d<_deepMed*0.7)) return true;
+      if(_durMed >0&&(dur>_durMed*1.2 ||dur<_durMed*0.85)) return true;
+      return false;
+    }
+
+    var wrap=document.getElementById('scr-bars-wrap');
+    if(!wrap) return;
+    wrap.innerHTML='';
+    var maxDeep=Math.max.apply(null,deepVals)||1;
+
+    trend7.forEach(function(n){
+      var anom=isAnom(n);
+      var hp=Math.max(6,Math.round((n.deepP||0)/maxDeep*100));
+
+      var col=document.createElement('div');col.className='scr-bar-col';
+      var bar=document.createElement('div');bar.className='scr-bar';
+      bar.style.height=hp+'%';
+      bar.style.background=anom?'var(--rem)':'var(--border)';
+      if(anom) bar.style.boxShadow='0 0 5px rgba(139,120,152,.3)';
+
+      var lbl=document.createElement('div');lbl.className='scr-bar-date';
+      lbl.textContent=(n.date||'').slice(5);
+
+      col.appendChild(bar);col.appendChild(lbl);
+      (function(entry){col.addEventListener('click',function(){showPanel(entry);});})(n);
+      wrap.appendChild(col);
+    });
+
+    var medEl=document.getElementById('scr-median-lbl');
+    if(medEl) medEl.textContent='中位數　深睡 '+_deepMed.toFixed(1)+'%　總時 '+_durMed.toFixed(1)+'h　紫柱 = 偏離 ±30% 以上　點擊任意柱查看前後文';
+  };
+})();
+
 /* INIT */
 window._catMap=loadCatMap();
 renderCatMapTable();
 renderOv();
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
+try{buildSleepCausalSection();}catch(e){}
 </script>
 </body>
 </html>
