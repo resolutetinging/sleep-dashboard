@@ -716,16 +716,7 @@ function readCombat(){
     if(el){
       var s=parseInt(el.textContent);
       if(!isNaN(s)&&s>0){
-        updateCombat(s);
-        // Read actual color from sleep-dashboard to sync
-        var elColor=el.style.color||window.getComputedStyle(el).color;
-        if(elColor&&elColor!==''){
-          var gNum=document.getElementById('g-num');
-          if(gNum)gNum.setAttribute('fill',elColor);
-          // Also sync arc gradient
-          var arc=document.getElementById('g-arc');
-          if(arc)arc.style.stroke=elColor;
-        }
+        updateCombat(s,true);
       }
     }
     // Read debt from debtPanel (reset each poll so it can update)
@@ -751,8 +742,13 @@ function readCombat(){
 setInterval(readCombat,2000);
 /* CHART REGISTRY — 必須在 IIFE 之前初始化，避免 hoisting 導致 CI 為 undefined */
 var CI={};var TC='rgba(40,38,32,.07)',LC='#a8a39b';
-// 啟動時立即從 localStorage 初始化，不等 iframe，避免橘色閃爍
-(function(){var s=parseInt(localStorage.getItem('sas_combat_weighted')||'0');if(s>0)updateCombat(s,true);})();
+// 啟動時初始化：只有今日計算的值才使用，避免昨日 stale 值造成顏色閃爍
+(function(){
+  var today=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('sas_combat_date')!==today)return;
+  var s=parseInt(localStorage.getItem('sas_combat_weighted')||'0');
+  if(s>0)updateCombat(s,true);
+})();
 
 function updateDebt(h){
   _debt=h;
