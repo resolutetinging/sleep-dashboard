@@ -75,6 +75,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .cdta{grid-column:1/13;grid-row:7}    /* dual-track beta */
 .ctx{grid-column:1/13;grid-row:8}     /* taxonomy — full width */
 .cha{grid-column:1/13;grid-row:9}     /* HD AI */
+.csca{grid-column:1/13;grid-row:10}   /* sleep causal analysis */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -220,7 +221,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta,.csca{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -561,15 +562,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       ⚠ Beta 觀察期：數據視窗尚短，趨勢需累積 2–4 週以上方具統計意義。Deep/REM score = 睡眠各分期比例除以目標比例，滿分 100。
     </div>
 
-    <!-- ── BETA：睡眠變異亮燈與行程回溯對照 ── -->
-    <div style="margin-top:1.4rem;padding-top:1rem;border-top:.5px dashed rgba(139,120,152,.3)">
-      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.55rem">
-        🔍 睡眠變異亮燈<span class="beta-badge">Beta</span>
-      </div>
-      <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
-      <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
-      <div id="scr-panel" class="scr-panel" style="display:none"></div>
-    </div>
   </div>
 
   <!-- 任務屬性熱點 -->
@@ -616,6 +608,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
+
+  <!-- 睡眠變異亮燈 / 因果回溯 -->
+  <div class="card csca" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
+    <div class="lbl" style="margin-bottom:1rem">
+      🔍 睡眠變異亮燈與因果回溯
+      <span class="beta-badge">Beta</span>
+    </div>
+    <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
+    <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
+    <div id="scr-panel" class="scr-panel" style="display:none"></div>
+  </div>
 
 </div><!-- /bento -->
 </div><!-- /overview -->
@@ -1884,22 +1887,33 @@ function renderDualTrackCard(){
     }
     appendRow(panel,'⏰','入睡',bedtime||'需重新開啟 Sleep Dashboard 以同步');
 
-    // 前 3 日派工
-    appendSection(panel,'📦 前 3 日派工狀態');
+    // 前 3 日行程安排
+    appendSection(panel,'📋 前 3 日行程安排');
     var hasOpt=false;
+    var anyRest=false;
     for(var i=1;i<=3;i++){
       var d=offsetDate(date,-i);
       var rev=null;
       try{rev=JSON.parse(localStorage.getItem('review_'+d)||'null');}catch(e){}
       if(rev){
         hasOpt=true;
-        var items=rev.items||[];
-        var done=items.filter(function(t){return t.status==='done';}).length;
-        var mode=rev.mode||'未知';var feel=rev.feel||'未知';
-        appendRow(panel,'',d,mode+' · '+feel+' · '+done+'/'+items.length+' 件');
+        if(rev.restMode){
+          anyRest=true;
+          appendRow(panel,'',d,'🌿 休假中'+(rev.restNote?' — '+rev.restNote:''));
+        } else {
+          var items=rev.items||[];
+          var done=items.filter(function(t){return t.status==='done';}).length;
+          var mode=rev.mode||'未知';var feel=rev.feel||'未知';
+          appendRow(panel,'',d,mode+' · '+feel+' · '+done+'/'+items.length+' 件');
+        }
       }
     }
-    if(!hasOpt) appendNote(panel,'[前 3 日無 Optimizer 派工紀錄，高機率為離線/休假回程狀態]');
+    if(!hasOpt){
+      // 全部無資料 — 提示可能為休假狀態
+      appendNote(panel,'[前 3 日無紀錄 — 高機率為離線或休假回程狀態]');
+    } else if(anyRest&&!hasOpt){
+      appendNote(panel,'[部分天數處於休假狀態]');
+    }
 
     // 前 3 日 Mental Dashboard 足跡
     appendSection(panel,'📝 前 3 日心理日誌足跡');
@@ -1911,14 +1925,36 @@ function renderDualTrackCard(){
       if(es.length){
         hasJournal=true;
         es.forEach(function(e){
-          var parts=[];
-          if(e.moodScore) parts.push('心情 '+e.moodScore+'/10');
-          var tags=(e.emotionTags||[]).filter(Boolean).slice(0,3);
-          if(tags.length) parts.push(tags.join(' / '));
-          var factors=(e.impactFactors||[]).map(function(f){return f.detail||f.name||f||'';}).filter(Boolean).slice(0,2);
-          if(factors.length) parts.push(factors.join('・'));
-          if(e.notes&&e.notes.trim()) parts.push(e.notes.trim().slice(0,40)+(e.notes.trim().length>40?'…':''));
-          appendRow(panel,'',d,parts.join('  ')||'有記錄但無細節');
+          // 日期標頭
+          var dateHdr=document.createElement('div');
+          dateHdr.style.cssText='font-size:.63rem;font-weight:700;color:var(--faint);margin-top:.4rem;';
+          dateHdr.textContent=d;
+          panel.appendChild(dateHdr);
+          // 心情分數
+          if(e.moodScore){
+            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;';
+            r.textContent='心情 '+e.moodScore+'/10';panel.appendChild(r);
+          }
+          // 情緒標籤
+          var tags=(e.emotionTags||[]).filter(Boolean);
+          if(tags.length){
+            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;';
+            r.textContent=tags.join(' / ');panel.appendChild(r);
+          }
+          // 影響因子
+          var factors=(e.impactFactors||[]).filter(function(f){return f&&(f.detail||f.name||typeof f==='string');});
+          factors.forEach(function(f){
+            var label=f.detail||f.name||(typeof f==='string'?f:'');
+            if(!label) return;
+            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;';
+            r.textContent=label;panel.appendChild(r);
+          });
+          // 文字記錄
+          if(e.notes&&e.notes.trim()){
+            var r=document.createElement('div');r.style.cssText='padding-left:.6rem;color:var(--faint);';
+            r.textContent=e.notes.trim().slice(0,80)+(e.notes.trim().length>80?'…':'');
+            panel.appendChild(r);
+          }
         });
       }
     }
