@@ -571,9 +571,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
   <!-- 睡眠變異亮燈 / 因果回溯 -->
   <div class="card csca" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
-    <div class="lbl" style="margin-bottom:1rem">
+    <div class="lbl" style="margin-bottom:1rem;display:flex;align-items:center;gap:8px;">
       🔍 睡眠變異亮燈與因果回溯
       <span class="beta-badge">Beta</span>
+      <button onclick="try{buildSleepCausalSection();}catch(e){}" style="margin-left:auto;font-size:.6rem;padding:2px 9px;border-radius:12px;border:1px solid var(--bstr);background:transparent;color:var(--faint);cursor:pointer;">↻ 重整</button>
     </div>
     <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
     <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
@@ -2082,6 +2083,19 @@ function renderDualTrackCard(){
       return;
     }
 
+    // 若今天有 energy_log 但 trend7 沒有今天的 entry，補一個佔位柱
+    var todayStr=(function(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    var hasTodayBar=trend7.some(function(n){return n.date===todayStr;});
+    if(!hasTodayBar){
+      var todayLog=null;
+      try{var tr=JSON.parse(localStorage.getItem('review_'+todayStr)||'null');todayLog=tr&&(tr.energy_log||tr.depleted_at)?tr:null;}catch(e){}
+      if(todayLog){
+        // 用前一天的 deepP/remP 作為佔位（顯示為今日，但標記為估算）
+        var prev=trend7.length?trend7[trend7.length-1]:{};
+        trend7=trend7.concat([{date:todayStr,deepP:prev.deepP||0,remP:prev.remP||0,durH:prev.durH||0,bedtime:null,wake:null,_estimated:true}]);
+      }
+    }
+
     var deepVals=trend7.map(function(n){return n.deepP||0;}).filter(Boolean);
     var durVals =trend7.map(function(n){return n.durH ||0;}).filter(Boolean);
     _deepMed=median(deepVals);
@@ -2122,7 +2136,7 @@ function renderDualTrackCard(){
       if(dep) bar.style.outline='1.5px solid var(--warn)';
 
       var lbl=document.createElement('div');lbl.className='scr-bar-date';
-      lbl.textContent=(n.date||'').slice(5);
+      lbl.textContent=(n.date||'').slice(5)+(n._estimated?' ~':'');
 
       col.appendChild(bar);col.appendChild(lbl);
       (function(entry){col.addEventListener('click',function(){showPanel(entry);});})(n);
