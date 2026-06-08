@@ -169,6 +169,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .scr-sec-hdr{font-weight:700;font-size:.72rem;color:var(--text);margin:.8rem 0 .25rem;}
 .scr-quote{border-left:2px solid var(--bstr);padding:.25rem 0 .25rem .65rem;margin:.15rem 0;font-size:.68rem;line-height:1.75;color:var(--sub);}
 .scr-quote-date{font-weight:600;font-size:.65rem;color:var(--text);margin-bottom:.1rem;}
+.scr-bar-marker{font-size:.55rem;text-align:center;margin-bottom:2px;line-height:1;color:var(--warn);}
+.scr-corr-tag{display:inline-block;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(230,126,34,.12);color:var(--warn);margin-left:6px;vertical-align:middle;}
 .em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.75rem 0 1rem}
 .em-cell{background:var(--bg2);border-radius:var(--rsm);padding:1rem .9rem;text-align:center;display:flex;flex-direction:column}
 .em-count{font-size:2rem;font-weight:700;font-family:'DM Mono',monospace;line-height:1;margin-bottom:6px}
@@ -1871,6 +1873,49 @@ function renderDualTrackCard(){
     return map;
   }
 
+  // ── 例外管理校正 helpers ──────────────────────────────────
+
+  function getDepletedAt(dateStr){
+    try{var r=JSON.parse(localStorage.getItem('review_'+dateStr)||'null');return r?r.depleted_at||null:null;}catch(e){return null;}
+  }
+
+  function predictedEndurance(entry){
+    var deepScore=Math.min((entry.deepP||0)/18*100,100);
+    var remScore =Math.min((entry.remP ||0)/22.5*100,100);
+    var score=deepScore*0.7+remScore*0.3;
+    var h=8+Math.floor(score/100*14);
+    return String(h).padStart(2,'0')+':00';
+  }
+
+  function timeDeltaHours(actual,predicted){
+    function toM(t){var p=t.split(':');return parseInt(p[0])*60+parseInt(p[1]);}
+    return(toM(actual)-toM(predicted))/60;
+  }
+
+  function runEnergyCorrection(trend7){
+    // 統計從最新往前的連續斷電天數（有 depleted_at 且 Δt < 0）
+    var sorted=trend7.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+    var consecutive=0;
+    for(var i=sorted.length-1;i>=0;i--){
+      var dep=getDepletedAt(sorted[i].date);
+      if(!dep) break;
+      if(timeDeltaHours(dep,predictedEndurance(sorted[i]))<0) consecutive++;
+      else break;
+    }
+    var weights={};
+    try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
+    if(consecutive>=3){
+      var prev=weights.highIntensity||1.0;
+      var bump=consecutive>=5?0.2:0.1;
+      weights.highIntensity=Math.min(+(prev+bump).toFixed(2),2.0);
+      weights.correctionCount=(weights.correctionCount||0)+1;
+      weights.lastCorrected=new Date().toISOString().slice(0,10);
+      weights.trigger=consecutive;
+      try{localStorage.setItem('cc_energy_weights',JSON.stringify(weights));}catch(e){}
+    }
+    return{consecutive:consecutive,weights:weights};
+  }
+
   function showPanel(entry){
     var panel=document.getElementById('scr-panel');
     if(!panel) return;
@@ -1946,6 +1991,33 @@ function renderDualTrackCard(){
       }
     }
     if(!hasJournal) appendNote(panel,'[前 3 日無 Mental Dashboard 日誌記錄]');
+
+    // 🛠️ 體能續航演算法校正狀態
+    appendSectionHdr(panel,'🛠️ 體能續航演算法校正狀態');
+    var depTime=getDepletedAt(date);
+    var predEnd=predictedEndurance(entry);
+    if(depTime){
+      var delta=timeDeltaHours(depTime,predEnd);
+      var sign=delta>=0?'+':'';
+      appendQuote(panel,null,[
+        '⚡ 斷電時刻：'+depTime+'（預估 '+predEnd+'）',
+        '能耗時差 Δt = '+sign+delta.toFixed(1)+' h'+(delta<0?' ← 提早斷電':'')
+      ]);
+      var weights={};
+      try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
+      if(weights.lastCorrected){
+        appendQuote(panel,null,[
+          '【已校正】高強度任務係數 × '+((weights.highIntensity||1).toFixed(2)),
+          '校正觸發：連續 '+weights.trigger+' 天提早斷電',
+          '上次校正：'+weights.lastCorrected+' 　 累計 '+weights.correctionCount+' 次'
+        ]);
+      } else {
+        appendNote(panel,'[演算法待校正 — 需連續 3+ 天提早斷電方觸發]');
+      }
+    } else {
+      appendQuote(panel,null,['✅ 能耗預估達標（本日無斷電紀錄）']);
+      appendNote(panel,'[正向收斂 — 繼續累積數據]');
+    }
   }
 
   window.buildSleepCausalSection=function(){
@@ -1975,15 +2047,27 @@ function renderDualTrackCard(){
     wrap.innerHTML='';
     var maxDeep=Math.max.apply(null,deepVals)||1;
 
+    // 校正運算（不影響顯示邏輯）
+    runEnergyCorrection(trend7);
+
     trend7.forEach(function(n){
       var anom=isAnom(n);
+      var dep=getDepletedAt(n.date);
       var hp=Math.max(6,Math.round((n.deepP||0)/maxDeep*100));
 
       var col=document.createElement('div');col.className='scr-bar-col';
+
+      // ⚡ 斷電標記（若有紀錄）
+      if(dep){
+        var mk=document.createElement('div');mk.className='scr-bar-marker';
+        mk.textContent='⚡';col.appendChild(mk);
+      }
+
       var bar=document.createElement('div');bar.className='scr-bar';
       bar.style.height=hp+'%';
       bar.style.background=anom?'var(--rem)':'var(--border)';
       if(anom) bar.style.boxShadow='0 0 5px rgba(139,120,152,.3)';
+      if(dep) bar.style.outline='1.5px solid var(--warn)';
 
       var lbl=document.createElement('div');lbl.className='scr-bar-date';
       lbl.textContent=(n.date||'').slice(5);
@@ -1993,8 +2077,10 @@ function renderDualTrackCard(){
       wrap.appendChild(col);
     });
 
+    var weights={};try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
+    var corrStr=weights.lastCorrected?' · 係數已校正 ×'+(weights.highIntensity||1).toFixed(2):'';
     var medEl=document.getElementById('scr-median-lbl');
-    if(medEl) medEl.textContent='中位數　深睡 '+_deepMed.toFixed(1)+'%　總時 '+_durMed.toFixed(1)+'h　紫柱 = 偏離 ±30% 以上　點擊任意柱查看前後文';
+    if(medEl) medEl.textContent='中位數　深睡 '+_deepMed.toFixed(1)+'%　總時 '+_durMed.toFixed(1)+'h　⚡ = 有斷電紀錄　紫柱 = 睡眠偏離'+corrStr;
   };
 })();
 
