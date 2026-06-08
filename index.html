@@ -640,7 +640,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- OPTIMIZER -->
 <div class="view-frame" id="v-op">
-  <div class="frame-bar"><div><div class="frame-title">Daily Optimizer</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">配速秘書 · 今日行程建議</div></div><a href="https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
+  <div class="frame-bar"><div><div class="frame-title">Daily Optimizer</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">配速秘書 · 今日行程建議</div></div><button class="open-btn" onclick="(function(){try{document.getElementById('op-frame').contentWindow.openHist();}catch(e){}})()">📋 歷史</button><a href="https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
   <div class="frame-wrap"><div class="frame-loading" id="op-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="op-frame" src="about:blank" title="Daily Optimizer"></iframe></div>
 </div>
 
