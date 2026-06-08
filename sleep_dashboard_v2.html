@@ -1854,10 +1854,10 @@ function updateCombatPower(totalDebt) {
   document.getElementById('combatNum').textContent = score;
   document.getElementById('combatNum').style.color = color;
   try{
-    var today=new Date().toISOString().slice(0,10);
+    var todayStr=new Date().toISOString().slice(0,10);
     localStorage.setItem('sas_combat',String(score));
     localStorage.setItem('sas_combat_weighted',String(score));
-    localStorage.setItem('sas_combat_date',today);
+    localStorage.setItem('sas_combat_date',todayStr);
   }catch(e){}
 
   // 單夜顯示

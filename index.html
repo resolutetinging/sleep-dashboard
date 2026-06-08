@@ -560,6 +560,16 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div style="margin-top:.85rem;font-size:.62rem;color:var(--faint);line-height:1.65">
       ⚠ Beta 觀察期：數據視窗尚短，趨勢需累積 2–4 週以上方具統計意義。Deep/REM score = 睡眠各分期比例除以目標比例，滿分 100。
     </div>
+
+    <!-- ── BETA：睡眠變異亮燈與行程回溯對照 ── -->
+    <div style="margin-top:1.4rem;padding-top:1rem;border-top:.5px dashed rgba(139,120,152,.3)">
+      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.55rem">
+        🔍 睡眠變異亮燈<span class="beta-badge">Beta</span>
+      </div>
+      <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
+      <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
+      <div id="scr-panel" class="scr-panel" style="display:none"></div>
+    </div>
   </div>
 
   <!-- 任務屬性熱點 -->
@@ -582,16 +592,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <button onclick="saveCatMap()" style="font-size:.65rem;padding:3px 10px;border-radius:20px;background:var(--text);color:var(--card);border:none;cursor:pointer">儲存</button>
       </div>
       <div id="cat-map-table" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
-    </div>
-
-    <!-- ── BETA：睡眠變異亮燈與行程回溯對照 ── -->
-    <div style="margin-top:1.4rem;padding-top:1rem;border-top:.5px dashed rgba(139,120,152,.3)">
-      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.55rem">
-        🔍 睡眠變異亮燈<span class="beta-badge">Beta</span>
-      </div>
-      <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
-      <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
-      <div id="scr-panel" class="scr-panel" style="display:none"></div>
     </div>
   </div>
 
@@ -744,8 +744,8 @@ setInterval(readCombat,2000);
 var CI={};var TC='rgba(40,38,32,.07)',LC='#a8a39b';
 // 啟動時初始化：只有今日計算的值才使用，避免昨日 stale 值造成顏色閃爍
 (function(){
-  var today=new Date().toISOString().slice(0,10);
-  if(localStorage.getItem('sas_combat_date')!==today)return;
+  var todayStr=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('sas_combat_date')!==todayStr)return;
   var s=parseInt(localStorage.getItem('sas_combat_weighted')||'0');
   if(s>0)updateCombat(s,true);
 })();
@@ -1215,8 +1215,8 @@ function renderWeekStrip(moodMap){
 /* MAIN RENDER */
 var chartsDrawn=false;
 function renderOv(){
-  var today=new Date().toISOString().slice(0,10);
-  var stored=localStorage.getItem('sas_combat_date')===today?localStorage.getItem('sas_combat'):null;
+  var todayStr=new Date().toISOString().slice(0,10);
+  var stored=localStorage.getItem('sas_combat_date')===todayStr?localStorage.getItem('sas_combat'):null;
   if(stored&&!_combat)updateCombat(parseInt(stored),true);
 
   var moods=getMoods();
