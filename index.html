@@ -640,7 +640,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- OPTIMIZER -->
 <div class="view-frame" id="v-op">
-  <div class="frame-bar"><div><div class="frame-title">Daily Optimizer</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">配速秘書 · 今日行程建議</div></div><button class="open-btn" onclick="openOpHist()">📋 歷史</button><a href="https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
+  <div class="frame-bar"><div><div class="frame-title">Daily Optimizer</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">配速秘書 · 今日行程建議</div></div><a href="https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
   <div class="frame-wrap"><div class="frame-loading" id="op-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="op-frame" src="about:blank" title="Daily Optimizer"></iframe></div>
 </div>
 
@@ -675,23 +675,6 @@ function go(id){
   if(id==='ov')renderOv();
 }
 function initFrames(){Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank')f.src=frameSrcs[k];});}
-function openOpHist(){
-  go('op');
-  var f=$('op-frame');
-  if(!f) return;
-  var tryOpen=function(){try{f.contentWindow.openHist();}catch(e){}};
-  // 確保 iframe 已載入再呼叫，不重設 src（initFrames 已處理）
-  try{
-    if(f.contentDocument&&f.contentDocument.readyState==='complete'){
-      tryOpen();
-    } else {
-      if(f.src==='about:blank'||!f.src) f.src=frameSrcs['op'];
-      f.addEventListener('load',function onL(){f.removeEventListener('load',onL);setTimeout(tryOpen,200);},{once:true});
-    }
-  }catch(e){
-    f.addEventListener('load',function onL(){f.removeEventListener('load',onL);setTimeout(tryOpen,200);},{once:true});
-  }
-}
 
 /* COMBAT */
 var _combat=null,_debt=null,_lag=null;
