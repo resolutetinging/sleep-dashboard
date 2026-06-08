@@ -677,6 +677,7 @@ var frameSrcs={sl:'./sleep_dashboard_v2.html',mn:'https://resolutetinging.github
 function frameLoaded(k){var el=$(k+'-loading');if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',320);}}
 ['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
 function go(id){
+  sessionStorage.setItem('sas_tab',id);
   document.querySelectorAll('.view-ov,.view-frame').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(n=>{n.classList.remove('on');n.removeAttribute('aria-current');});
   $(id==='ov'?'v-ov':'v-'+id).classList.add('on');
@@ -2217,6 +2218,7 @@ renderOv();
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
+(function(){var t=sessionStorage.getItem('sas_tab');if(t&&t!=='ov')go(t);})();
 </script>
 </body>
 </html>
