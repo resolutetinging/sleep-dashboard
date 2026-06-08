@@ -158,7 +158,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 /* BETA CARD */
 .beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
 /* SCR: 睡眠變異亮燈 */
-.scr-bars-wrap{display:flex;align-items:flex-end;gap:3px;height:54px;}
+.scr-bars-wrap{display:flex;align-items:flex-end;gap:3px;height:54px;position:relative;}
+.scr-target-line{position:absolute;left:0;right:0;border-top:1px dashed rgba(92,122,150,.35);pointer-events:none;}
+.scr-target-lbl{position:absolute;right:0;font-size:.52rem;color:var(--info);line-height:1;}
 .scr-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;cursor:pointer;}
 .scr-bar-col:hover .scr-bar{opacity:.65;}
 .scr-bar{width:100%;border-radius:3px 3px 0 0;transition:opacity .15s;min-height:3px;}
@@ -2111,7 +2113,9 @@ function renderDualTrackCard(){
     var wrap=document.getElementById('scr-bars-wrap');
     if(!wrap) return;
     wrap.innerHTML='';
-    var maxDeep=Math.max.apply(null,deepVals)||1;
+    // 高度 = deepP 絕對值，以 30% 為視覺上限（超過仍 cap 在 100%）
+    // 18% 目標線 = 60% 高度（18/30）
+    var DEEP_CEIL=30;
 
     // 校正運算（不影響顯示邏輯）
     runEnergyCorrection(trend7);
@@ -2119,7 +2123,7 @@ function renderDualTrackCard(){
     trend7.forEach(function(n){
       var anom=isAnom(n);
       var dep=getDepletedAt(n.date);
-      var hp=Math.max(6,Math.round((n.deepP||0)/maxDeep*100));
+      var hp=Math.max(6,Math.min(100,Math.round((n.deepP||0)/DEEP_CEIL*100)));
 
       var col=document.createElement('div');col.className='scr-bar-col';
 
@@ -2143,10 +2147,18 @@ function renderDualTrackCard(){
       wrap.appendChild(col);
     });
 
+    // 18% 目標線（60% 高度）
+    var tl=document.createElement('div');tl.className='scr-target-line';
+    tl.style.bottom='60%'; // 18/30 = 60%
+    var tlbl=document.createElement('div');tlbl.className='scr-target-lbl';
+    tlbl.style.bottom='calc(60% + 1px)';
+    tlbl.textContent='18%';
+    wrap.appendChild(tl);wrap.appendChild(tlbl);
+
     var weights={};try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
     var corrStr=weights.lastCorrected?' · 係數已校正 ×'+(weights.highIntensity||1).toFixed(2):'';
     var medEl=document.getElementById('scr-median-lbl');
-    if(medEl) medEl.textContent='中位數　深睡 '+_deepMed.toFixed(1)+'%　總時 '+_durMed.toFixed(1)+'h　⚡ = 有斷電紀錄　紫柱 = 睡眠偏離'+corrStr;
+    if(medEl) medEl.textContent='深睡% 絕對值（上限30%）　18% 為目標基準線　⚡ = 有斷電紀錄　紫柱 = 偏離中位數 ±30%'+corrStr;
   };
 })();
 
