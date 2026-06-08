@@ -1812,7 +1812,7 @@ function renderDualTrackCard(){
 //  BETA: 睡眠變異亮燈 + 行程回溯對照
 // ══════════════════════════════════════════════════════════
 (function(){
-  var _deepMed=0,_durMed=0;
+  var _deepMed=0,_durMed=0,_activeDate=null;
 
   function median(arr){
     if(!arr.length) return 0;
@@ -2113,6 +2113,9 @@ function renderDualTrackCard(){
     var wrap=document.getElementById('scr-bars-wrap');
     if(!wrap) return;
     wrap.innerHTML='';
+    _activeDate=null; // 重建柱時清除選取狀態
+    var panel=document.getElementById('scr-panel');
+    if(panel){panel.style.display='none';panel.innerHTML='';}
     // 高度 = deepP 絕對值，以 30% 為視覺上限（超過仍 cap 在 100%）
     // 18% 目標線 = 60% 高度（18/30）
     var DEEP_CEIL=30;
@@ -2143,7 +2146,22 @@ function renderDualTrackCard(){
       lbl.textContent=(n.date||'').slice(5)+(n._estimated?' ~':'');
 
       col.appendChild(bar);col.appendChild(lbl);
-      (function(entry){col.addEventListener('click',function(){showPanel(entry);});})(n);
+      (function(entry,colEl){
+        col.addEventListener('click',function(){
+          var panel=document.getElementById('scr-panel');
+          if(_activeDate===entry.date){
+            // 同一天 → 收起
+            _activeDate=null;
+            if(panel){panel.style.display='none';panel.innerHTML='';}
+            document.querySelectorAll('.scr-bar-col').forEach(function(c){c.style.opacity='';});
+          } else {
+            _activeDate=entry.date;
+            document.querySelectorAll('.scr-bar-col').forEach(function(c){c.style.opacity='.45';});
+            colEl.style.opacity='1';
+            showPanel(entry);
+          }
+        });
+      })(n,col);
       wrap.appendChild(col);
     });
 
