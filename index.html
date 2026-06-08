@@ -219,6 +219,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .hd-spinner-inline{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
 
 /* MOBILE */
+.ch-sm{height:90px}
+.ch-lg{height:180px}
+@media(max-width:720px){
+  .ch-sm{height:70px}
+  .ch-lg{height:130px}
+}
 @media(max-width:720px){
   body{flex-direction:column}
   .sb{width:100%;min-height:auto;height:auto;position:fixed;bottom:0;top:auto;left:0;right:0;flex-direction:row;border-right:none;border-top:.5px solid var(--bstr);padding:0 0 env(safe-area-inset-bottom);z-index:200}
@@ -363,7 +369,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   <!-- 情緒正弦波 -->
   <div class="card cm">
     <div class="lbl">🌊 內在情緒正弦波 <span style="text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400">— 已去噪</span></div>
-    <div style="position:relative;height:90px"><canvas id="ov-mc"></canvas></div>
+    <div class="ch-sm" style="position:relative;"><canvas id="ov-mc"></canvas></div>
     <div class="msr">
       <div class="mst"><div class="lbl">週期</div><div class="val">~18 天</div></div>
       <div class="mst"><div class="lbl">當前位置</div><div class="val" id="mood-trend" style="color:var(--ok)">—</div></div>
@@ -438,7 +444,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="cco-inner">
       <div>
-        <div style="position:relative;height:180px"><canvas id="corr-chart"></canvas></div>
+        <div class="ch-lg" style="position:relative;"><canvas id="corr-chart"></canvas></div>
         <div class="corr-legend">
           <span class="corr-leg-item"><span style="width:14px;height:3px;background:var(--mental);border-radius:2px;display:inline-block"></span>情緒分（折線）</span>
           <span class="corr-leg-item"><span style="display:inline-block;width:14px;height:0;border-top:2px dashed #5c7a96"></span>睡眠戰力（虛線）</span>

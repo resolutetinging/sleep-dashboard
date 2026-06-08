@@ -199,45 +199,69 @@
   /* Bold axis ticks */
   .chart-wrap canvas, .hypno-wrap canvas { font-weight:700 !important; }
 
+  /* ── TABLET / LANDSCAPE MOBILE (≤ 900px) ── */
   @media(max-width:900px) {
     .app { grid-template-columns:1fr; }
-    .sidebar { position:static; height:auto; }
+    .sidebar { display:none; }
     .stats-row { grid-template-columns:repeat(2,1fr); }
     .two-col { grid-template-columns:1fr; }
+    /* Allow banner right block to drop to next line when tight */
+    #dailySummary { flex-wrap:wrap; gap:12px !important; }
   }
 
-  /* ── MOBILE (≤ 600px) ── */
+  /* ── MOBILE PORTRAIT (≤ 600px) ── */
   @media(max-width:600px) {
     /* Layout */
-    .sidebar { display:none; }
-    .main { padding:16px 14px; gap:16px; }
+    .main { padding:14px 12px; gap:14px; overflow-x:hidden; }
 
     /* Page title */
     .page-title { font-size:18px; }
 
-    /* Daily summary banner */
+    /* Daily summary banner: stack vertically */
     #dailySummary {
-      grid-template-columns:1fr !important;
-      gap:12px !important;
-      padding:14px 16px !important;
+      flex-direction: column;
+      gap: 10px !important;
+      padding: 12px 14px !important;
+      flex-wrap: nowrap;
     }
-    #dailySummary > div:first-child,
-    #dailySummary { grid-template-columns:1fr !important; gap:14px !important; }
-    #ds-score, #ds-single { font-size:34px !important; line-height:1 !important; }
-    .ds-dual-col { display:flex; gap:12px; }
-    .ds-track-row { gap:6px !important; }
-    .ds-track-score { font-size:22px !important; }
+    /* Left cluster: let 3 sub-blocks wrap into rows */
+    #dailySummary > div:nth-child(1) {
+      flex-wrap: wrap;
+      gap: 0;
+      flex-shrink: 1 !important;
+    }
+    /* Spacer: not needed when stacked */
+    #dailySummary > div:nth-child(2) { display:none !important; }
+    /* Right block: remove vertical divider, lay out horizontally */
+    #dailySummary > div:nth-child(3) {
+      border-left: none !important;
+      border-top: 1px solid var(--border);
+      padding-left: 0 !important;
+      padding-top: 10px;
+      min-width: unset !important;
+      flex-direction: row !important;
+      flex-wrap: wrap;
+      gap: 4px 16px !important;
+    }
+    .ds-right-item { flex:1; min-width:90px; border-bottom:none !important; padding:2px 0 !important; }
+    .ds-right-val { font-size:11px; }
+    /* Shrink score numbers */
+    #ds-score, #ds-single { font-size:30px !important; line-height:1 !important; }
+    .ds-track-row { gap:5px !important; }
+    .ds-track-score { font-size:20px !important; }
+    .ds-badge { font-size:8.5px !important; }
 
     /* Stat cards: 2 col */
     .stats-row { grid-template-columns:repeat(2,1fr); gap:10px; }
-    .stat-val { font-size:22px; }
+    .stat-val { font-size:20px; }
+    .stat-label { font-size:10px; }
 
     /* Metrics grid: 1 col */
     .metrics-grid { grid-template-columns:1fr; gap:12px; }
     .metric-title { font-size:12px; }
 
     /* Panels */
-    .panel { padding:16px 14px; }
+    .panel { padding:14px 12px; }
 
     /* Panel header: stack title and buttons */
     .panel-header {
@@ -248,23 +272,17 @@
     .panel-title { font-size:13px; }
 
     /* Range buttons: wrap and smaller */
-    .range-btns, .range-btns ~ div {
-      flex-wrap:wrap;
-      gap:5px;
-    }
-    .range-btn, .pct-range-btn {
-      font-size:10px;
-      padding:4px 8px;
-    }
+    .range-btns, .range-btns ~ div { flex-wrap:wrap; gap:5px; }
+    .range-btn, .pct-range-btn { font-size:10px; padding:4px 8px; }
 
     /* Two-col panels */
     .two-col { grid-template-columns:1fr; gap:12px; }
 
     /* Combat power score */
-    #combatNum { font-size:44px !important; }
+    #combatNum { font-size:38px !important; }
 
-    /* Charts */
-    .chart-wrap canvas { height:160px !important; }
+    /* Charts: reduce to avoid dominating card layout */
+    .chart-wrap canvas { height:120px !important; }
 
     /* Toggle row */
     .toggle-wrap { margin-top:4px; }
