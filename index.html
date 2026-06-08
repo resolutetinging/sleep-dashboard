@@ -159,8 +159,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
 /* SCR: 睡眠變異亮燈 */
 .scr-bars-wrap{display:flex;align-items:flex-end;gap:4px;height:100px;position:relative;}
-.scr-target-line{position:absolute;left:0;right:0;border-top:1px dashed rgba(92,122,150,.35);pointer-events:none;}
-.scr-target-lbl{position:absolute;right:0;font-size:.52rem;color:var(--info);line-height:1;}
+.scr-target-line{position:absolute;left:0;right:0;pointer-events:none;}
+.scr-target-lbl{position:absolute;right:0;font-size:.52rem;line-height:1;}
+.scr-legend{display:flex;gap:10px;margin-top:.45rem;flex-wrap:wrap;}
+.scr-legend-item{display:flex;align-items:center;gap:4px;font-size:.6rem;color:var(--sub);}
+.scr-legend-line{width:14px;height:0;border-top-width:1.5px;border-top-style:dashed;flex-shrink:0;}
 .scr-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;cursor:pointer;}
 .scr-bar-col:hover .scr-bar{opacity:.65;}
 .scr-bar{width:100%;border-radius:3px 3px 0 0;transition:opacity .15s;min-height:4px;}
@@ -579,7 +582,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <button onclick="try{buildSleepCausalSection();}catch(e){}" style="margin-left:auto;font-size:.6rem;padding:2px 9px;border-radius:12px;border:1px solid var(--bstr);background:transparent;color:var(--faint);cursor:pointer;">↻ 重整</button>
     </div>
     <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
-    <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.3rem;line-height:1.5"></div>
+    <div id="scr-legend" class="scr-legend"></div>
+    <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.25rem;line-height:1.5"></div>
     <div id="scr-panel" class="scr-panel" style="display:none"></div>
   </div>
 
@@ -2165,18 +2169,44 @@ function renderDualTrackCard(){
       wrap.appendChild(col);
     });
 
-    // 18% 目標線（60% 高度）
-    var tl=document.createElement('div');tl.className='scr-target-line';
-    tl.style.bottom='60%'; // 18/30 = 60%
-    var tlbl=document.createElement('div');tlbl.className='scr-target-lbl';
-    tlbl.style.bottom='calc(60% + 1px)';
-    tlbl.textContent='18%';
-    wrap.appendChild(tl);wrap.appendChild(tlbl);
+    // ── 參考線 ──
+    function addRefLine(pct,color,isDashed,label){
+      var bot=Math.min(pct/DEEP_CEIL*100,100).toFixed(1)+'%';
+      var ln=document.createElement('div');ln.className='scr-target-line';
+      ln.style.bottom=bot;
+      ln.style.borderTopColor=color;
+      ln.style.borderTopStyle=isDashed?'dashed':'solid';
+      ln.style.borderTopWidth='1.5px';
+      var lbl=document.createElement('div');lbl.className='scr-target-lbl';
+      lbl.style.bottom='calc('+bot+' + 2px)';
+      lbl.style.color=color;
+      lbl.textContent=label;
+      wrap.appendChild(ln);wrap.appendChild(lbl);
+    }
+    // 國際定義 18%（藍色虛線）
+    addRefLine(18,'rgba(78,110,138,.7)',true,'18%');
+    // 個人中位數（暖綠實線）
+    if(_deepMed>0) addRefLine(_deepMed,'rgba(94,143,126,.75)',false,_deepMed.toFixed(0)+'%');
+
+    // ── 圖例 ──
+    var lgd=document.getElementById('scr-legend');
+    if(lgd){
+      lgd.innerHTML='';
+      function mkLegend(color,style,text){
+        var item=document.createElement('div');item.className='scr-legend-item';
+        var line=document.createElement('div');line.className='scr-legend-line';
+        line.style.borderTopColor=color;line.style.borderTopStyle=style;
+        var lbl=document.createElement('span');lbl.textContent=text;
+        item.appendChild(line);item.appendChild(lbl);lgd.appendChild(item);
+      }
+      mkLegend('rgba(78,110,138,.8)','dashed','AASM 建議 18%');
+      if(_deepMed>0) mkLegend('rgba(94,143,126,.85)','solid','個人中位數 '+_deepMed.toFixed(1)+'%');
+    }
 
     var weights={};try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
     var corrStr=weights.lastCorrected?' · 係數已校正 ×'+(weights.highIntensity||1).toFixed(2):'';
     var medEl=document.getElementById('scr-median-lbl');
-    if(medEl) medEl.textContent='深睡% 絕對值（上限30%）　18% 為目標基準線　⚡ = 有斷電紀錄　紫柱 = 偏離中位數 ±30%'+corrStr;
+    if(medEl) medEl.textContent='深睡% 絕對值　⚡ = 有斷電紀錄　紫柱 = 偏離個人中位數 ±30%'+corrStr;
   };
 })();
 
