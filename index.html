@@ -680,11 +680,16 @@ function openOpHist(){
   var f=$('op-frame');
   if(!f) return;
   var tryOpen=function(){try{f.contentWindow.openHist();}catch(e){}};
-  if(f.src==='about:blank'||!f.contentDocument||f.contentDocument.readyState!=='complete'){
-    f.src=frameSrcs['op'];
+  // 確保 iframe 已載入再呼叫，不重設 src（initFrames 已處理）
+  try{
+    if(f.contentDocument&&f.contentDocument.readyState==='complete'){
+      tryOpen();
+    } else {
+      if(f.src==='about:blank'||!f.src) f.src=frameSrcs['op'];
+      f.addEventListener('load',function onL(){f.removeEventListener('load',onL);setTimeout(tryOpen,200);},{once:true});
+    }
+  }catch(e){
     f.addEventListener('load',function onL(){f.removeEventListener('load',onL);setTimeout(tryOpen,200);},{once:true});
-  } else {
-    tryOpen();
   }
 }
 
