@@ -672,29 +672,29 @@ function initFrames(){Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(
 
 /* COMBAT */
 var _combat=null,_debt=null,_lag=null;
-function scoreColor(s){return s>=70?'var(--ok)':s>=40?'var(--warn)':'var(--danger)';}
-function scoreLabel(s){return s>=85?'頂峰':s>=70?'良好':s>=55?'普通':s>=40?'注意':'需休息';}
+function scoreColor(s){return s>=70?'var(--ok)':s>=60?'var(--warn)':'var(--danger)';}
+function scoreLabel(s){return s>=85?'頂峰':s>=70?'良好':s>=60?'注意':'需休息';}
 function paceBody(s){
   if(s>=70)return '<strong>09–12h</strong> 深度思考任務<br><strong>14–17h</strong> 社交/創作協作<br><strong>20h後</strong> 強制降速';
-  if(s>=40)return '<strong>上午</strong> 輕度例行任務<br><strong>下午</strong> 保持節奏，不啟新項目<br><strong>晚間</strong> 提早收工補眠';
+  if(s>=60)return '<strong>上午</strong> 輕度例行任務<br><strong>下午</strong> 保持節奏，不啟新項目<br><strong>晚間</strong> 提早收工補眠';
   return '<strong>今日</strong> 以休息為主<br><strong>強制</strong> 補眠、獨處、身體照護';
 }
 function updateCombat(score,skipAnim){
   if(isNaN(score)||score===_combat)return;
   _combat=score;
   var col=scoreColor(score);
-  var cols=score>=70?['#27ae60','#2ecc71']:score>=40?['#e67e22','#f39c12']:['#c0392b','#e74c3c'];
+  var cols=score>=70?['#27ae60','#2ecc71']:score>=60?['#e67e22','#f39c12']:['#c0392b','#e74c3c'];
   var gg=$('gg');if(gg){gg.children[0].setAttribute('stop-color',cols[0]);gg.children[1].setAttribute('stop-color',cols[1]);}
   var arc=$('g-arc');if(arc)arc.style.strokeDashoffset=220*(1-score/100);
   var numEl=$('g-num');
   var startVal=parseInt(numEl.textContent)||0;if(isNaN(startVal))startVal=0;
-  if(skipAnim){numEl.textContent=score;numEl.setAttribute('fill',score>=70?'#27ae60':score>=40?'#e67e22':'#c0392b');}
-  else{var t0=performance.now(),dur=900;function step(t){var p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3);numEl.textContent=Math.round(startVal+(score-startVal)*e);numEl.setAttribute('fill',score>=70?'#27ae60':score>=40?'#e67e22':'#c0392b');if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
-  var sl=$('g-status-label');if(sl){sl.textContent=scoreLabel(score)+' · '+score;sl.className='pill '+(score>=70?'p-ok':score>=40?'p-warn':'p-no');}
-  var dr=$('g-drag');if(dr)dr.textContent=score>=70?'睡眠結構健康，維持現有作息':score>=40?'深睡或REM偏低，注意補眠':'深睡&REM嚴重不足，今日強制休息';
+  if(skipAnim){numEl.textContent=score;numEl.setAttribute('fill',score>=70?'#27ae60':score>=60?'#e67e22':'#c0392b');}
+  else{var t0=performance.now(),dur=900;function step(t){var p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3);numEl.textContent=Math.round(startVal+(score-startVal)*e);numEl.setAttribute('fill',score>=70?'#27ae60':score>=60?'#e67e22':'#c0392b');if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
+  var sl=$('g-status-label');if(sl){sl.textContent=scoreLabel(score)+' · '+score;sl.className='pill '+(score>=70?'p-ok':score>=60?'p-warn':'p-no');}
+  var dr=$('g-drag');if(dr)dr.textContent=score>=70?'睡眠結構健康，維持現有作息':score>=60?'深睡或REM偏低，注意補眠':'深睡&REM嚴重不足，今日強制休息';
   var nc=$('num-combat');if(nc){nc.textContent=score;nc.style.color=col;}
   var bc=$('bar-combat');if(bc){bc.style.background=col;setTimeout(()=>bc.style.width=score+'%',200);}
-  var pb=$('pace-badge');if(pb){pb.textContent=scoreLabel(score)+'狀態';pb.style.background=score>=70?'rgba(39,174,96,.14)':score>=40?'rgba(230,126,34,.14)':'rgba(192,57,43,.12)';pb.style.color=col;}
+  var pb=$('pace-badge');if(pb){pb.textContent=scoreLabel(score)+'狀態';pb.style.background=score>=70?'rgba(39,174,96,.14)':score>=60?'rgba(230,126,34,.14)':'rgba(192,57,43,.12)';pb.style.color=col;}
   var pbo=$('pace-body');if(pbo)pbo.innerHTML=paceBody(score);
   var eEl=$('g-endurance');if(eEl)eEl.textContent=String(8+Math.floor(score/100*14)).padStart(2,'0')+':00';
   var eb=$('g-endurance-bar');if(eb)eb.style.width=score+'%';
@@ -1215,7 +1215,8 @@ function renderWeekStrip(moodMap){
 /* MAIN RENDER */
 var chartsDrawn=false;
 function renderOv(){
-  var stored=localStorage.getItem('sas_combat');
+  var today=new Date().toISOString().slice(0,10);
+  var stored=localStorage.getItem('sas_combat_date')===today?localStorage.getItem('sas_combat'):null;
   if(stored&&!_combat)updateCombat(parseInt(stored),true);
 
   var moods=getMoods();
