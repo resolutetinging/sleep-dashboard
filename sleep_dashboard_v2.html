@@ -397,7 +397,7 @@
   </div>
 
   <!-- DAILY SUMMARY BANNER -->
-  <div id="dailySummary" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:flex;align-items:stretch;gap:0;margin-bottom:4px">
+  <div id="dailySummary" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:0;margin-bottom:4px">
 
     <!-- 左叢：單夜 | 3夜加權 | 雙軌能耗 -->
     <div style="display:flex;align-items:flex-start;gap:0;flex-shrink:0;">
@@ -2037,17 +2037,16 @@ function saveSleepToLocalStorage() {
     const corePct  = last.core_min  / totalSleep * 100;
     const awakePct = last.awake_min / t * 100;
 
-    const last7 = allN.slice(-7).map(n => {
+    const _mapN = n => {
       const ts = n.deep_min + n.rem_min + n.core_min || 1;
-      return {
-        date:    n.date,
-        bedtime: n.bedtime || null,
-        wake:    n.wake    || null,
-        durH:    +(n.total_min / 60).toFixed(1),
-        deepP:   Math.round(n.deep_min / ts * 100),
-        remP:    Math.round(n.rem_min  / ts * 100)
-      };
-    });
+      return { date: n.date, bedtime: n.bedtime||null, wake: n.wake||null,
+               durH: +(n.total_min/60).toFixed(1),
+               deepP: Math.round(n.deep_min/ts*100), remP: Math.round(n.rem_min/ts*100) };
+    };
+    const last7   = allN.slice(-7).map(_mapN);
+    const last14  = allN.slice(-14).map(_mapN);
+    const last30  = allN.slice(-30).map(_mapN);
+    const last180 = allN.slice(-180).map(_mapN);
 
     // 讀取 updateCombatPower 已寫入的分數（refreshAll 在前，此函式在後）
     const combatSingle   = parseInt(localStorage.getItem('sas_combat_single')  ||'0')||null;
@@ -2066,7 +2065,7 @@ function saveSleepToLocalStorage() {
       combatSingle,
       combatWeighted,
       nightsWeighted,
-      trend7: last7
+      trend7: last7, trend14: last14, trend30: last30, trend180: last180
     }));
     // sas_combat 與 sas_combat_single 由 updateCombatPower 寫入
   } catch(e) {}
@@ -2193,7 +2192,7 @@ async function runWeightedAI() {
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content:
           `你是睡眠分析師。三夜加權戰力（${label}）：均值${avg}，標準差${std}，近7天趨勢${trend > 0 ? '+' : ''}${trend}。序列（最新14筆）：${scores.slice(-14).join('、')}。\n用繁體中文2句話：①趨勢與規律性現況；②最關鍵行動建議。直擊痛點，無廢話。` }],
-        max_tokens: 120, temperature: 0.5
+        max_tokens: 200, temperature: 0.5
       })
     });
     const json = await resp.json();

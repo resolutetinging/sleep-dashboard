@@ -157,6 +157,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-action-body{font-size:.72rem;color:var(--sub);line-height:1.7}
 /* BETA CARD */
 .beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
+/* SCR range pills */
+.scr-range-btn{font-size:.58rem;padding:2px 8px;border-radius:10px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s;font-family:inherit;}
+.scr-range-btn.active,.scr-range-btn:hover{background:var(--text);color:var(--card);border-color:var(--text);}
 /* SCR: 睡眠變異亮燈 */
 .scr-bars-wrap{display:flex;align-items:flex-end;gap:4px;height:100px;position:relative;}
 .scr-target-line{position:absolute;left:0;right:0;pointer-events:none;}
@@ -585,7 +588,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="lbl" style="margin-bottom:1rem;display:flex;align-items:center;gap:8px;">
       🔍 睡眠變異亮燈與因果回溯
       <span class="beta-badge">Beta</span>
-      <button onclick="try{buildSleepCausalSection();}catch(e){}" style="margin-left:auto;font-size:.6rem;padding:2px 9px;border-radius:12px;border:1px solid var(--bstr);background:transparent;color:var(--faint);cursor:pointer;">↻ 重整</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:4px;">
+        <button class="scr-range-btn active" id="scr-r7"  onclick="setScrRange(7)">1週</button>
+        <button class="scr-range-btn"        id="scr-r14" onclick="setScrRange(14)">2週</button>
+        <button class="scr-range-btn"        id="scr-r30" onclick="setScrRange(30)">1月</button>
+        <button class="scr-range-btn"        id="scr-r180"onclick="setScrRange(180)">半年</button>
+        <button onclick="try{buildSleepCausalSection();}catch(e){}" style="margin-left:4px;font-size:.6rem;padding:2px 9px;border-radius:12px;border:1px solid var(--bstr);background:transparent;color:var(--faint);cursor:pointer;">↻ 重整</button>
+      </div>
     </div>
     <div id="scr-bars-wrap" class="scr-bars-wrap"></div>
     <div id="scr-legend" class="scr-legend"></div>
@@ -2094,10 +2103,21 @@ function renderDualTrackCard(){
     }
   }
 
+  var _scrDays=7;
+  window.setScrRange=function(d){
+    _scrDays=d;
+    [7,14,30,180].forEach(function(n){
+      var b=document.getElementById('scr-r'+n);
+      if(b) b.classList.toggle('active',n===d);
+    });
+    try{buildSleepCausalSection();}catch(e){}
+  };
+
   window.buildSleepCausalSection=function(){
     var sl={};
     try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
-    var trend7=sl.trend7||[];
+    var tKey=_scrDays<=7?'trend7':_scrDays<=14?'trend14':_scrDays<=30?'trend30':'trend180';
+    var trend7=(sl[tKey]||sl.trend7||[]);
     if(!trend7.length){
       var wrap=document.getElementById('scr-bars-wrap');
       if(wrap){var msg=document.createElement('div');msg.style.cssText='font-size:.68rem;color:var(--faint);';msg.textContent='請先開啟 Sleep Dashboard 以載入近 7 日資料';wrap.appendChild(msg);}
