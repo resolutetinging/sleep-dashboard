@@ -2182,7 +2182,9 @@ function renderDualTrackCard(){
       if(dep) bar.style.outline='1.5px solid var(--warn)';
 
       var lbl=document.createElement('div');lbl.className='scr-bar-date';
-      lbl.textContent=(n.date||'').slice(5)+(n._estimated?' ~':'');
+      var _dow=['日','一','二','三','四','五','六'];
+      var _dowStr=n.date?'週'+_dow[new Date(n.date+'T12:00:00').getDay()]:'';
+      lbl.innerHTML='<div>'+(n.date||'').slice(5)+(n._estimated?' ~':'')+'</div><div>'+_dowStr+'</div>';
 
       col.appendChild(bar);col.appendChild(lbl);
       (function(entry,colEl){
