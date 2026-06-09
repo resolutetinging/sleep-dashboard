@@ -1982,16 +1982,19 @@ function renderDualTrackCard(){
     panel.innerHTML='';
     panel.style.display='block';
 
+    // Day_N = 柱子日期（醒來當日）；Day_N-1 = 入睡當日
     var date=entry.date||'';
+    var dayN1=offsetDate(date,-1);
+
     var deepDelta=_deepMed>0?((entry.deepP-_deepMed)/_deepMed*100):null;
     var deltaStr=deepDelta!==null?(deepDelta>=0?'▲+':'▼')+Math.abs(deepDelta).toFixed(0)+'% vs 中位數':'';
 
     var title=document.createElement('div');
     title.style.cssText='font-weight:700;font-size:.7rem;margin-bottom:.4rem;color:var(--text);';
-    title.textContent='📅 '+date+'  深睡 '+(entry.deepP||0)+'%  '+deltaStr+'  總時 '+(entry.durH||0)+'h';
+    title.textContent='📅 '+date+'（醒來）  深睡 '+(entry.deepP||0)+'%  '+deltaStr+'  總時 '+(entry.durH||0)+'h';
     panel.appendChild(title);
 
-    // ⏰ 入睡時刻
+    // ⏰ 入睡時刻（Day_N-1 當晚）
     var bedtime=entry.bedtime||null;
     if(!bedtime){
       try{
@@ -1999,13 +2002,57 @@ function renderDualTrackCard(){
         if(sl2.date===date) bedtime=sl2.bedtime||null;
       }catch(ex){}
     }
-    appendSectionHdr(panel,'⏰ 入睡時刻');
+    appendSectionHdr(panel,'⏰ 入睡時刻（'+dayN1+' 當晚）');
     appendQuote(panel,null,[bedtime||'需重新開啟 Sleep Dashboard 以同步']);
 
-    // 📋 前 3 日行程安排
-    appendSectionHdr(panel,'📋 前 3 日行程安排');
+    // 一次讀取 mental map，後面兩個區塊共用
+    var mentalMap=getMentalByDate();
+
+    // 📋 入睡當日行程安排（Day_N-1）
+    appendSectionHdr(panel,'📋 入睡當日行程安排');
+    var rev1=null;
+    try{rev1=JSON.parse(localStorage.getItem('review_'+dayN1)||'null');}catch(e){}
+    if(rev1){
+      if(rev1.restMode){
+        appendQuote(panel,dayN1,['🌿 休假中'+(rev1.restNote?' — '+rev1.restNote:'')]);
+      } else {
+        var items1=rev1.items||[];
+        var done1=items1.filter(function(t){return t.status==='done';}).length;
+        appendQuote(panel,dayN1,[
+          (rev1.mode||'未知')+' · '+(rev1.feel||'未知'),
+          done1+'/'+items1.length+' 件完成'
+        ]);
+      }
+    } else {
+      appendNote(panel,'[入睡當日（'+dayN1+'）無 Optimizer 紀錄]');
+    }
+
+    // 📝 入睡當日心理日誌足跡（Day_N-1）
+    appendSectionHdr(panel,'📝 入睡當日心理日誌足跡');
+    var es1=mentalMap[dayN1]||[];
+    if(es1.length){
+      es1.forEach(function(e){
+        var lines=[];
+        if(e.moodScore) lines.push('心情 '+e.moodScore+'/10');
+        var tags=(e.emotionTags||[]).filter(Boolean);
+        if(tags.length) lines.push(tags.join(' / '));
+        var factors=(e.impactFactors||[]).filter(function(f){return f&&(f.detail||f.name||typeof f==='string');});
+        factors.forEach(function(f){
+          var lbl=f.detail||f.name||(typeof f==='string'?f:'');
+          if(lbl) lines.push(lbl);
+        });
+        if(e.notes&&e.notes.trim())
+          e.notes.trim().split('\n').forEach(function(l){if(l.trim()) lines.push(l.trim());});
+        appendQuote(panel,dayN1,lines);
+      });
+    } else {
+      appendNote(panel,'[入睡當日（'+dayN1+'）無 Mental Dashboard 日誌記錄]');
+    }
+
+    // 📋 往前 3 日累積行程（Day_N-2, N-3, N-4）
+    appendSectionHdr(panel,'📋 往前 3 日累積行程');
     var hasOpt=false;
-    for(var i=1;i<=3;i++){
+    for(var i=2;i<=4;i++){
       var d=offsetDate(date,-i);
       var rev=null;
       try{rev=JSON.parse(localStorage.getItem('review_'+d)||'null');}catch(e){}
@@ -2023,13 +2070,12 @@ function renderDualTrackCard(){
         }
       }
     }
-    if(!hasOpt) appendNote(panel,'[前 3 日無紀錄 — 高機率為離線或休假回程狀態]');
+    if(!hasOpt) appendNote(panel,'[往前 3 日無紀錄 — 高機率為離線或休假回程狀態]');
 
-    // 📝 前 3 日心理日誌足跡
-    appendSectionHdr(panel,'📝 前 3 日心理日誌足跡');
-    var mentalMap=getMentalByDate();
+    // 📝 往前 3 日心理日誌累積（Day_N-2, N-3, N-4）
+    appendSectionHdr(panel,'📝 往前 3 日心理日誌累積');
     var hasJournal=false;
-    for(var i=1;i<=3;i++){
+    for(var i=2;i<=4;i++){
       var d=offsetDate(date,-i);
       var es=mentalMap[d]||[];
       if(es.length){
@@ -2041,32 +2087,30 @@ function renderDualTrackCard(){
           if(tags.length) lines.push(tags.join(' / '));
           var factors=(e.impactFactors||[]).filter(function(f){return f&&(f.detail||f.name||typeof f==='string');});
           factors.forEach(function(f){
-            var label=f.detail||f.name||(typeof f==='string'?f:'');
-            if(label) lines.push(label);
+            var lbl=f.detail||f.name||(typeof f==='string'?f:'');
+            if(lbl) lines.push(lbl);
           });
           if(e.notes&&e.notes.trim())
-            e.notes.trim().split('\n').forEach(function(l){if(l.trim())lines.push(l.trim());});
+            e.notes.trim().split('\n').forEach(function(l){if(l.trim()) lines.push(l.trim());});
           appendQuote(panel,d,lines);
         });
       }
     }
-    if(!hasJournal) appendNote(panel,'[前 3 日無 Mental Dashboard 日誌記錄]');
+    if(!hasJournal) appendNote(panel,'[往前 3 日無 Mental Dashboard 日誌記錄]');
 
-    // 🛠️ 體能續航演算法校正狀態
+    // 🛠️ 體能續航演算法校正狀態（以醒來當日 Day_N 為基準）
     appendSectionHdr(panel,'🛠️ 體能續航演算法校正狀態');
     var depTime=getDepletedAt(date);
     var log=getEnergyLog(date);
     var predEnd=predictedEndurance(entry);
 
     if(log&&log.length){
-      // 完整事件時間軸
       var eIcons={low:'⚡',rest:'🌿',recovery:'💚'};
       var logLines=log.map(function(e){
         return (eIcons[e.type]||'·')+' '+e.time+'  '+e.label;
       });
       appendQuote(panel,null,logLines);
 
-      // 能耗時差（基於第一個 low 事件）
       if(depTime){
         var delta=timeDeltaHours(depTime,predEnd);
         var sign=delta>=0?'+':'';
@@ -2075,7 +2119,6 @@ function renderDualTrackCard(){
         ]);
       }
 
-      // 💡 配速建議（偵測到「小休後恢復」模式）
       if(detectRecovery(log)){
         appendSectionHdr(panel,'💡 配速建議');
         appendQuote(panel,null,[
@@ -2084,7 +2127,6 @@ function renderDualTrackCard(){
         ]);
       }
 
-      // 演算法校正狀態
       var weights={};
       try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
       if(weights.lastCorrected){
