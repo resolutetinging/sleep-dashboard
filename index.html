@@ -63,12 +63,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .vsub{font-size:.75rem;color:#6e6a62;font-weight:500}
 
 .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:9px}
-/* Layout — no sleep proportion card */
-.cg {grid-column:1/5;grid-row:1/4}   /* gauge, tall */
+/* Layout — top row same height; cm full-width below */
+.cg {grid-column:1/5;grid-row:1}      /* gauge, aligned with cp/cb */
 .cp {grid-column:5/10;grid-row:1}     /* pace */
 .cb {grid-column:10/13;grid-row:1}    /* 3D bars */
-.cm {grid-column:5/13;grid-row:2}     /* mental wave */
-.cd {grid-column:5/13;grid-row:3}     /* debt */
+.cm {grid-column:1/13;grid-row:2}     /* mental dual-track, full-width */
+.cd {grid-column:1/13;grid-row:3}     /* debt, full-width */
 .chw{grid-column:1/13;grid-row:4}     /* week view */
 .clw{grid-column:1/13;grid-row:5}     /* last week recap */
 .cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
