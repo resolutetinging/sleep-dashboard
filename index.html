@@ -369,22 +369,37 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
   </div>
 
-  <!-- 情緒正弦波 -->
+  <!-- 情緒雙軌對照 BETA -->
   <div class="card cm">
-    <div class="lbl">🌊 內在情緒正弦波 <span style="text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400">— 已去噪</span></div>
+    <div class="lbl">🌊 內在情緒雙軌對照 <span style="text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400">BETA</span></div>
+
+    <div style="font-size:.6rem;color:var(--sub);letter-spacing:.05em;margin-bottom:.3rem">① 理論基準線（18天固定週期）</div>
     <div class="ch-sm" style="position:relative;"><canvas id="ov-mc"></canvas></div>
-    <div class="msr">
-      <div class="mst"><div class="lbl">週期</div><div class="val">~18 天</div></div>
-      <div class="mst"><div class="lbl">當前位置</div><div class="val" id="mood-trend" style="color:var(--ok)">—</div></div>
-      <div class="mst"><div class="lbl">滯後效應</div><div class="val" id="lag-days" style="color:var(--info)">—</div></div>
+
+    <div style="font-size:.6rem;color:var(--sub);letter-spacing:.05em;margin:.6rem 0 .3rem">② 實時情緒曲線（MA5 去噪　<span style="color:rgba(122,138,154,.9)">—</span> 平滑　<span style="color:rgba(158,107,122,.5)">●</span> 原始　<span style="color:#b08d62">- -</span> 預測）</div>
+    <div class="ch-sm" style="position:relative;"><canvas id="ov-mc-real"></canvas></div>
+
+    <div class="msr" style="margin-top:.5rem">
+      <div class="mst"><div class="lbl">當前走勢</div><div class="val" id="mood-trend" style="color:var(--ok)">—</div></div>
+      <div class="mst"><div class="lbl">行為滯後</div><div class="val" id="lag-days" style="color:var(--info)">—</div></div>
     </div>
+
+    <div id="mood-analysis-panel" style="margin-top:.65rem;padding:.6rem .7rem;border-radius:var(--rsm);background:var(--bg2);border:.5px solid var(--border)">
+      <div class="lbl" style="font-size:.66rem;margin-bottom:5px">🧬 內在情緒綜合分析</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.67rem;color:var(--sub);line-height:1.75">
+        <div id="ma-cycle">—</div>
+        <div id="ma-lag">—</div>
+        <div id="ma-trend"></div>
+      </div>
+    </div>
+
     <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
       <div class="lbl" style="margin-bottom:5px">指標定義</div>
       <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--sub);line-height:1.6">
-        <div><strong style="color:var(--text)">正弦波</strong>：去除天氣/社交等環境因子後的純內在情緒週期，用於識別個人生理情緒節律</div>
-        <div><strong style="color:var(--text)">週期</strong>：連續高峰到高峰或低谷到低谷的平均間隔天數（基於歷史紀錄估算）</div>
-        <div><strong style="color:var(--text)">滯後效應</strong>：生理狀態（睡眠）改變後，情緒分數跟著變化所需的平均天數</div>
-        <div><strong style="color:var(--text)">預測虛線</strong>：依識別週期外推的預測段，僅供參考，實際以紀錄為準</div>
+        <div><strong style="color:var(--text)">理論基準線</strong>：純生理節律假設（18天週期），去除環境干擾後的參考模型</div>
+        <div><strong style="color:var(--text)">MA5 去噪曲線</strong>：5日移動平均，濾除單日突發情緒波動後的內在情緒基調</div>
+        <div><strong style="color:var(--text)">預測虛線</strong>：以近半週期實測斜率外推，供防禦性配速參考</div>
+        <div><strong style="color:var(--text)">行為滯後</strong>：情緒下滑後，行為完成率跟著下降所需的平均天數</div>
       </div>
     </div>
   </div>
@@ -938,6 +953,125 @@ for(var _i=0;_i<35;_i++){var _d=new Date();_d.setDate(_d.getDate()-29+_i);D30.pu
 for(var _i=0;_i<30;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI)+.3*(Math.random()-.5))*10)/10);
 for(var _i=0;_i<5;_i++)PM.push(Math.round((5+3.5*Math.sin(((30+_i)/18)*2*Math.PI))*10)/10);
 
+/* ── MOOD DUAL-TRACK — 5日移動平均 + 實測週期/滯後 ── */
+function movingAvg5(arr){
+  return arr.map(function(_,i){
+    var vals=[];
+    for(var j=Math.max(0,i-2);j<=Math.min(arr.length-1,i+2);j++){
+      if(arr[j]!==null&&arr[j]!==undefined)vals.push(arr[j]);
+    }
+    return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:null;
+  });
+}
+function buildRealMoodArrays(days){
+  var moods=getMoods(),moodMap={};
+  moods.forEach(function(m){moodMap[m.date]=m.score;});
+  var labels=[],raw=[];
+  for(var i=days-1;i>=0;i--){
+    var d=new Date();d.setDate(d.getDate()-i);
+    labels.push((d.getMonth()+1)+'/'+d.getDate());
+    var k=dkey(d);raw.push(moodMap[k]!==undefined?moodMap[k]:null);
+  }
+  return{labels:labels,raw:raw,smoothed:movingAvg5(raw)};
+}
+function calcRealCycle(smoothed){
+  var pts=[];
+  smoothed.forEach(function(v,i){if(v!==null)pts.push({i:i,v:v});});
+  if(pts.length<8)return null;
+  var peaks=[],troughs=[];
+  for(var k=1;k<pts.length-1;k++){
+    var p=pts[k-1].v,c=pts[k].v,n=pts[k+1].v;
+    if(c>p&&c>n)peaks.push(pts[k].i);
+    if(c<p&&c<n)troughs.push(pts[k].i);
+  }
+  var intervals=[];
+  for(var pi=1;pi<peaks.length;pi++)intervals.push(peaks[pi]-peaks[pi-1]);
+  for(var ti=1;ti<troughs.length;ti++)intervals.push(troughs[ti]-troughs[ti-1]);
+  if(!intervals.length)return null;
+  return Math.round(intervals.reduce(function(a,b){return a+b;},0)/intervals.length);
+}
+function calcSleepToMoodLag(smoothedArr,days){
+  var combatMap={};
+  try{
+    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
+    (sl.trend7||[]).forEach(function(n){
+      var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
+      combatMap[n.date]=(dp*0.7+rp*0.3)/10;
+    });
+  }catch(e){}
+  var moodByDate={};
+  for(var i=0;i<days;i++){var d=new Date();d.setDate(d.getDate()-(days-1-i));moodByDate[dkey(d)]=smoothedArr[i];}
+  var cdates=Object.keys(combatMap).sort(),lags=[];
+  for(var ci=1;ci<cdates.length;ci++){
+    if(combatMap[cdates[ci-1]]-combatMap[cdates[ci]]<1.2)continue;
+    var ev=new Date(cdates[ci].replace(/-/g,'/'));
+    var bm=moodByDate[cdates[ci]];
+    if(bm===null||bm===undefined)continue;
+    for(var f=1;f<=7;f++){
+      var fd=new Date(ev);fd.setDate(ev.getDate()+f);
+      var fm=moodByDate[dkey(fd)];
+      if(fm!==null&&fm!==undefined&&bm-fm>0.5){lags.push(f);break;}
+    }
+  }
+  return lags.length>=2?Math.round(lags.reduce(function(a,b){return a+b;},0)/lags.length):null;
+}
+function buildMoodRealChart(moodData,realCycle){
+  var days=moodData.labels.length,smoothed=moodData.smoothed,raw=moodData.raw;
+  var lastNonNullIdx=-1,lastVal=null;
+  for(var i=smoothed.length-1;i>=0;i--){if(smoothed[i]!==null){lastNonNullIdx=i;lastVal=smoothed[i];break;}}
+  var halfCycle=realCycle?Math.max(3,Math.round(realCycle/2)):9;
+  var recent=[];
+  for(var i=smoothed.length-1;i>=0&&recent.length<halfCycle;i--){if(smoothed[i]!==null)recent.unshift(smoothed[i]);}
+  var slope=recent.length>=2?(recent[recent.length-1]-recent[0])/(recent.length-1):0;
+  var predLabels=[],predVals=[];
+  if(lastVal!==null){
+    var anchorAgo=days-1-lastNonNullIdx;
+    for(var p=1;p<=5;p++){
+      var pd=new Date();pd.setDate(pd.getDate()-anchorAgo+p);
+      predLabels.push((pd.getMonth()+1)+'/'+pd.getDate());
+      predVals.push(Math.max(1,Math.min(10,Math.round((lastVal+slope*p)*10)/10)));
+    }
+  }
+  var allLabels=moodData.labels.concat(predLabels);
+  var smoothedFull=smoothed.concat(Array(predLabels.length).fill(null));
+  var rawFull=raw.concat(Array(predLabels.length).fill(null));
+  var predFull=Array(days).fill(null);
+  if(lastNonNullIdx>=0)predFull[lastNonNullIdx]=lastVal;
+  predFull=predFull.concat(predVals);
+  mk('ov-mc-real',{type:'line',data:{labels:allLabels,datasets:[
+    {label:'原始',data:rawFull,borderColor:'transparent',pointRadius:rawFull.map(function(v){return v!==null?2.5:0;}),pointBackgroundColor:'rgba(158,107,122,.3)',fill:false,borderWidth:0,spanGaps:false},
+    {label:'MA5',data:smoothedFull,borderColor:'#7a8a9a',backgroundColor:'rgba(122,138,154,.07)',tension:.4,pointRadius:0,fill:true,borderWidth:1.8,spanGaps:true},
+    {label:'預測',data:predFull,borderColor:'#b08d62',borderDash:[4,4],tension:.3,pointRadius:0,fill:false,borderWidth:1.5,spanGaps:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
+}
+function buildMoodAnalysis(moodData,realCycle,sleepLag){
+  var cycleEl=document.getElementById('ma-cycle');
+  var lagEl=document.getElementById('ma-lag');
+  var trendEl=document.getElementById('ma-trend');
+  if(!cycleEl||!lagEl)return;
+  if(realCycle){
+    var dev=realCycle-18;
+    var devStr=dev>0?'較理論長 '+dev+' 天':dev<0?'較理論短 '+Math.abs(dev)+' 天':'與 18 天理論吻合';
+    cycleEl.textContent='📊 實測週期：~'+realCycle+' 天（'+devStr+'）';
+  }else{
+    var hasData=moodData.raw.filter(function(v){return v!==null;}).length;
+    cycleEl.textContent='📊 實測週期：積累中（目前 '+hasData+' 筆，建議 45 天以上）';
+  }
+  if(sleepLag){
+    lagEl.textContent='⏳ 睡眠→情緒滯後：平均 '+sleepLag+' 天後跟進';
+  }else{
+    lagEl.textContent='⏳ 睡眠→情緒滯後：積累中（需更多配對事件）';
+  }
+  var valid=moodData.smoothed.filter(function(v){return v!==null;});
+  if(valid.length>=3&&trendEl){
+    var last3=valid.slice(-3),tr=last3[2]-last3[0];
+    var tStr=tr>0.5?'📈 近期走勢：情緒上行（+'+Math.round(tr*10)/10+'），配速可適度提升':
+             tr<-0.5?'📉 近期走勢：情緒下行（'+Math.round(tr*10)/10+'），建議保守配速':
+             '➡️ 近期走勢：情緒平穩，維持當前節奏';
+    trendEl.textContent=tStr;
+  }
+}
+
 /* CORRELATION CHART */
 var corrRange=14;
 function setCorrRange(n){
@@ -1272,10 +1406,17 @@ function renderOv(){
 
   if(!chartsDrawn){
     chartsDrawn=true;
+    // 圖表一：理論 18 天正弦基準線
     mk('ov-mc',{type:'line',data:{labels:D30,datasets:[
       {label:'情緒',data:RM.concat(Array(5).fill(null)),borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.09)',tension:.45,pointRadius:1.5,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:1.5},
       {label:'預測',data:Array(29).fill(null).concat([RM[29]]).concat(PM),borderColor:'#b08d62',borderDash:[4,4],tension:.45,pointRadius:0,fill:false,borderWidth:1.5}
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
+    // 圖表二：實時 MA5 去噪 + 分析
+    var _rmd=buildRealMoodArrays(30);
+    var _rc=calcRealCycle(_rmd.smoothed);
+    var _sl=calcSleepToMoodLag(_rmd.smoothed,30);
+    buildMoodRealChart(_rmd,_rc);
+    buildMoodAnalysis(_rmd,_rc,_sl);
   }
   rebuildCorrChart();
   buildTaskTaxonomy();
