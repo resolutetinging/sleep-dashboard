@@ -934,9 +934,9 @@ function calcLag(moods){
 /* CI/TC/LC 已在 IIFE 前定義，此處僅保留 mk */
 function mk(id,cfg){if(!CI)return;if(CI[id])CI[id].destroy();var el=$(id);if(!el)return;CI[id]=new Chart(el,cfg);}
 var D30=[],RM=[],PM=[];
-for(var _i=0;_i<30;_i++){var _d=new Date();_d.setDate(_d.getDate()-29+_i);D30.push((_d.getMonth()+1)+'/'+(_d.getDate()));}
-for(var _i=0;_i<25;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI)+.3*(Math.random()-.5))*10)/10);
-for(var _i=0;_i<5;_i++)PM.push(Math.round((5+3.5*Math.sin(((24+_i)/18)*2*Math.PI))*10)/10);
+for(var _i=0;_i<35;_i++){var _d=new Date();_d.setDate(_d.getDate()-29+_i);D30.push((_d.getMonth()+1)+'/'+(_d.getDate()));}
+for(var _i=0;_i<30;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI)+.3*(Math.random()-.5))*10)/10);
+for(var _i=0;_i<5;_i++)PM.push(Math.round((5+3.5*Math.sin(((30+_i)/18)*2*Math.PI))*10)/10);
 
 /* CORRELATION CHART */
 var corrRange=14;
@@ -1274,7 +1274,7 @@ function renderOv(){
     chartsDrawn=true;
     mk('ov-mc',{type:'line',data:{labels:D30,datasets:[
       {label:'情緒',data:RM.concat(Array(5).fill(null)),borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.09)',tension:.45,pointRadius:1.5,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:1.5},
-      {label:'預測',data:Array(24).fill(null).concat([RM[24]]).concat(PM),borderColor:'#b08d62',borderDash:[4,4],tension:.45,pointRadius:0,fill:false,borderWidth:1.5}
+      {label:'預測',data:Array(29).fill(null).concat([RM[29]]).concat(PM),borderColor:'#b08d62',borderDash:[4,4],tension:.45,pointRadius:0,fill:false,borderWidth:1.5}
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
   }
   rebuildCorrChart();
