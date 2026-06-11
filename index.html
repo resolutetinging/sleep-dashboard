@@ -389,6 +389,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
 
     <div id="mood-analysis-panel" style="margin-top:.65rem;padding:.65rem .75rem;border-radius:var(--rsm);background:var(--bg2);border:.5px solid var(--border)">
+      <div id="ma-hd-alert" style="display:none;margin-bottom:10px;padding:.65rem .75rem;border-radius:var(--rsm);background:rgba(168,90,40,.10);border:.5px solid rgba(168,90,40,.35)">
+        <div style="font-size:.69rem;font-weight:700;color:#9c6030;letter-spacing:0;text-transform:none;margin-bottom:4px">⚠️ 人類圖策略提示</div>
+        <div id="ma-hd-alert-text" style="font-size:.67rem;color:var(--sub);line-height:1.8;white-space:pre-line"></div>
+      </div>
       <div class="lbl" style="font-size:.66rem;margin-bottom:8px">🧬 內在情緒與滯後效應綜合分析</div>
       <div>
         <div style="font-size:.63rem;font-weight:700;color:var(--text);letter-spacing:0;text-transform:none;margin-bottom:3px">📈 節律與振幅健康度說明</div>
@@ -1093,6 +1097,25 @@ function buildMoodAnalysis(moodData,realCycle,sleepLag){
   if(!rhythmEl)return;
   var sm=moodData.smoothed;
   var valid=sm.filter(function(v){return v!==null;});
+  /* --- 人類圖決策防呆：今日原始分 vs 中位數 --- */
+  var hdAlertEl=document.getElementById('ma-hd-alert');
+  var hdAlertTextEl=document.getElementById('ma-hd-alert-text');
+  if(hdAlertEl){
+    var todayRaw=moodData.raw[moodData.raw.length-1];
+    var validRaw=moodData.raw.filter(function(v){return v!==null;});
+    var median=null;
+    if(validRaw.length>0){
+      var sorted=validRaw.slice().sort(function(a,b){return a-b;});
+      var mid=Math.floor(sorted.length/2);
+      median=sorted.length%2!==0?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
+    }
+    if(todayRaw!==null&&todayRaw!==undefined&&median!==null&&todayRaw<median){
+      hdAlertEl.style.display='block';
+      if(hdAlertTextEl)hdAlertTextEl.textContent='偵測到今日原始體感進入局部低谷（'+todayRaw+' 分）。依據生產者策略，當前處於情緒波低位，認知清明度不足，請全面暫緩重大決策，避免於此節點進行排程變更，允許肉體靜默退火。';
+    }else{
+      hdAlertEl.style.display='none';
+    }
+  }
   /* --- Section 1: 節律與振幅健康度 --- */
   var amp=valid.length>=2?Math.round((Math.max.apply(null,valid)-Math.min.apply(null,valid))*10)/10:null;
   var halfAmp=amp!==null?Math.round(amp/2*10)/10:null;
