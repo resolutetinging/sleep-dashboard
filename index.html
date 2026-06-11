@@ -63,19 +63,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .vsub{font-size:.75rem;color:#6e6a62;font-weight:500}
 
 .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:9px}
-/* Layout — top row same height; cm full-width below */
+/* Layout — top row same height; cm full-width below; cd merged into cp */
 .cg {grid-column:1/5;grid-row:1}      /* gauge, aligned with cp/cb */
-.cp {grid-column:5/10;grid-row:1}     /* pace */
+.cp {grid-column:5/10;grid-row:1}     /* pace (debt section merged in) */
 .cb {grid-column:10/13;grid-row:1}    /* 3D bars */
 .cm {grid-column:1/13;grid-row:2}     /* mental dual-track, full-width */
-.cd {grid-column:1/13;grid-row:3}     /* debt, full-width */
-.chw{grid-column:1/13;grid-row:4}     /* week view */
-.clw{grid-column:1/13;grid-row:5}     /* last week recap */
-.cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
-.cdta{grid-column:1/13;grid-row:7}    /* dual-track beta */
-.csca{grid-column:1/13;grid-row:8}    /* sleep causal analysis */
-.ctx{grid-column:1/13;grid-row:9}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:10}    /* HD AI */
+.chw{grid-column:1/13;grid-row:3}     /* week view */
+.clw{grid-column:1/13;grid-row:4}     /* last week recap */
+.cco{grid-column:1/13;grid-row:5}     /* correlation — full width */
+.cdta{grid-column:1/13;grid-row:6}    /* dual-track beta */
+.csca{grid-column:1/13;grid-row:7}    /* sleep causal analysis */
+.ctx{grid-column:1/13;grid-row:8}     /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:9}     /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -338,13 +337,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
   </div>
 
-  <!-- 配速建議 + 慣性警告 -->
+  <!-- 配速建議 + 慣性警告 + 睡眠負債 -->
   <div class="card cp">
     <div class="lbl">📋 今日配速建議</div>
     <div class="pace-badge" id="pace-badge">—</div>
     <div class="pace-body" id="pace-body">—</div>
     <div class="dd" id="pace-pills"></div>
     <div id="inertia-alert" style="display:none"></div>
+    <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
+      <div class="lbl" style="margin-bottom:.4rem">睡眠負債影響</div>
+      <div id="debt-status-pill" style="margin-bottom:.5rem">—</div>
+      <div id="debt-impact-list" style="display:flex;flex-direction:column;gap:5px"></div>
+    </div>
   </div>
 
   <!-- 三維狀態 + Alignment -->
@@ -384,12 +388,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="mst"><div class="lbl">行為滯後</div><div class="val" id="lag-days" style="color:var(--info)">—</div></div>
     </div>
 
-    <div id="mood-analysis-panel" style="margin-top:.65rem;padding:.6rem .7rem;border-radius:var(--rsm);background:var(--bg2);border:.5px solid var(--border)">
-      <div class="lbl" style="font-size:.66rem;margin-bottom:5px">🧬 內在情緒綜合分析</div>
-      <div style="display:flex;flex-direction:column;gap:4px;font-size:.67rem;color:var(--sub);line-height:1.75">
-        <div id="ma-cycle">—</div>
-        <div id="ma-lag">—</div>
-        <div id="ma-trend"></div>
+    <div id="mood-analysis-panel" style="margin-top:.65rem;padding:.65rem .75rem;border-radius:var(--rsm);background:var(--bg2);border:.5px solid var(--border)">
+      <div class="lbl" style="font-size:.66rem;margin-bottom:8px">🧬 內在情緒與滯後效應綜合分析</div>
+      <div>
+        <div style="font-size:.63rem;font-weight:700;color:var(--text);letter-spacing:0;text-transform:none;margin-bottom:3px">📈 節律與振幅健康度說明</div>
+        <div id="ma-rhythm" style="font-size:.67rem;color:var(--sub);line-height:1.8;white-space:pre-line">—</div>
+      </div>
+      <div style="border-top:.5px dashed var(--border);margin-top:9px;padding-top:9px">
+        <div style="font-size:.63rem;font-weight:700;color:var(--text);letter-spacing:0;text-transform:none;margin-bottom:3px">⏳ 實測滯後效應與案發現場對齊</div>
+        <div id="ma-lag-section" style="font-size:.67rem;color:var(--sub);line-height:1.8;white-space:pre-line">—</div>
+      </div>
+      <div style="border-top:.5px dashed var(--border);margin-top:9px;padding-top:9px">
+        <div style="font-size:.63rem;font-weight:700;color:var(--text);letter-spacing:0;text-transform:none;margin-bottom:3px">🔮 近期走勢與實戰配速建議</div>
+        <div id="ma-pace" style="font-size:.67rem;color:var(--sub);line-height:1.8;white-space:pre-line">—</div>
       </div>
     </div>
 
@@ -402,13 +413,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div><strong style="color:var(--text)">行為滯後</strong>：情緒下滑後，行為完成率跟著下降所需的平均天數</div>
       </div>
     </div>
-  </div>
-
-  <!-- 睡眠負債影響 -->
-  <div class="card cd">
-    <div class="lbl">睡眠負債影響</div>
-    <div id="debt-status-pill" style="margin-bottom:.5rem">—</div>
-    <div id="debt-impact-list" style="display:flex;flex-direction:column;gap:5px"></div>
   </div>
 
   <!-- 本週總覽 -->
@@ -1044,32 +1048,108 @@ function buildMoodRealChart(moodData,realCycle){
     {label:'預測',data:predFull,borderColor:'#b08d62',borderDash:[4,4],tension:.3,pointRadius:0,fill:false,borderWidth:1.5,spanGaps:false}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
 }
+function buildCausalChainNarrative(moodData,avgLag){
+  try{
+    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
+    var td=sl.trend30||sl.trend14||sl.trend7||[];
+    if(td.length<3)return null;
+    var ca=td.map(function(n){
+      var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
+      return{date:n.date,c:Math.round((dp*0.7+rp*0.3)*10)/10};
+    }).sort(function(a,b){return a.date.localeCompare(b.date);});
+    if(ca.length<2)return null;
+    var avg=ca.reduce(function(s,x){return s+x.c;},0)/ca.length;
+    var drops=[];
+    for(var i=1;i<ca.length;i++){
+      var d=ca[i-1].c-ca[i].c;
+      if(d>=1.5||ca[i].c<avg*0.75||ca[i].c<30)drops.push({date:ca[i].date,drop:d,c:ca[i].c});
+    }
+    if(!drops.length)return null;
+    var worst=drops.sort(function(a,b){return b.drop-a.drop;})[0];
+    var wd=new Date(worst.date.replace(/-/g,'/'));
+    var mbyd={};
+    for(var i=0;i<moodData.smoothed.length;i++){
+      var dd=new Date();dd.setDate(dd.getDate()-(moodData.smoothed.length-1-i));
+      if(moodData.smoothed[i]!==null)mbyd[dkey(dd)]=moodData.smoothed[i];
+    }
+    var minV=99,minK=null;
+    for(var off=Math.max(1,avgLag-2);off<=avgLag+3;off++){
+      var d2=new Date(wd);d2.setDate(wd.getDate()+off);
+      var k=dkey(d2);
+      if(mbyd[k]!==undefined&&mbyd[k]<minV){minV=mbyd[k];minK=k;}
+    }
+    if(!minK)return null;
+    var lag=Math.round((new Date(minK.replace(/-/g,'/'))-wd)/864e5);
+    var dmd=worst.date.substring(5).replace('-','/');
+    var tmd=minK.substring(5).replace('-','/');
+    return '追溯生理因果：'+dmd+' 的睡眠戰力驟降（戰力 '+Math.round(worst.c)+'）'
+      +'，經過 '+lag+' 天延遲傳導，導致了 '+tmd+' 的情緒低谷（MA5 = '+Math.round(minV*10)/10+'）。';
+  }catch(e){return null;}
+}
 function buildMoodAnalysis(moodData,realCycle,sleepLag){
-  var cycleEl=document.getElementById('ma-cycle');
-  var lagEl=document.getElementById('ma-lag');
-  var trendEl=document.getElementById('ma-trend');
-  if(!cycleEl||!lagEl)return;
+  var rhythmEl=document.getElementById('ma-rhythm');
+  var lagEl=document.getElementById('ma-lag-section');
+  var paceEl=document.getElementById('ma-pace');
+  if(!rhythmEl)return;
+  var sm=moodData.smoothed;
+  var valid=sm.filter(function(v){return v!==null;});
+  /* --- Section 1: 節律與振幅健康度 --- */
+  var amp=valid.length>=2?Math.round((Math.max.apply(null,valid)-Math.min.apply(null,valid))*10)/10:null;
+  var halfAmp=amp!==null?Math.round(amp/2*10)/10:null;
+  var rLines=[];
   if(realCycle){
-    var dev=realCycle-18;
-    var devStr=dev>0?'較理論長 '+dev+' 天':dev<0?'較理論短 '+Math.abs(dev)+' 天':'與 18 天理論吻合';
-    cycleEl.textContent='📊 實測週期：~'+realCycle+' 天（'+devStr+'）';
+    rLines.push('📊 實測真實週期：~'+realCycle+' 天');
+    if(realCycle<=8&&halfAmp!==null&&halfAmp<1.0){
+      rLines.push('系統處於「高韌性動態平衡」狀態：週期極短（'+realCycle+' 天）且振幅僅 ±'+halfAmp+'。\n這代表防禦性配速正在有效吸收隨機噪音——以小幅震盪維持高基準線，是精實的節律韌性表現，而非低能量平台。');
+    }else{
+      var dev=realCycle-18;
+      rLines.push('週期偏差：'+(dev>0?'較理論長 '+dev+' 天':dev<0?'較理論短 '+Math.abs(dev)+' 天':'與 18 天理論完全吻合')+'。');
+      if(halfAmp!==null)rLines.push(halfAmp<1.0?'振幅 ±'+halfAmp+'：系統呈低波動穩健態，情緒基線保持穩定。':halfAmp>2.0?'振幅 ±'+halfAmp+'：振幅偏大，峰谷切換期決策品質需特別留意。':'振幅 ±'+halfAmp+'：情緒波動處於正常範圍。');
+    }
   }else{
     var hasData=moodData.raw.filter(function(v){return v!==null;}).length;
-    cycleEl.textContent='📊 實測週期：積累中（目前 '+hasData+' 筆，建議 45 天以上）';
+    rLines.push('📊 實測真實週期：積累中（目前 '+hasData+' 筆，建議 45 天以上以推算週期）');
+    if(halfAmp!==null)rLines.push('當前觀察振幅區間：±'+halfAmp+'（觀察窗口尚短，週期判斷持保留）');
   }
+  rhythmEl.textContent=rLines.join('\n');
+  /* --- Section 2: 滯後效應 + 因果鏈 --- */
+  var lLines=[];
   if(sleepLag){
-    lagEl.textContent='⏳ 睡眠→情緒滯後：平均 '+sleepLag+' 天後跟進';
+    lLines.push('⏳ 實測滯後效應：平均 '+sleepLag+' 天後情緒跟進下滑');
+    var chain=buildCausalChainNarrative(moodData,sleepLag);
+    lLines.push(chain||'（近期未偵測到顯著睡眠戰力驟降事件，或滯後窗口內情緒資料不足）');
   }else{
-    lagEl.textContent='⏳ 睡眠→情緒滯後：積累中（需更多配對事件）';
+    lLines.push('⏳ 實測滯後效應：積累中（需更多「睡眠下滑 → N天後情緒低谷」配對事件）');
+    lLines.push('系統需偵測到至少 2 組配對事件方可推算滯後天數。');
   }
-  var valid=moodData.smoothed.filter(function(v){return v!==null;});
-  if(valid.length>=3&&trendEl){
-    var last3=valid.slice(-3),tr=last3[2]-last3[0];
-    var tStr=tr>0.5?'📈 近期走勢：情緒上行（+'+Math.round(tr*10)/10+'），配速可適度提升':
-             tr<-0.5?'📉 近期走勢：情緒下行（'+Math.round(tr*10)/10+'），建議保守配速':
-             '➡️ 近期走勢：情緒平穩，維持當前節奏';
-    trendEl.textContent=tStr;
+  if(lagEl)lagEl.textContent=lLines.join('\n');
+  /* --- Section 3: 近期走勢 + 配速建議 --- */
+  var pLines=[];
+  var pts=[];
+  for(var i=sm.length-1;i>=0&&pts.length<3;i--){if(sm[i]!==null)pts.unshift({idx:i,val:sm[i]});}
+  if(pts.length>=2){
+    var span=pts[pts.length-1].idx-pts[0].idx;
+    var slope=span>0?(pts[pts.length-1].val-pts[0].val)/span:0;
+    var latest=pts[pts.length-1].val;
+    var total=Math.round((pts[pts.length-1].val-pts[0].val)*10)/10;
+    if(slope>0.15){
+      pLines.push('🔮 近期走勢：情緒上行段（近 3 日 MA5 '+( total>0?'+':'')+total+'）');
+      pLines.push(latest>=7.5
+        ?'實戰建議：系統處於情緒高區上行，水管可排入高認知密度任務（深度工作、複雜決策、創意構思）。把握峰值窗口做推進型配速；注意峰值通常持續 2–4 天，避免過度透支。'
+        :'實戰建議：情緒回升中（未達高位），可逐步放入中高強度任務，優先啟動上次卡住的推進項目，但避免同時開太多新戰線。');
+    }else if(slope<-0.15){
+      pLines.push('🔮 近期走勢：情緒下行段（近 3 日 MA5 '+total+'）');
+      pLines.push(latest<=4
+        ?'實戰建議：系統處於情緒低谷區，水管立即切換防禦配速。清除高決策量任務，優先完成例行維護項目以穩住完成率慣性；低谷期強撐推進反而加速崩潰。'
+        :'實戰建議：情緒下行趨勢確立，水管預先切換保守模式——減少同日深度任務數量，加入緩衝槽，為可能的低谷期預留恢復空間。');
+    }else{
+      pLines.push('🔮 近期走勢：情緒平穩段（近 3 日 MA5 斜率接近 0）');
+      pLines.push('實戰建議：系統處於穩態，水管維持當前節奏。可安排中等密度的推進任務（文件整理、系統優化、學習消化），避免過度衝刺或過度保守。');
+    }
+  }else{
+    pLines.push('🔮 近期走勢：資料不足（需更多情緒記錄）');
   }
+  if(paceEl)paceEl.textContent=pLines.join('\n');
 }
 
 /* CORRELATION CHART */
