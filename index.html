@@ -693,7 +693,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- REFUELER -->
 <div class="view-frame" id="v-rf">
-  <div class="frame-bar"><div><div class="frame-title">Refueler</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">攝取記錄 · 咖啡 / 水分 / 消費</div></div><a href="https://resolutetinging.github.io/control-center/refueler.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
+  <div class="frame-bar"><div><div class="frame-title">Refueler</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">攝取記錄 · 咖啡 / 水分 / 消費</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="open-btn" onclick="reloadRfFrame()" id="rf-reload-btn" title="重新載入最新版本">↻ 重整</button><a href="https://resolutetinging.github.io/control-center/refueler.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div></div>
   <div class="frame-wrap"><div class="frame-loading" id="rf-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="rf-frame" src="about:blank" title="Refueler"></iframe></div>
 </div>
 
@@ -724,6 +724,13 @@ function go(id){
   if(id==='ov')renderOv();
 }
 function initFrames(){Object.keys(frameSrcs).forEach(k=>{var f=$(k+'-frame');if(f&&f.src==='about:blank')f.src=frameSrcs[k];});}
+function reloadRfFrame(){
+  var f=$('rf-frame'),ld=$('rf-loading'),btn=$('rf-reload-btn');
+  if(ld){ld.style.display='flex';ld.classList.remove('hidden');}
+  if(btn){btn.textContent='載入中…';btn.disabled=true;}
+  if(f){f.src='https://resolutetinging.github.io/control-center/refueler.html?t='+Date.now();}
+  setTimeout(()=>{if(btn){btn.textContent='↻ 重整';btn.disabled=false;}},3000);
+}
 function reloadSleepFrame(){
   var f=$('sl-frame'),sl=$('sl-loading'),btn=$('sl-reload-btn');
   if(sl){sl.style.display='flex';sl.classList.remove('hidden');}
