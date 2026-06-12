@@ -712,7 +712,7 @@ var $=id=>document.getElementById(id);
 
 /* FRAMES */
 var _slDate=new Date().toISOString().slice(0,10);
-var frameSrcs={sl:'./sleep_dashboard_v2.html?d='+_slDate,mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html',op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html',rf:'https://resolutetinging.github.io/control-center/refueler.html'};
+var frameSrcs={sl:'./sleep_dashboard_v2.html?d='+_slDate,mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html?d='+_slDate,op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer.html?d='+_slDate,rf:'https://resolutetinging.github.io/control-center/refueler.html?d='+_slDate};
 function frameLoaded(k){var el=$(k+'-loading');if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',320);}}
 ['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
 function go(id){
