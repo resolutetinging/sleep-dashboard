@@ -767,6 +767,18 @@ const COLORS = {
   deep: '#5c7a96', rem: '#8b7898', core: '#5e8f7e', awake: '#b08d62'
 };
 
+// ── Shared score kernel ──────────────────────────────────────────────
+// Single source of truth for per-night raw combat score.
+// Score = deep contribution (weight 0.7) + REM contribution (weight 0.3),
+// each capped at 100 before weighting.
+function calcNightRaw(d) {
+  const ts = d.deep_min + d.rem_min + d.core_min;
+  if (!ts) return 0;
+  return Math.min(d.deep_min / ts * 100 / 18  * 100, 100) * 0.7
+       + Math.min(d.rem_min  / ts * 100 / 22.5 * 100, 100) * 0.3;
+}
+// ─────────────────────────────────────────────────────────────────────
+
 let trendChart, donutChart, hypnoChart, pctTrendChart, effChart, regularityTrendChart;
 let currentRange = 90;
 let currentPctRange = 90;
@@ -1523,26 +1535,15 @@ function updatePersonalBaseline() {
     </div>`;
 }
 
-function updateDailySummary(totalDebt) {
+function updateDailySummary(totalDebt, score, singleScore) {
   const last = RAW.summary[RAW.summary.length - 1];
   if (!last) return;
 
-  // --- Recalculate combat score (3-night weighted) ---
-  const nights3 = RAW.summary.slice(-3);
-  function nightRawDS(d) {
-    const ts = d.deep_min + d.rem_min + d.core_min;
-    if (!ts) return 0;
-    return Math.min(d.deep_min / ts * 100 / 18 * 100, 100) * 0.7 + Math.min(d.rem_min / ts * 100 / 22.5 * 100, 100) * 0.3;
-  }
-  const scoresDS = nights3.map(nightRawDS);
-  const wtsDS = nights3.length >= 3 ? [0.1, 0.3, 0.6] : nights3.length === 2 ? [0.4, 0.6] : [1.0];
-  const rawScore = scoresDS.reduce((sum, s, i) => sum + s * wtsDS[i], 0);
   const totalSleep = last.deep_min + last.rem_min + last.core_min;
   const remPct  = pctNum(last.rem_min,  totalSleep);
   const deepPct = pctNum(last.deep_min, totalSleep);
   const debtHours = (totalDebt || 0) / 60;
   const debtPenalty = Math.max(0, debtHours - 3) * 2;
-  const score = Math.round(Math.max(0, rawScore - debtPenalty));
 
   // Score color
   const color = score >= 80 ? '#5e8f7e' : score >= 70 ? '#5c7a96' : score >= 60 ? '#e67e22' : '#c0392b';
@@ -1552,10 +1553,9 @@ function updateDailySummary(totalDebt) {
   document.getElementById('ds-score').style.color = color;
   document.getElementById('ds-label').textContent = labelShort;
   document.getElementById('ds-label').style.color = color;
-  const dsSingle = parseInt(localStorage.getItem('sas_combat_single')||'0')||null;
-  if(dsSingle !== null){
-    const sc = dsSingle>=80?'#5e8f7e':dsSingle>=70?'#5c7a96':dsSingle>=60?'#e67e22':'#c0392b';
-    document.getElementById('ds-single').textContent = dsSingle;
+  if(singleScore != null){
+    const sc = singleScore>=80?'#5e8f7e':singleScore>=70?'#5c7a96':singleScore>=60?'#e67e22':'#c0392b';
+    document.getElementById('ds-single').textContent = singleScore;
     document.getElementById('ds-single').style.color = sc;
   }
 
@@ -1819,17 +1819,10 @@ function updateSleepDebt(allData) {
 
 function updateCombatPower(totalDebt) {
   const nights = RAW.summary.slice(-3);
-  if (!nights.length) return;
+  if (!nights.length) return { score: 0, singleScore: 0 };
   const last = nights[nights.length - 1];
 
-  function nightRaw(d) {
-    const ts = d.deep_min + d.rem_min + d.core_min;
-    if (!ts) return 0;
-    const rp = d.rem_min / ts * 100;
-    const dp = d.deep_min / ts * 100;
-    return Math.min(dp / 18 * 100, 100) * 0.7 + Math.min(rp / 22.5 * 100, 100) * 0.3;
-  }
-  const scores = nights.map(nightRaw);
+  const scores = nights.map(calcNightRaw);
   // 單夜：只取最後一晚
   const singleRaw = scores[scores.length - 1];
   // 3夜加權：oldest 10%, middle 30%, latest 60%
@@ -1998,6 +1991,7 @@ function updateCombatPower(totalDebt) {
     </div>`;
 
   document.getElementById('combatTasks').innerHTML = tasks;
+  return { score, singleScore };
 }
 
 function refreshAll() {
@@ -2015,8 +2009,8 @@ function refreshAll() {
   updateRegularity(data);
   updateEffTrend(getFilteredData(currentEffRange));
   const totalDebt = updateSleepDebt(data);
-  updateCombatPower(totalDebt);
-  updateDailySummary(totalDebt);
+  const { score: combatScore, singleScore: combatSingle } = updateCombatPower(totalDebt);
+  updateDailySummary(totalDebt, combatScore, combatSingle);
   buildWeightedHistory();
   renderWeightedChart();
   runWeightedAI();
@@ -2074,20 +2068,13 @@ function saveSleepToLocalStorage() {
 // ── WEIGHTED COMBAT TREND CHART ──
 let _wChart = null, _wHistory = [], _wRange = 30, _wAIBusy = false;
 
-function _nightRawW(d) {
-  const ts = d.deep_min + d.rem_min + d.core_min;
-  if (!ts) return 0;
-  return Math.min(d.deep_min / ts * 100 / 18 * 100, 100) * 0.7
-       + Math.min(d.rem_min  / ts * 100 / 22.5 * 100, 100) * 0.3;
-}
-
 function buildWeightedHistory() {
   const excludeWE = document.getElementById('excludeWeekend').checked;
   const s = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
   _wHistory = s.map((d, i) => {
     const nights = s.slice(Math.max(0, i - 2), i + 1);
     const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
-    const raw = nights.reduce((sum, n, wi) => sum + _nightRawW(n) * wts[wi], 0);
+    const raw = nights.reduce((sum, n, wi) => sum + calcNightRaw(n) * wts[wi], 0);
     const prev7 = s.slice(Math.max(0, i - 6), i + 1);
     const totalDebt = prev7.reduce((a, n) => a + (480 - n.total_min), 0);
     const penalty = Math.max(0, (totalDebt / 60 - 3) * 2);
