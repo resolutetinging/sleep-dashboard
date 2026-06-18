@@ -2089,7 +2089,7 @@ function buildWeightedHistory() {
     const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
     const raw = nights.reduce((sum, n, wi) => sum + _nightRawW(n) * wts[wi], 0);
     const prev7 = s.slice(Math.max(0, i - 6), i + 1);
-    const totalDebt = prev7.reduce((a, n) => a + Math.max(0, 480 - (n.deep_min + n.rem_min + n.core_min)), 0);
+    const totalDebt = prev7.reduce((a, n) => a + (480 - n.total_min), 0);
     const penalty = Math.max(0, (totalDebt / 60 - 3) * 2);
     return { date: d.date, score: Math.round(Math.max(0, raw - penalty)) };
   });
