@@ -681,7 +681,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- MENTAL -->
 <div class="view-frame" id="v-mn">
-  <div class="frame-bar"><div><div class="frame-title">Mental Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">心理氣象站 · 情緒週期分析</div></div><a href="https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div>
+  <div class="frame-bar"><div><div class="frame-title">Mental Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">心理氣象站 · 情緒週期分析</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="open-btn" onclick="reloadMnFrame()" id="mn-reload-btn" title="重新載入最新資料">↻ 重整</button><a href="https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div></div>
   <div class="frame-wrap"><div class="frame-loading" id="mn-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="mn-frame" src="about:blank" title="Mental Dashboard"></iframe></div>
 </div>
 
@@ -729,6 +729,13 @@ function reloadRfFrame(){
   if(ld){ld.style.display='flex';ld.classList.remove('hidden');}
   if(btn){btn.textContent='載入中…';btn.disabled=true;}
   if(f){f.src='https://resolutetinging.github.io/control-center/refueler.html?t='+Date.now();}
+  setTimeout(()=>{if(btn){btn.textContent='↻ 重整';btn.disabled=false;}},3000);
+}
+function reloadMnFrame(){
+  var f=$('mn-frame'),ld=$('mn-loading'),btn=$('mn-reload-btn');
+  if(ld){ld.style.display='flex';ld.classList.remove('hidden');}
+  if(btn){btn.textContent='載入中…';btn.disabled=true;}
+  if(f){f.src='https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html?t='+Date.now();}
   setTimeout(()=>{if(btn){btn.textContent='↻ 重整';btn.disabled=false;}},3000);
 }
 function reloadSleepFrame(){
