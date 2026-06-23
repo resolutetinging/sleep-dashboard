@@ -80,6 +80,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
 /* BLACK BOLD TITLES — matching sleep-dashboard */
 .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#1a1814;margin-bottom:.6rem;font-weight:700}
+/* 四層 Typography */
+.t-sub{font-size:.7rem;font-weight:700;color:var(--text);margin-bottom:.3rem;letter-spacing:0;text-transform:none}
+.t-body{font-size:.78rem;color:var(--sub);line-height:1.75}
+.t-note{font-size:.65rem;color:var(--faint);line-height:1.6}
 
 /* GAUGE */
 .gw{display:flex;flex-direction:column;align-items:center;gap:.65rem}
@@ -208,12 +212,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .tax-track{flex:1;height:10px;background:var(--bg2);border-radius:5px;overflow:hidden}
 .tax-fill{height:100%;border-radius:5px;transition:width .8s ease}
 .tax-num{font-size:.65rem;color:#1a1814;font-weight:700;min-width:36px;text-align:right}
-.tax-insight-box{background:var(--bg2);border-radius:var(--rsm);padding:.75rem .9rem;border:.5px solid var(--border);font-size:.75rem;line-height:1.8;color:var(--sub)}
+.tax-insight-box{background:var(--bg2);border-radius:var(--rsm);padding:.75rem .9rem;border:.5px solid var(--border);font-size:.78rem;line-height:1.8;color:var(--sub)}
 .tax-insight-box strong{color:var(--text);font-weight:700}
 
 /* HD */
 .hd-ai-grid{display:grid;grid-template-columns:240px 1fr;gap:12px;align-items:start}
-.hd-profile-box{background:var(--bg2);border-radius:var(--rsm);padding:.7rem .85rem;border:.5px solid var(--border);font-size:.75rem;line-height:1.85;color:var(--sub)}
+.hd-profile-box{background:var(--bg2);border-radius:var(--rsm);padding:.7rem .85rem;border:.5px solid var(--border);font-size:.78rem;line-height:1.85;color:var(--sub)}
 .hd-profile-box strong{color:var(--text);font-weight:700}
 .hd-result{font-size:.87rem;line-height:1.75;color:var(--sub)}
 .hd-btn{font-size:.72rem;padding:5px 14px;border-radius:20px;background:var(--text);color:var(--card);border:none;font-family:'Noto Sans TC',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
@@ -328,7 +332,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
         <div class="lbl" style="margin-bottom:5px">體能續航計算定義</div>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--sub);line-height:1.6">
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--faint);line-height:1.6">
           <div><strong style="color:var(--text)">維持時間</strong>：以戰力指數線性映射，0分=8:00止、100分=22:00止（可高強度運作14小時）</div>
           <div><strong style="color:var(--text)">顏色等級</strong>：≥70 綠色（良好）／40–69 橘色（注意）／&lt;40 紅色（需休息）</div>
           <div><strong style="color:var(--text)">注意</strong>：僅反映睡眠生理能量，未納入情緒狀態與外部壓力因素</div>
@@ -365,7 +369,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
       <div class="lbl" style="margin-bottom:5px">指標定義</div>
-      <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--sub);line-height:1.6">
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--faint);line-height:1.6">
         <div><strong style="color:var(--text)">戰力</strong>：Deep×0.7＋REM×0.3，以2h為滿分基準，睡眠債修正後計算（0–100）</div>
         <div><strong style="color:var(--text)">情緒</strong>：wellness journal 手動紀錄分數（1–10），去噪後的內在基準值</div>
         <div><strong style="color:var(--text)">壓力</strong>：綜合影響因子密度估算，暫為固定示意值（待連接 optimizer 數據）</div>
@@ -377,10 +381,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   <div class="card cm">
     <div class="lbl">🌊 內在情緒雙軌對照 <span style="text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400">BETA</span></div>
 
-    <div style="font-size:.6rem;color:var(--sub);letter-spacing:.05em;margin-bottom:.3rem">① 理論基準線（18天固定週期）</div>
+    <div style="font-size:.6rem;color:var(--faint);letter-spacing:.05em;margin-bottom:.3rem">① 理論基準線（18天固定週期）</div>
     <div class="ch-sm" style="position:relative;"><canvas id="ov-mc"></canvas></div>
 
-    <div style="font-size:.6rem;color:var(--sub);letter-spacing:.05em;margin:.6rem 0 .3rem">② 實時情緒曲線（MA5 去噪　<span style="color:rgba(122,138,154,.9)">—</span> 平滑　<span style="color:rgba(158,107,122,.5)">●</span> 原始　<span style="color:#b08d62">- -</span> 預測）</div>
+    <div style="font-size:.6rem;color:var(--faint);letter-spacing:.05em;margin:.6rem 0 .3rem">② 實時情緒曲線（MA5 去噪<span style="color:rgba(122,138,154,.9)">—</span> 平滑　<span style="color:rgba(158,107,122,.5)">●</span> 原始　<span style="color:#b08d62">- -</span> 預測）</div>
     <div class="ch-sm" style="position:relative;"><canvas id="ov-mc-real"></canvas></div>
 
     <div class="msr" style="margin-top:.5rem">
@@ -410,7 +414,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
     <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
       <div class="lbl" style="margin-bottom:5px">指標定義</div>
-      <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--sub);line-height:1.6">
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--faint);line-height:1.6">
         <div><strong style="color:var(--text)">理論基準線</strong>：純生理節律假設（18天週期），去除環境干擾後的參考模型</div>
         <div><strong style="color:var(--text)">MA5 去噪曲線</strong>：5日移動平均，濾除單日突發情緒波動後的內在情緒基調</div>
         <div><strong style="color:var(--text)">預測虛線</strong>：以近半週期實測斜率外推，供防禦性配速參考</div>
@@ -428,7 +432,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       </button>
     </div>
     <div class="week-strip">
-      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1a1814;margin-bottom:.7rem">每日狀態 · 影響因子</div>
+      <div class="lbl">每日狀態 · 影響因子</div>
       <div id="week-day-strip"><div style="font-size:.7rem;color:var(--faint);padding:.5rem">載入中…</div></div>
     </div>
     <div class="week-grid">
@@ -451,7 +455,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div class="hd-spinner-inline" id="lw-spinner"></div><span id="lw-btn-text">生成上週回顧</span>
       </button>
     </div>
-    <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1a1814;margin-bottom:.6rem">每日狀態 · 影響因子</div>
+    <div class="lbl">每日狀態 · 影響因子</div>
     <div id="lw-day-strip" style="margin-bottom:1rem;padding-bottom:.9rem;border-bottom:.5px solid var(--border)"><div style="font-size:.7rem;color:var(--faint);padding:.5rem">載入中…</div></div>
     <div id="lw-stat-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.6rem"></div>
     <div class="week-ai-result" id="lw-ai-result">點擊「生成上週回顧」以獲得上週狀態分析。</div>
@@ -502,7 +506,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <!-- Definitions block -->
     <div class="corr-defs">
       <div class="lbl" style="margin-bottom:.65rem">資料說明 & 評分定義</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:.67rem;color:var(--sub);line-height:1.65">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:.67rem;color:var(--faint);line-height:1.65">
         <div>
           <div style="font-weight:700;color:var(--text);margin-bottom:3px">Y 軸尺度（統一 0–10）</div>
           <div>情緒分：wellness journal 原始值（0–10）</div>
@@ -631,11 +635,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="lbl">📊 任務屬性熱點 × 狀態匹配建議</div>
     <div class="ctx-inner">
       <div>
-        <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">本週任務分佈</div>
+        <div class="t-sub" style="margin-bottom:.5rem">本週任務分佈</div>
         <div id="tax-bars">—</div>
       </div>
       <div>
-        <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">狀態匹配建議</div>
+        <div class="t-sub" style="margin-bottom:.5rem">狀態匹配建議</div>
         <div id="tax-insights" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
@@ -1380,8 +1384,8 @@ function buildTaskTaxonomy(){
   var total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
   var defs=[{k:'logic',label:'邏輯/工作',col:'#5c7a96'},{k:'social',label:'社交耗能',col:'#9e6b7a'},{k:'input',label:'身心靈/輸入',col:'#5e8f7e'},{k:'other',label:'其他',col:'#b08d62'}];
   var legend='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:.65rem;font-size:.65rem;font-weight:700;color:#1a1814;padding:.4rem .6rem;background:var(--bg2);border-radius:var(--rsm)">'+
-    '<span>第一% <span style="font-weight:400;color:var(--sub)">= 佔總任務比例</span></span>'+
-    '<span>✓ 第二% <span style="font-weight:400;color:var(--sub)">= 此類任務完成率</span></span>'+
+    '<span>第一% <span style="font-weight:400;color:var(--faint)">= 佔總任務比例</span></span>'+
+    '<span>✓ 第二% <span style="font-weight:400;color:var(--faint)">= 此類任務完成率</span></span>'+
     '<span style="color:var(--info);font-weight:400">▶ 點擊列展開近7日任務明細</span></div>';
   var bars=$('tax-bars');
   if(bars)bars.innerHTML=legend+defs.map(d=>{
@@ -1413,7 +1417,7 @@ function buildTaskTaxonomy(){
   if(inputPct<10&&total>5)insights.push({icon:'🌱',text:'身心靈/輸入任務佔比僅 <strong>'+inputPct+'%</strong>，建議增加恢復型任務比例。'});
   if(!insights.length)insights.push({icon:'✓',text:'任務分佈暫無明顯失衡，繼續觀察。'});
   var ins=$('tax-insights');
-  if(ins)ins.innerHTML=insights.map(t=>'<div style="display:flex;gap:8px;align-items:baseline;font-size:.75rem;line-height:1.7;color:var(--sub)"><span style="flex-shrink:0">'+t.icon+'</span><span>'+t.text+'</span></div>').join('');
+  if(ins)ins.innerHTML=insights.map(t=>'<div style="display:flex;gap:8px;align-items:baseline;font-size:.78rem;line-height:1.7;color:var(--sub)"><span style="flex-shrink:0">'+t.icon+'</span><span>'+t.text+'</span></div>').join('');
 }
 
 function toggleExpand(id){var el=$(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
