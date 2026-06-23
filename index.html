@@ -102,7 +102,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 /* PACE */
 .pace-badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;padding:3px 10px;border-radius:20px;font-weight:700;margin-bottom:.5rem}
-.pace-body{font-size:.82rem;line-height:1.9;color:var(--sub)}
+.pace-body{font-size:.78rem;line-height:1.9;color:var(--sub)}
 .pace-body strong{color:var(--text);font-weight:700}
 .dd{display:flex;flex-wrap:wrap;gap:4px;margin-top:.65rem}
 
@@ -137,7 +137,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .week-stat-label{font-size:.7rem;color:var(--sub)}.week-stat-val{font-size:.78rem;font-weight:700}
 .mood-dots{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:.5rem}
 .mood-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700;color:#fff;flex-shrink:0}
-.week-ai-result{font-size:.85rem;line-height:1.75;color:var(--sub)}
+.week-ai-result{font-size:.78rem;line-height:1.75;color:var(--sub)}
 
 /* CORRELATION */
 .cco-inner{display:flex;flex-direction:column;gap:14px;margin-top:.5rem}
@@ -153,7 +153,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-action-block{margin-bottom:.75rem;padding:.55rem .65rem;background:var(--bg2);border-radius:var(--rsm);border-left:2.5px solid var(--bstr);}
 .corr-action-block:last-child{margin-bottom:0}
 .corr-action-lbl{font-size:.65rem;font-weight:800;color:var(--text);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.35rem}
-.corr-action-body{font-size:.72rem;color:var(--sub);line-height:1.7}
+.corr-action-body{font-size:.78rem;color:var(--sub);line-height:1.7}
 /* BETA CARD */
 .beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
 /* SCR range pills */
@@ -461,11 +461,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   <div class="card cco">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
       <div class="lbl" style="margin-bottom:0">🔬 三維相關性 — 情緒 × 睡眠戰力 × 行為完成度</div>
-      <div style="display:flex;gap:5px">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="corr-range-btn" onclick="setCorrRange(7)">1週</button>
         <button class="corr-range-btn active" onclick="setCorrRange(14)">2週</button>
         <button class="corr-range-btn" onclick="setCorrRange(30)">1月</button>
         <button class="corr-range-btn" onclick="setCorrRange(180)">半年</button>
+        <button class="corr-range-btn" id="corr-excl-we-btn" onclick="toggleCorrWeekend()" style="margin-left:6px">排除週末</button>
       </div>
     </div>
     <div class="cco-inner">
@@ -637,14 +638,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div style="font-size:.72rem;font-weight:600;color:var(--sub);margin-bottom:.5rem">狀態匹配建議</div>
         <div id="tax-insights" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
-    </div>
-    <!-- Category mapping table -->
-    <div style="margin-top:1rem;padding-top:.85rem;border-top:.5px solid var(--border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;flex-wrap:wrap;gap:6px">
-        <div class="lbl" style="margin-bottom:0">關鍵字對照表 <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--faint)">— 點擊關鍵字可刪除，右側可新增</span></div>
-        <button onclick="saveCatMap()" style="font-size:.65rem;padding:3px 10px;border-radius:20px;background:var(--text);color:var(--card);border:none;cursor:pointer">儲存</button>
-      </div>
-      <div id="cat-map-table" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
     </div>
   </div>
 
@@ -1191,12 +1184,22 @@ function buildMoodAnalysis(moodData,realCycle,sleepLag){
 
 /* CORRELATION CHART */
 var corrRange=14;
+var _corrExclWeekend=false;
+function toggleCorrWeekend(){
+  _corrExclWeekend=!_corrExclWeekend;
+  var btn=document.getElementById('corr-excl-we-btn');
+  if(btn){btn.classList.toggle('active',_corrExclWeekend);}
+  rebuildCorrChart();
+}
 function setCorrRange(n){
   corrRange=n;
   document.querySelectorAll('.corr-range-btn').forEach(b=>b.classList.remove('active'));
   event.target.classList.add('active');
+  var weBtn=document.getElementById('corr-excl-we-btn');
+  if(weBtn)weBtn.classList.toggle('active',_corrExclWeekend);
   rebuildCorrChart();
 }
+var _WD_ZH=['日','一','二','三','四','五','六'];
 function rebuildCorrChart(){
   var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
   var combatMap={};
@@ -1213,8 +1216,9 @@ function rebuildCorrChart(){
   var over=0,under=0,ok=0;
   for(var i=corrRange-1;i>=0;i--){
     var d=new Date();d.setDate(d.getDate()-i);
+    if(_corrExclWeekend&&(d.getDay()===0||d.getDay()===6))continue;
     var k=dkey(d);
-    labels.push((d.getMonth()+1)+'/'+(d.getDate()));
+    labels.push([(d.getMonth()+1)+'/'+(d.getDate()),'('+_WD_ZH[d.getDay()]+')']);
     var ms=moodMap[k]!==undefined?moodMap[k]:null;
     var cs=combatMap[k]!==undefined?combatMap[k]:null;
     moodLine.push(ms);
@@ -1356,6 +1360,7 @@ function buildTaskTaxonomy(){
   var counts={logic:0,social:0,input:0,other:0};
   var done_counts={logic:0,social:0,input:0,other:0};
   var skipsLow={logic:0,social:0,input:0,other:0};
+  var skipsLowDetails={logic:[],social:[],input:[],other:[]};
   var taskLists={logic:[],social:[],input:[],other:[]};
   var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
   for(var i=13;i>=0;i--){
@@ -1368,7 +1373,7 @@ function buildTaskTaxonomy(){
       counts[cat]++;
       var isDone=item.status==='done';
       if(isDone)done_counts[cat]++;
-      else if(isLow)skipsLow[cat]++;
+      else if(isLow){skipsLow[cat]++;skipsLowDetails[cat].push({name:item.name,date:(d.getMonth()+1)+'/'+(d.getDate())});}
       if(i<7){var dd=new Date();dd.setDate(dd.getDate()-i);taskLists[cat].push({name:item.name,status:item.status||'',date:(dd.getMonth()+1)+'/'+(dd.getDate()),done:isDone});}
     });
   }
@@ -1399,7 +1404,11 @@ function buildTaskTaxonomy(){
   var socialPct=Math.round(counts.social/total*100);
   if(socialPct>35)insights.push({icon:'🔋',text:'社交耗能佔比 <strong>'+socialPct+'%</strong>，偏高。建議每次高密度社交後安排獨處緩衝時間。'});
   var maxSkip=Object.entries(skipsLow).sort((a,b)=>b[1]-a[1])[0];
-  if(maxSkip&&maxSkip[1]>0)insights.push({icon:'⚠',text:'狀態偏低時最常略過 <strong>'+catNames[maxSkip[0]]+'任務</strong>（'+maxSkip[1]+'次）。建議低狀態日提前降優先或重排。'});
+  if(maxSkip&&maxSkip[1]>0){
+    var skipDetail=skipsLowDetails[maxSkip[0]]||[];
+    var skipList=skipDetail.map(function(s){return s.name+'（'+s.date+'）';}).join('、');
+    insights.push({icon:'⚠',text:'狀態偏低時最常略過 <strong>'+catNames[maxSkip[0]]+'任務</strong>（'+maxSkip[1]+'次）<br><span style="font-size:.65rem;color:var(--faint)">略過：'+skipList+'</span>'});
+  }
   var inputPct=Math.round(counts.input/total*100);
   if(inputPct<10&&total>5)insights.push({icon:'🌱',text:'身心靈/輸入任務佔比僅 <strong>'+inputPct+'%</strong>，建議增加恢復型任務比例。'});
   if(!insights.length)insights.push({icon:'✓',text:'任務分佈暫無明顯失衡，繼續觀察。'});
@@ -1554,46 +1563,6 @@ function loadCatMap(){
   try{return JSON.parse(localStorage.getItem('sas_cat_map')||'null')||JSON.parse(JSON.stringify(DEFAULT_CAT_MAP));}
   catch(e){return JSON.parse(JSON.stringify(DEFAULT_CAT_MAP));}
 }
-function saveCatMap(){
-  // Read from inputs
-  var map={};
-  ['logic','social','input'].forEach(cat=>{
-    var inp=$('cat-input-'+cat);
-    map[cat]=window._catMap[cat]||[];
-    if(inp&&inp.value.trim()){
-      inp.value.trim().split(/[,，、\s]+/).filter(Boolean).forEach(k=>{if(!map[cat].includes(k))map[cat].push(k);});
-      inp.value='';
-    }
-  });
-  window._catMap=map;
-  localStorage.setItem('sas_cat_map',JSON.stringify(map));
-  renderCatMapTable();
-  // Rebuild with new map
-  Object.assign(LOGIC,map.logic||[]);Object.assign(SOCIAL,map.social||[]);Object.assign(INPUT,map.input||[]);
-  buildTaskTaxonomy();
-  var ok=document.createElement('span');ok.textContent=' ✓ 已儲存';ok.style.cssText='font-size:.65rem;color:var(--ok)';
-  var btn=document.querySelector('[onclick="saveCatMap()"]');if(btn){btn.after(ok);setTimeout(()=>ok.remove(),2000);}
-}
-function removeCatKey(cat,key){
-  if(!window._catMap)window._catMap=loadCatMap();
-  window._catMap[cat]=(window._catMap[cat]||[]).filter(k=>k!==key);
-  localStorage.setItem('sas_cat_map',JSON.stringify(window._catMap));
-  renderCatMapTable();buildTaskTaxonomy();
-}
-function renderCatMapTable(){
-  var map=window._catMap||loadCatMap();
-  var el=$('cat-map-table');if(!el)return;
-  el.innerHTML=['logic','social','input'].map(cat=>
-    '<div style="background:var(--bg2);border-radius:var(--rsm);padding:.6rem .75rem;border:.5px solid var(--border)">'+
-    '<div style="font-size:.68rem;font-weight:700;color:'+CAT_COLORS[cat]+';margin-bottom:.45rem">'+CAT_LABELS[cat]+'</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.5rem">'+
-    (map[cat]||[]).map(k=>'<span style="font-size:.6rem;padding:2px 7px;border-radius:12px;background:var(--card);border:.5px solid var(--border);cursor:pointer;color:var(--sub)" onclick="removeCatKey(\''+cat+'\',\''+k+'\')">'
-    +k+' ×</span>').join('')+
-    '</div>'+
-    '<input id="cat-input-'+cat+'" placeholder="新增關鍵字（逗號分隔）" style="width:100%;font-size:.65rem;padding:3px 7px;border:.5px solid var(--bstr);border-radius:var(--rsm);background:var(--card);color:var(--text);font-family:inherit">'+
-    '</div>'
-  ).join('');
-}
 
 /* AI FORMAT */
 function fmtAI(raw){
@@ -1699,11 +1668,22 @@ async function analyzeLastWeek(){
   var taskDoneRate=taskTotalSum>0?Math.round(taskDoneSum/taskTotalSum*100)+'%':'無資料';
   var taskSummary=taskTotalSum>0?taskDoneSum+'/'+taskTotalSum+' 項（'+taskDays+' 天有紀錄）':'無任務紀錄';
 
-  // 睡眠維度：戰力 + 睡眠債
-  var combatVal=_combat||(parseInt(localStorage.getItem('sas_combat')||'0')||null);
-  var debtVal=_debt;
-  var sleepSummary=combatVal?'戰力 '+combatVal+'/100':'—';
-  if(debtVal!==null&&debtVal>0)sleepSummary+='，睡眠債 '+debtVal.toFixed(1)+' 小時';
+  // 睡眠維度：上週平均戰力（從 sas_sleep_latest trend 資料推算）
+  var lwSet2=new Set(lwDates);
+  var lwCombatVals=[];
+  try{
+    var slRaw=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
+    var trendSrc=slRaw.trend14||slRaw.trend30||slRaw.trend7||[];
+    trendSrc.forEach(function(n){
+      if(lwSet2.has(n.date)){
+        var dp=Math.min(n.deepP/18*100,100);
+        var rp=Math.min(n.remP/22.5*100,100);
+        lwCombatVals.push(Math.round(dp*0.7+rp*0.3));
+      }
+    });
+  }catch(e){}
+  var lwCombatAvg=lwCombatVals.length?Math.round(lwCombatVals.reduce((a,b)=>a+b,0)/lwCombatVals.length):null;
+  var sleepSummary=lwCombatAvg!==null?'上週均戰力 '+lwCombatAvg+'/100（'+lwCombatVals.length+' 天資料）':'無睡眠資料';
 
   // 補給維度：讀取 Refueler 上週資料（同 origin localStorage）
   var rfRaw=null;try{rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
@@ -2549,7 +2529,6 @@ function renderDualTrackCard(){
 
 /* INIT */
 window._catMap=loadCatMap();
-renderCatMapTable();
 var _initTab=sessionStorage.getItem('sas_tab')||'ov';
 go(_initTab);
 initFrames();
