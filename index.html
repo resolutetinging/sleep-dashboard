@@ -1513,7 +1513,8 @@ function renderWeekStrip(moodMap){
       var wdone=witems.filter(t=>t.status==='done').length;
       var wpct=witems.length?Math.round(wdone/witems.length*100):null;
       var wpcol=wpct!==null?(wpct>=80?'var(--ok)':wpct>=50?'var(--warn)':'var(--danger)'):'';
-      var restTag='<div style="font-size:.55rem;color:#7a9e8a;font-weight:600;margin-top:3px;height:14px;line-height:14px;overflow:hidden">'+(!isFuture&&wrev&&wrev.restMode?'🌿 休假':'')+'</div>';
+      var isVacDay=!isFuture&&(!wrev||wrev.restMode);
+      var restTag='<div style="font-size:.55rem;color:#7a9e8a;font-weight:600;margin-top:3px;height:14px;line-height:14px;overflow:hidden">'+(isVacDay?'🌿 休假':'')+'</div>';
       var c0w=_cwByDate[k];
       var combatW=null;
       if(c0w!==undefined&&!isFuture){
@@ -1677,18 +1678,20 @@ async function analyzeLastWeek(){
   var fc={};allFactors.forEach(f=>{fc[f]=(fc[f]||0)+1;});
   var topFactors=Object.entries(fc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([f])=>f);
 
-  // 行為維度：上週任務完成率
-  var taskDays=0,taskDoneSum=0,taskTotalSum=0;
+  // 行為維度：上週任務完成率（空白日 = 休假，不計入分母）
+  var taskDays=0,taskDoneSum=0,taskTotalSum=0,vacCount=0;
   lwDates.forEach(function(k){
     var rev=getReview(k);
-    if(rev&&rev.items&&rev.items.length){
+    if(!rev||rev.restMode){vacCount++;return;}
+    if(rev.items&&rev.items.length){
       taskDays++;
       taskDoneSum+=rev.items.filter(function(t){return t.status==='done';}).length;
       taskTotalSum+=rev.items.length;
     }
   });
   var taskDoneRate=taskTotalSum>0?Math.round(taskDoneSum/taskTotalSum*100)+'%':'無資料';
-  var taskSummary=taskTotalSum>0?taskDoneSum+'/'+taskTotalSum+' 項（'+taskDays+' 天有紀錄）':'無任務紀錄';
+  var vacNote=vacCount>0?'，'+vacCount+' 天休假':'';
+  var taskSummary=taskTotalSum>0?taskDoneSum+'/'+taskTotalSum+' 項（'+taskDays+' 天有紀錄'+vacNote+'）':'無任務紀錄'+(vacCount>0?'（'+vacCount+' 天休假）':'');
 
   // 睡眠維度：上週每日三日加權戰力均值
   var lwCombatVals=[];
@@ -1742,6 +1745,7 @@ async function analyzeLastWeek(){
       ['⚡ 三日加權均戰力',lwCombatAvg!==null?lwCombatAvg+'/100':'無資料',combatStatColor],
       ['行為完成率',taskDoneRate,taskColor]
     ];
+    if(vacCount>0) statItems.push(['🌿 休假',vacCount+' 天','#7a9e8a']);
     if(coffeeDaySet.size>0) statItems.push(['☕ 咖啡',coffeeCups+' 杯','#C47A3A']);
     if(waterDaySet.size>0) statItems.push(['💧 水分',(waterAvgPerDay||0)+' ml/日','#4a7fa5']);
     statRow.innerHTML=statItems.map(function(r){return '<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
