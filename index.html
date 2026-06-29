@@ -667,8 +667,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <!-- 黃金槓桿 / 頭號戰犯摘要 -->
     <div id="lev-footer" class="lev-note" style="margin-top:.7rem;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)"></div>
-    <!-- 定義說明 -->
-    <div style="margin-top:.55rem;font-size:.65rem;color:var(--faint);line-height:1.65">⚠ 需至少 5 天配對資料方計算；|r| ≥ 0.5 深色顯示，|r| ≥ 0.3 淺色顯示；相關性≠因果，僅供戰略參考。若 Refueler 未啟用，咖啡/飲水欄自動略過。</div>
+    <!-- 計算方法說明 -->
+    <div style="margin-top:.6rem;padding:.65rem .8rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border);display:flex;flex-direction:column;gap:.38rem">
+      <div style="font-size:.63rem;font-weight:700;color:var(--sub);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.05rem">計算方法說明</div>
+      <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--text);font-weight:600">T-1 因果對齊</strong>：所有行為因子（咖啡、飲水、情緒、任務完成率）皆已套用前一日偏移——前日行為數據對齊次日睡眠戰力，符合真實生理因果律。</div>
+      <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--text);font-weight:600">Pearson r</strong> = Σ(Xᵢ−X̄)(Yᵢ−Ȳ) / √[Σ(Xᵢ−X̄)²·Σ(Yᵢ−Ȳ)²]　取值 −1 ～ +1，需至少 5 天配對資料；排序按 |r| 絕對值由大到小。</div>
+      <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--ok);font-weight:600">正向 ▶ 綠條</strong>：該行為量增加 → 目標指標傾向提升。　<strong style="color:var(--danger);font-weight:600">負向 ◀ 紅條</strong>：該行為量增加 → 目標指標傾向下降。</div>
+      <div style="font-size:.65rem;color:var(--faint);line-height:1.65">⚠ |r| ≥ 0.5 深色顯示，|r| ≥ 0.3 淺色顯示；相關性≠因果，僅供戰略參考。Refueler 未啟用時咖啡/飲水自動略過。</div>
+    </div>
   </div>
 
   <!-- 任務屬性熱點 -->
@@ -2635,14 +2641,22 @@ function buildLeverageBars(){
       if(e.type==='water')waterByDate[dk]=(waterByDate[dk]||0)+(e.amount||0);
     });
   }catch(e){}
-  var dates=[];
+  // ── 預載 doneByDate（全 31 天，涵蓋 T-1 所需的前一天窗口）──
+  for(var di=31;di>=0;di--){
+    var dd=new Date();dd.setDate(dd.getDate()-di);var dk=dkey(dd);
+    var drev=getReview(dk);
+    if(drev&&drev.items&&drev.items.length)
+      doneByDate[dk]=drev.items.filter(function(t){return t.status==='done';}).length/drev.items.length;
+  }
+  // ── 建立 (目標日 t, 行為日 f = t-1) 配對 + 週末雙日過濾 ──
+  // T-1 因果對齊：前一日行為因子 → 次日睡眠/情緒/完成率
+  // 週末過濾：目標日或行為日任一為週末，整對捨棄
+  var pairs=[];
   for(var li=29;li>=0;li--){
     var ld=new Date();ld.setDate(ld.getDate()-li);
-    var lk=dkey(ld);
-    if(_corrExclWeekend&&(ld.getDay()===0||ld.getDay()===6))continue;
-    var lrev=getReview(lk);
-    if(lrev&&lrev.items&&lrev.items.length)doneByDate[lk]=lrev.items.filter(function(t){return t.status==='done';}).length/lrev.items.length;
-    dates.push(lk);
+    var ld1=new Date(ld);ld1.setDate(ld.getDate()-1);
+    if(_corrExclWeekend&&(ld.getDay()===0||ld.getDay()===6||ld1.getDay()===0||ld1.getDay()===6))continue;
+    pairs.push({t:dkey(ld),f:dkey(ld1)});
   }
   function getV(id,date){
     if(id==='combat')return sleepByDate[date]?sleepByDate[date].combat:null;
@@ -2687,8 +2701,9 @@ function buildLeverageBars(){
   FACTORS.forEach(function(f){
     if(f.id===_levTab)return;
     var xs=[],ys=[];
-    dates.forEach(function(date){
-      var tv=getV(_levTab,date),fv=getV(f.id,date);
+    // target 取目標日（t），factor 取 T-1 行為日（f）
+    pairs.forEach(function(p){
+      var tv=getV(_levTab,p.t),fv=getV(f.id,p.f);
       if(tv!==null&&fv!==null){xs.push(tv);ys.push(fv);}
     });
     if(xs.length>=5)results.push({id:f.id,label:f.label,r:pearson(xs,ys),n:xs.length});
