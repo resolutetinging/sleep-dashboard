@@ -2655,16 +2655,34 @@ function buildLeverageBars(){
     if(id==='durH')return sleepByDate[date]?sleepByDate[date].durH:null;
     return null;
   }
-  var FACTORS=[
-    {id:'mood',label:'🌊 情緒分數'},
-    {id:'done',label:'✓ 任務完成率'},
-    {id:'coffee',label:'☕ 咖啡攝取'},
-    {id:'water',label:'💧 每日飲水'},
-    {id:'deepP',label:'🧠 深睡比例'},
-    {id:'remP',label:'💭 REM 比例'},
-    {id:'durH',label:'⏱ 睡眠時長'},
-    {id:'combat',label:'⚡ 睡眠戰力'}
-  ];
+  // combat tab 只看外在行為變數；sleep 內部原料（deepP/remP/durH）對自身無解釋意義
+  var LEV_FACTORS={
+    combat:[
+      {id:'mood',   label:'🌊 情緒分數'},
+      {id:'done',   label:'✓ 任務完成率'},
+      {id:'coffee', label:'☕ 咖啡攝取'},
+      {id:'water',  label:'💧 每日飲水'}
+    ],
+    mood:[
+      {id:'combat', label:'⚡ 睡眠戰力'},
+      {id:'done',   label:'✓ 任務完成率'},
+      {id:'coffee', label:'☕ 咖啡攝取'},
+      {id:'water',  label:'💧 每日飲水'},
+      {id:'deepP',  label:'🧠 深睡比例'},
+      {id:'remP',   label:'💭 REM 比例'},
+      {id:'durH',   label:'⏱ 睡眠時長'}
+    ],
+    done:[
+      {id:'combat', label:'⚡ 睡眠戰力'},
+      {id:'mood',   label:'🌊 情緒分數'},
+      {id:'coffee', label:'☕ 咖啡攝取'},
+      {id:'water',  label:'💧 每日飲水'},
+      {id:'deepP',  label:'🧠 深睡比例'},
+      {id:'remP',   label:'💭 REM 比例'},
+      {id:'durH',   label:'⏱ 睡眠時長'}
+    ]
+  };
+  var FACTORS=LEV_FACTORS[_levTab]||LEV_FACTORS.mood;
   var results=[];
   FACTORS.forEach(function(f){
     if(f.id===_levTab)return;
