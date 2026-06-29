@@ -73,8 +73,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .cco{grid-column:1/13;grid-row:5}     /* correlation — full width */
 .cdta{grid-column:1/13;grid-row:6}    /* dual-track beta */
 .csca{grid-column:1/13;grid-row:7}    /* sleep causal analysis */
-.ctx{grid-column:1/13;grid-row:8}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:9}     /* HD AI */
+.clv{grid-column:1/13;grid-row:8}     /* leverage bars */
+.ctx{grid-column:1/13;grid-row:9}     /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:10}    /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -224,6 +225,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .hd-btn:hover{opacity:.8}.hd-btn:disabled{opacity:.45;cursor:default}
 .hd-spinner-inline{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
 
+/* LEVERAGE BARS */
+.lev-tab{font-size:.62rem;padding:3px 12px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s;font-family:'Noto Sans TC',sans-serif}
+.lev-tab.active{background:var(--text);color:var(--card);border-color:var(--text)}
+.lev-row{display:flex;align-items:center;gap:6px;padding:.28rem 0}
+.lev-label{font-size:.62rem;padding:3px 8px;border-radius:20px;font-weight:600;background:rgba(40,38,32,.07);color:var(--sub);white-space:nowrap;min-width:90px;text-align:center;flex-shrink:0}
+.lev-note{font-size:.62rem;color:var(--faint);line-height:1.6}
+
 /* MOBILE */
 .ch-sm{height:90px}
 .ch-lg{height:180px}
@@ -243,7 +251,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta,.csca{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta,.csca,.clv{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -628,6 +636,39 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div id="scr-legend" class="scr-legend"></div>
     <div id="scr-median-lbl" style="font-size:.6rem;color:var(--faint);margin-top:.25rem;line-height:1.5"></div>
     <div id="scr-panel" class="scr-panel" style="display:none"></div>
+  </div>
+
+  <!-- 跨維度長期因果槓桿條 -->
+  <div class="card clv">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.8rem">
+      <div>
+        <div class="lbl" style="margin-bottom:2px">🔗 跨維度因果槓桿條</div>
+        <div style="font-size:.62rem;color:var(--faint)">近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="lev-tab active" data-tab="combat" onclick="setLevTab('combat')">⚡ 睡眠戰力</button>
+        <button class="lev-tab" data-tab="mood" onclick="setLevTab('mood')">🌊 情緒分數</button>
+        <button class="lev-tab" data-tab="done" onclick="setLevTab('done')">✓ 任務完成率</button>
+      </div>
+    </div>
+    <!-- 軸向圖例 -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:.55rem">
+      <div class="lev-label" style="opacity:0;pointer-events:none">佔位</div>
+      <div style="flex:1;display:flex;align-items:center;font-size:.6rem;color:var(--faint);gap:0;min-width:0">
+        <div style="flex:1;text-align:right;padding-right:6px">◄ 負向壓制</div>
+        <div style="width:1px;height:12px;background:var(--bstr);flex-shrink:0"></div>
+        <div style="flex:1;padding-left:6px">正向驅動 ►</div>
+      </div>
+      <div style="min-width:44px"></div>
+    </div>
+    <!-- 槓桿條列表 -->
+    <div id="lev-bars" style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:.7rem;color:var(--faint);padding:.8rem 0;text-align:center">計算中…</div>
+    </div>
+    <!-- 黃金槓桿 / 頭號戰犯摘要 -->
+    <div id="lev-footer" class="lev-note" style="margin-top:.7rem;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)"></div>
+    <!-- 定義說明 -->
+    <div style="margin-top:.55rem;font-size:.6rem;color:var(--faint);line-height:1.65">⚠ 需至少 5 天配對資料方計算；|r| ≥ 0.5 深色顯示，|r| ≥ 0.3 淺色顯示；相關性≠因果，僅供戰略參考。若 Refueler 未啟用，咖啡/飲水欄自動略過。</div>
   </div>
 
   <!-- 任務屬性熱點 -->
@@ -1571,6 +1612,7 @@ function renderOv(){
   buildTaskTaxonomy();
   loadHDProfile();
   loadWeekView();
+  try{buildLeverageBars();}catch(e){}
 }
 
 /* CATEGORY MAP */
@@ -2561,6 +2603,125 @@ function renderDualTrackCard(){
   };
 })();
 
+/* LEVERAGE BARS */
+var _levTab='combat';
+function pearson(xs,ys){
+  var n=xs.length;if(n<3)return null;
+  var mx=0,my=0;
+  for(var pi=0;pi<n;pi++){mx+=xs[pi];my+=ys[pi];}
+  mx/=n;my/=n;
+  var num=0,sdx=0,sdy=0;
+  for(var qi=0;qi<n;qi++){var dx=xs[qi]-mx,dy=ys[qi]-my;num+=dx*dy;sdx+=dx*dx;sdy+=dy*dy;}
+  var denom=Math.sqrt(sdx*sdy);
+  return denom<1e-10?null:Math.round(num/denom*100)/100;
+}
+function buildLeverageBars(){
+  var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+  var trendSrc=sl.trend30||sl.trend14||sl.trend7||[];
+  var sleepByDate={};
+  trendSrc.forEach(function(n){
+    var dp=Math.min((n.deepP||0)/18*100,100);
+    var rp=Math.min((n.remP||0)/22.5*100,100);
+    sleepByDate[n.date]={combat:Math.round(dp*0.7+rp*0.3),deepP:Math.round(dp),remP:Math.round(rp),durH:n.durH||0};
+  });
+  var moodByDate={};getMoods().forEach(function(m){moodByDate[m.date]=m.score;});
+  var doneByDate={},coffeeByDate={},waterByDate={};
+  try{
+    var rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');
+    var rfArr=(rfRaw&&rfRaw.entries)?rfRaw.entries:[];
+    rfArr.forEach(function(e){
+      var dk=(e.timestamp||'').slice(0,10);if(!dk)return;
+      if(e.type==='coffee')coffeeByDate[dk]=(coffeeByDate[dk]||0)+1;
+      if(e.type==='water')waterByDate[dk]=(waterByDate[dk]||0)+(e.amount||0);
+    });
+  }catch(e){}
+  var dates=[];
+  for(var li=29;li>=0;li--){
+    var ld=new Date();ld.setDate(ld.getDate()-li);
+    var lk=dkey(ld);
+    if(_corrExclWeekend&&(ld.getDay()===0||ld.getDay()===6))continue;
+    var lrev=getReview(lk);
+    if(lrev&&lrev.items&&lrev.items.length)doneByDate[lk]=lrev.items.filter(function(t){return t.status==='done';}).length/lrev.items.length;
+    dates.push(lk);
+  }
+  function getV(id,date){
+    if(id==='combat')return sleepByDate[date]?sleepByDate[date].combat:null;
+    if(id==='mood')return moodByDate[date]!==undefined?moodByDate[date]:null;
+    if(id==='done')return doneByDate[date]!==undefined?doneByDate[date]*100:null;
+    if(id==='coffee')return coffeeByDate[date]!==undefined?coffeeByDate[date]:null;
+    if(id==='water')return waterByDate[date]!==undefined?waterByDate[date]:null;
+    if(id==='deepP')return sleepByDate[date]?sleepByDate[date].deepP:null;
+    if(id==='remP')return sleepByDate[date]?sleepByDate[date].remP:null;
+    if(id==='durH')return sleepByDate[date]?sleepByDate[date].durH:null;
+    return null;
+  }
+  var FACTORS=[
+    {id:'mood',label:'🌊 情緒分數'},
+    {id:'done',label:'✓ 任務完成率'},
+    {id:'coffee',label:'☕ 咖啡攝取'},
+    {id:'water',label:'💧 每日飲水'},
+    {id:'deepP',label:'🧠 深睡比例'},
+    {id:'remP',label:'💭 REM 比例'},
+    {id:'durH',label:'⏱ 睡眠時長'},
+    {id:'combat',label:'⚡ 睡眠戰力'}
+  ];
+  var results=[];
+  FACTORS.forEach(function(f){
+    if(f.id===_levTab)return;
+    var xs=[],ys=[];
+    dates.forEach(function(date){
+      var tv=getV(_levTab,date),fv=getV(f.id,date);
+      if(tv!==null&&fv!==null){xs.push(tv);ys.push(fv);}
+    });
+    if(xs.length>=5)results.push({id:f.id,label:f.label,r:pearson(xs,ys),n:xs.length});
+  });
+  results.sort(function(a,b){return Math.abs(b.r||0)-Math.abs(a.r||0);});
+  var container=$('lev-bars');if(!container)return;
+  if(!results.length){
+    container.innerHTML='<div style="font-size:.7rem;color:var(--faint);text-align:center;padding:1.2rem 0">資料點不足（需各因子至少 5 天配對資料），繼續記錄後自動更新。</div>';
+    return;
+  }
+  var html='';
+  results.forEach(function(f){
+    var r=f.r;
+    var rStr=r!==null?(r>=0?'+':'')+r.toFixed(2):'—';
+    var absR=r!==null?Math.abs(r):0;
+    var rCol=r===null?'var(--faint)':absR>=0.5?(r>0?'var(--ok)':'var(--danger)'):absR>=0.3?(r>0?'#5a9e7a':'#c07060'):'var(--faint)';
+    var pct=absR*100;
+    var leftBar=r!==null&&r<0?'<div style="background:rgba(192,57,43,.65);height:8px;width:'+pct+'%;border-radius:4px 0 0 4px;margin-left:auto"></div>':'';
+    var rightBar=r!==null&&r>=0?'<div style="background:rgba(39,174,96,.72);height:8px;width:'+pct+'%;border-radius:0 4px 4px 0"></div>':'';
+    html+='<div class="lev-row">'+
+      '<div class="lev-label">'+f.label+'</div>'+
+      '<div style="flex:1;display:flex;align-items:center;min-width:0;gap:0">'+
+        '<div style="flex:1;display:flex;justify-content:flex-end;height:8px;min-width:0">'+leftBar+'</div>'+
+        '<div style="width:1px;height:16px;background:var(--bstr);flex-shrink:0"></div>'+
+        '<div style="flex:1;height:8px;min-width:0">'+rightBar+'</div>'+
+      '</div>'+
+      '<div style="font-size:.65rem;font-weight:700;min-width:50px;text-align:right;flex-shrink:0;color:'+rCol+'">'+
+        rStr+'<span style="font-size:.55rem;color:var(--faint);font-weight:400"> n='+f.n+'</span>'+
+      '</div>'+
+    '</div>';
+  });
+  container.innerHTML=html;
+  var footer=$('lev-footer');
+  if(footer){
+    var TL={combat:'睡眠戰力',mood:'情緒分數',done:'任務完成率'};
+    var sig=results.filter(function(f){return f.r!==null&&Math.abs(f.r)>=0.3;});
+    var best=sig.filter(function(f){return f.r>0;}).sort(function(a,b){return b.r-a.r;})[0]||null;
+    var worst=sig.filter(function(f){return f.r<0;}).sort(function(a,b){return a.r-b.r;})[0]||null;
+    var parts=[];
+    if(best)parts.push('🟢 黃金槓桿：'+best.label+'（r='+best.r.toFixed(2)+'）');
+    if(worst)parts.push('🔴 頭號戰犯：'+worst.label+'（r='+worst.r.toFixed(2)+'）');
+    footer.textContent=parts.length?parts.join('　·　'):'近 30 日各因子與 '+TL[_levTab]+' 相關性均低於 0.3，持續積累資料。';
+    footer.style.display='block';
+  }
+}
+function setLevTab(tab){
+  _levTab=tab;
+  document.querySelectorAll('.lev-tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab);});
+  try{buildLeverageBars();}catch(e){}
+}
+
 /* INIT */
 window._catMap=loadCatMap();
 var _initTab=sessionStorage.getItem('sas_tab')||'ov';
@@ -2568,6 +2729,7 @@ go(_initTab);
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
+try{buildLeverageBars();}catch(e){}
 </script>
 </body>
 </html>
