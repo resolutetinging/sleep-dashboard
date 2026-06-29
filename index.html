@@ -230,7 +230,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .lev-tab.active{background:var(--text);color:var(--card);border-color:var(--text)}
 .lev-row{display:flex;align-items:center;gap:6px;padding:.28rem 0}
 .lev-label{font-size:.62rem;padding:3px 8px;border-radius:20px;font-weight:600;background:rgba(40,38,32,.07);color:var(--sub);white-space:nowrap;min-width:90px;text-align:center;flex-shrink:0}
-.lev-note{font-size:.62rem;color:var(--faint);line-height:1.6}
+.lev-note{font-size:.65rem;color:var(--faint);line-height:1.6}
 
 /* MOBILE */
 .ch-sm{height:90px}
@@ -643,7 +643,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.8rem">
       <div>
         <div class="lbl" style="margin-bottom:2px">🔗 跨維度因果槓桿條</div>
-        <div style="font-size:.62rem;color:var(--faint)">近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）</div>
+        <div style="font-size:.65rem;color:var(--faint)">近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）</div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="lev-tab active" data-tab="combat" onclick="setLevTab('combat')">⚡ 睡眠戰力</button>
@@ -654,7 +654,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <!-- 軸向圖例 -->
     <div style="display:flex;align-items:center;gap:0;margin-bottom:.55rem">
       <div class="lev-label" style="opacity:0;pointer-events:none">佔位</div>
-      <div style="flex:1;display:flex;align-items:center;font-size:.6rem;color:var(--faint);gap:0;min-width:0">
+      <div style="flex:1;display:flex;align-items:center;font-size:.65rem;color:var(--faint);gap:0;min-width:0">
         <div style="flex:1;text-align:right;padding-right:6px">◄ 負向壓制</div>
         <div style="width:1px;height:12px;background:var(--bstr);flex-shrink:0"></div>
         <div style="flex:1;padding-left:6px">正向驅動 ►</div>
@@ -668,7 +668,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <!-- 黃金槓桿 / 頭號戰犯摘要 -->
     <div id="lev-footer" class="lev-note" style="margin-top:.7rem;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)"></div>
     <!-- 定義說明 -->
-    <div style="margin-top:.55rem;font-size:.6rem;color:var(--faint);line-height:1.65">⚠ 需至少 5 天配對資料方計算；|r| ≥ 0.5 深色顯示，|r| ≥ 0.3 淺色顯示；相關性≠因果，僅供戰略參考。若 Refueler 未啟用，咖啡/飲水欄自動略過。</div>
+    <div style="margin-top:.55rem;font-size:.65rem;color:var(--faint);line-height:1.65">⚠ 需至少 5 天配對資料方計算；|r| ≥ 0.5 深色顯示，|r| ≥ 0.3 淺色顯示；相關性≠因果，僅供戰略參考。若 Refueler 未啟用，咖啡/飲水欄自動略過。</div>
   </div>
 
   <!-- 任務屬性熱點 -->
@@ -2698,7 +2698,7 @@ function buildLeverageBars(){
         '<div style="flex:1;height:8px;min-width:0">'+rightBar+'</div>'+
       '</div>'+
       '<div style="font-size:.65rem;font-weight:700;min-width:50px;text-align:right;flex-shrink:0;color:'+rCol+'">'+
-        rStr+'<span style="font-size:.55rem;color:var(--faint);font-weight:400"> n='+f.n+'</span>'+
+        rStr+'<span style="font-size:.6rem;color:var(--faint);font-weight:400"> n='+f.n+'</span>'+
       '</div>'+
     '</div>';
   });
