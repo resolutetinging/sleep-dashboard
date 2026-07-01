@@ -727,7 +727,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- SLEEP -->
 <div class="view-frame" id="v-sl">
-  <div class="frame-bar"><div><div class="frame-title">Sleep Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">生理油錶 · 睡眠品質分析</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="open-btn" onclick="reloadSleepFrame()" id="sl-reload-btn" title="重新載入最新資料">↻ 重整</button><a href="./sleep_dashboard_v2.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div></div>
+  <div class="frame-bar"><div><div class="frame-title">Sleep Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">生理油錶 · 睡眠品質分析</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="open-btn" onclick="triggerICloudUpdate()" title="從本機 iCloud 讀取最新睡眠資料">📥 更新</button><button class="open-btn" onclick="reloadSleepFrame()" id="sl-reload-btn" title="重新載入最新資料">↻ 重整</button><a href="./sleep_dashboard_v2.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div></div>
   <div class="frame-wrap"><div class="frame-loading" id="sl-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="sl-frame" src="about:blank" title="Sleep Dashboard"></iframe></div>
 </div>
 
@@ -789,6 +789,19 @@ function reloadMnFrame(){
   if(btn){btn.textContent='載入中…';btn.disabled=true;}
   if(f){f.src='https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html?t='+Date.now();}
   setTimeout(()=>{if(btn){btn.textContent='↻ 重整';btn.disabled=false;}},3000);
+}
+function triggerICloudUpdate(){
+  var f=$('sl-frame');
+  if(f&&f.contentWindow&&f.contentWindow.loadFromICloud){
+    f.contentWindow.loadFromICloud();
+  } else {
+    // iframe 尚未載入，先載入再觸發
+    reloadSleepFrame();
+    setTimeout(function(){
+      var ff=$('sl-frame');
+      if(ff&&ff.contentWindow&&ff.contentWindow.loadFromICloud) ff.contentWindow.loadFromICloud();
+    },3500);
+  }
 }
 function reloadSleepFrame(){
   var f=$('sl-frame'),sl=$('sl-loading'),btn=$('sl-reload-btn');

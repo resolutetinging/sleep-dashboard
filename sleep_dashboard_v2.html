@@ -387,12 +387,18 @@
       <div class="page-title">睡眠分析儀錶板</div>
       <div class="page-sub" id="dateRangeLabel">載入中...</div>
     </div>
-    <div class="toggle-wrap" style="padding-bottom:4px">
-      <span class="toggle-label">排除週末</span>
-      <label class="toggle">
-        <input type="checkbox" id="excludeWeekend" onchange="refreshAll()">
-        <span class="toggle-slider"></span>
-      </label>
+    <div style="display:flex;align-items:center;gap:12px;padding-bottom:4px;flex-wrap:wrap">
+      <button id="icloud-btn" onclick="loadFromICloud()"
+        style="padding:5px 13px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+        📥 iCloud 更新
+      </button>
+      <div class="toggle-wrap">
+        <span class="toggle-label">排除週末</span>
+        <label class="toggle">
+          <input type="checkbox" id="excludeWeekend" onchange="refreshAll()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
     </div>
   </div>
 
@@ -2188,6 +2194,88 @@ async function runWeightedAI() {
     el.innerHTML = parts.map(p => `<div>${p.trim()}</div>`).join('');
   } catch (e) { el.textContent = '無法連線 Groq'; }
   _wAIBusy = false;
+}
+
+// ── iCloud 手動更新 ──────────────────────────────────────────────
+function parseSleepTxtRecord(text) {
+  try {
+    const obj = JSON.parse(text.trim());
+    const date = (obj.date || '').trim();
+    if (!date || date < '2026-01-01') return null;
+    const deep_min  = Math.round((obj.deep  || 0) * 60);
+    const rem_min   = Math.round((obj.rem   || 0) * 60);
+    const core_min  = Math.round((obj.core  || 0) * 60);
+    const awake_min = Math.round((obj.awake || 0) * 60);
+    const total_min = deep_min + rem_min + core_min;
+    if (total_min < 60) return null;
+    const startStr = (obj.sleepStart || '').replace(' ', 'T');
+    const endStr   = (obj.sleepEnd   || '').replace(' ', 'T');
+    const bedtime  = startStr.length >= 16 ? startStr.slice(11, 16) : '';
+    const wake     = endStr.length >= 16   ? endStr.slice(11, 16)   : '';
+    let efficiency = null;
+    if (startStr && endStr) {
+      const dur = (new Date(endStr) - new Date(startStr)) / 60000;
+      if (dur > 0) efficiency = Math.round(total_min / dur * 100);
+    }
+    return { date, bedtime, wake, total_min, deep_min, rem_min, core_min, awake_min, efficiency, segments: [] };
+  } catch(e) { return null; }
+}
+
+async function loadFromICloud() {
+  if (!window.showDirectoryPicker) {
+    showICloudToast('此功能需要 Chrome 或 Edge 瀏覽器', true); return;
+  }
+  const btn = document.getElementById('icloud-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '讀取中…'; }
+  try {
+    const dirHandle = await window.showDirectoryPicker({ id: 'sleep-icloud', mode: 'read' });
+    const newRecords = [];
+    for await (const [name, handle] of dirHandle.entries()) {
+      if (handle.kind !== 'file') continue;
+      if (!name.startsWith('sleep_') || !name.endsWith('.txt')) continue;
+      try {
+        const file = await handle.getFile();
+        const rec = parseSleepTxtRecord(await file.text());
+        if (rec) newRecords.push(rec);
+      } catch(e) {}
+    }
+    if (!newRecords.length) { showICloudToast('找不到有效的 sleep_*.txt', true); return; }
+    const existing = new Map(RAW.summary.map(r => [r.date, r]));
+    for (const rec of newRecords) existing.set(rec.date, rec);
+    const merged = [...existing.values()].sort((a, b) => a.date.localeCompare(b.date));
+    RAW.summary = merged;
+    RAW.detail  = merged.slice(-90).map(r => ({ ...r, segments: r.segments || [] }));
+    nightIdx = RAW.detail.length - 1;
+    updateNight();
+    refreshAll();
+    saveSleepToLocalStorage();
+    showICloudToast(`已更新：${merged[merged.length-1]?.date}（共 ${merged.length} 夜）`);
+  } catch(e) {
+    if (e.name !== 'AbortError') showICloudToast('讀取失敗：' + e.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📥 iCloud 更新'; }
+  }
+}
+
+function showICloudToast(msg, isErr) {
+  let t = document.getElementById('icloud-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'icloud-toast';
+    Object.assign(t.style, {
+      position:'fixed', bottom:'24px', right:'24px', zIndex:'9999',
+      padding:'10px 18px', borderRadius:'10px', fontSize:'13px',
+      fontWeight:'600', boxShadow:'0 4px 16px rgba(0,0,0,.18)',
+      transition:'opacity .3s', opacity:'0', pointerEvents:'none'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.background = isErr ? '#a05858' : '#5e8f7e';
+  t.style.color = '#fff';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3500);
 }
 
 // Init
