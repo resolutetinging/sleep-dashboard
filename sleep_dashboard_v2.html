@@ -785,7 +785,7 @@ function calcNightRaw(d) {
 }
 // ─────────────────────────────────────────────────────────────────────
 
-let trendChart, donutChart, hypnoChart, pctTrendChart, effChart, regularityTrendChart;
+let trendChart, hypnoChart, pctTrendChart, effChart, regularityTrendChart;
 let currentRange = 90;
 let currentPctRange = 90;
 let currentEffRange = 30;
@@ -989,37 +989,6 @@ function updateTrend(data) {
 
   if (trendChart) { trendChart.destroy(); trendChart = null; }
   trendChart = new Chart(document.getElementById('trendChart'), { ...cfg, plugins:[totalLabelPlugin] });
-}
-
-function updateDonut(data) {
-  const avg = computeAvg(data);
-  const total = avg.deep + avg.rem + avg.core + avg.awake;
-  const vals = [avg.deep, avg.rem, avg.core, avg.awake];
-  const labels = ['深度 Deep','REM','核心 Core','清醒 Awake'];
-  const colors = [COLORS.deep, COLORS.rem, COLORS.core, COLORS.awake];
-
-  const cfg = {
-    type: 'doughnut',
-    data: { labels, datasets:[{ data:vals, backgroundColor:colors, borderWidth:0, hoverOffset:6 }] },
-    options: {
-      cutout:'68%', plugins:{ legend:{display:false}, tooltip:{callbacks:{
-        label: i => ` ${i.label}: ${i.raw}分鐘 (${pct(i.raw, total)})`
-      }}}
-    }
-  };
-
-  if (donutChart) { donutChart.data = cfg.data; donutChart.update(); }
-  else donutChart = new Chart(document.getElementById('donutChart'), cfg);
-
-  const leg = document.getElementById('donutLegend');
-  leg.innerHTML = labels.map((l,i) => `
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim)">
-        <span style="width:10px;height:10px;border-radius:2px;background:${colors[i]};display:inline-block"></span>${l}
-      </span>
-      <span style="font-family:DM Mono,monospace;font-size:12px">${pct(vals[i],total)}</span>
-    </div>
-  `).join('');
 }
 
 function updateRegularity(data) {
@@ -1486,7 +1455,10 @@ function updateEffTrend(data) {
 }
 
 function updatePersonalBaseline() {
-  const all = RAW.summary;
+  // 基準線母體受「排除週末」開關影響（開啟時只算週間夜晚）；
+  // 「昨晚」比對點固定用 RAW.summary 真正最後一夜，不受開關影響（同單夜戰力規則）
+  const excludeWE = document.getElementById('excludeWeekend').checked;
+  const all = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
   const el = document.getElementById('personalBaseline');
   if (!el || all.length < 5) return;
   function stagePctArr(key) {
@@ -1504,7 +1476,7 @@ function updatePersonalBaseline() {
   const remPcts  = stagePctArr('rem_min');
   const deepMed  = median(deepPcts);
   const remMed   = median(remPcts);
-  const last = all[all.length - 1];
+  const last = RAW.summary[RAW.summary.length - 1];
   const lastTotal = last.deep_min + last.rem_min + last.core_min;
   const lastDeepPct = lastTotal > 0 ? last.deep_min / lastTotal * 100 : 0;
   const lastRemPct  = lastTotal > 0 ? last.rem_min  / lastTotal * 100 : 0;
@@ -1526,7 +1498,7 @@ function updatePersonalBaseline() {
     }
   }
   el.innerHTML = `
-    <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">個人歷史基準（${all.length} 夜中位數）</div>
+    <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">個人歷史基準（${all.length} 夜中位數${excludeWE ? '，已排除週末' : ''}）</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
         <div style="font-size:10px;color:var(--deep);font-weight:600;margin-bottom:4px">■ Deep 基礎能量</div>
@@ -1612,123 +1584,6 @@ function updateDailySummary(totalDebt, score, singleScore) {
     drEl.innerHTML = debtMin>0
       ? `<span style="color:${debtColor}">−${debtStr}</span>`
       : `<span style="color:#5e8f7e">+${debtStr} 盈餘</span>`;
-  }
-}
-
-function updateSocialJetlag() {
-  // Convert bedtime string to minutes from noon (so cross-midnight stays consistent)
-  function bedToMins(bt) {
-    const [h, m] = bt.split(':').map(Number);
-    let mins = h * 60 + m;
-    if (h < 12) mins += 1440; // treat 00:xx–11:xx as next day
-    return mins;
-  }
-  function midSleep(bt, total_min) {
-    return bedToMins(bt) + total_min / 2;
-  }
-  function minToHHMM(m) {
-    const norm = ((m % 1440) + 1440) % 1440;
-    return `${String(Math.floor(norm/60)).padStart(2,'0')}:${String(Math.floor(norm%60)).padStart(2,'0')}`;
-  }
-  function median(arr) {
-    const s = [...arr].sort((a,b)=>a-b);
-    const n = s.length;
-    return n % 2 === 0 ? (s[n/2-1]+s[n/2])/2 : s[Math.floor(n/2)];
-  }
-  function stddev(arr) {
-    const avg = arr.reduce((a,b)=>a+b,0)/arr.length;
-    return Math.sqrt(arr.map(x=>(x-avg)**2).reduce((a,b)=>a+b,0)/arr.length);
-  }
-
-  const all = RAW.summary;
-  const weekdayMid = [], weekendMid = [], allBed = [];
-
-  all.forEach(d => {
-    const dow = new Date(d.date + 'T12:00:00').getDay(); // 0=Sun,6=Sat
-    const ms = midSleep(d.bedtime, d.total_min);
-    const bt = bedToMins(d.bedtime);
-    allBed.push(bt);
-    if (dow === 0 || dow === 6) weekendMid.push(ms);
-    else weekdayMid.push(ms);
-  });
-
-  if (weekdayMid.length < 3 || weekendMid.length < 3) return;
-
-  const wkdayMed = median(weekdayMid);
-  const wkendMed = median(weekendMid);
-  const jetlagMin = Math.abs(wkendMed - wkdayMed);
-  const jetlagHr  = jetlagMin / 60;
-  const direction = wkendMed > wkdayMed ? '週末偏晚' : '週末偏早';
-  const sdMin = stddev(allBed);
-  const sdHr  = sdMin / 60;
-
-  // Average bedtimes (separate weekday/weekend)
-  const wkdayBeds = [], wkendBeds = [];
-  all.forEach(d => {
-    const dow = new Date(d.date + 'T12:00:00').getDay();
-    const bt = bedToMins(d.bedtime);
-    if (dow === 0 || dow === 6) wkendBeds.push(bt);
-    else wkdayBeds.push(bt);
-  });
-  const avgWkdayBed = wkdayBeds.reduce((a,b)=>a+b,0)/wkdayBeds.length;
-  const avgWkendBed = wkendBeds.reduce((a,b)=>a+b,0)/wkendBeds.length;
-
-  // Color coding
-  const jetlagColor = jetlagHr < 1 ? '#5e8f7e' : jetlagHr < 2 ? '#e67e22' : '#c0392b';
-  const sdColor     = sdHr < 0.75 ? '#5e8f7e' : sdHr < 1.5 ? '#e67e22' : '#c0392b';
-
-  // Left: Social Jetlag
-  document.getElementById('jetlagLeft').innerHTML = `
-    <div style="margin-bottom:10px">
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em">社交時差 Social Jetlag</div>
-      <div style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;color:${jetlagColor};line-height:1">${jetlagHr.toFixed(1)}<span style="font-size:16px;font-weight:400">h</span></div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${direction} · 閾值 &lt; 1h</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
-          <span style="color:var(--text-dim)">平日平均入睡</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--deep)">${minToHHMM(avgWkdayBed)}</span>
-        </div>
-        <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
-          <div style="width:60%;height:100%;background:var(--deep);border-radius:3px"></div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
-          <span style="color:var(--text-dim)">週末平均入睡</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--awake)">${minToHHMM(avgWkendBed)}</span>
-        </div>
-        <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
-          <div style="width:${Math.min(60 + jetlagHr*15, 100)}%;height:100%;background:var(--awake);border-radius:3px"></div>
-        </div>
-      </div>
-    </div>`;
-
-  // Right: Regularity
-  document.getElementById('jetlagRight').innerHTML = `
-    <div style="margin-bottom:10px">
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em">作息規律性 Regularity</div>
-      <div style="font-size:40px;font-weight:700;font-family:'DM Mono',monospace;color:${sdColor};line-height:1">±${sdHr.toFixed(1)}<span style="font-size:16px;font-weight:400">h</span></div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">入睡時間標準差 · 建議 &lt; 45min</div>
-    </div>
-    <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:10px;color:var(--text-dim);line-height:1.8">
-      樣本：平日 ${weekdayMid.length} 夜 · 週末 ${weekendMid.length} 夜<br>
-      ${sdHr < 0.75 ? '✓ 作息穩定，生理時鐘一致性高' : sdHr < 1.5 ? '⚡ 作息有一定波動，建議固定入睡時間' : '⚠ 作息波動較大，建議建立固定睡前習慣'}
-    </div>`;
-
-  const advEl = document.getElementById('jetlagAdvice');
-  const idealBedNote = '研究建議理想入睡時間為 22:00–23:00（有助於深度睡眠在前半夜達到峰值）。';
-  const mondayNote = '若週一早上特別難起床或感到倦怠，通常是社交時差的直接體現。';
-  if (jetlagHr < 1) {
-    advEl.className = 'advice-box good';
-    advEl.innerHTML = '<span class="advice-status">✓ 社交時差在安全範圍（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">平日與週末生理時鐘偏移不大，週一狀態應相對穩定。<br>' + idealBedNote + '</span>';
-  } else if (jetlagHr < 2) {
-    advEl.className = 'advice-box warn';
-    advEl.innerHTML = '<span class="advice-status">⚡ 社交時差中度（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">' + mondayNote + '<br>建議週末入睡時間不要比平日晚超過 1 小時；若有偏移，可在週日提早 30 分鐘入睡縮短落差。<br>' + idealBedNote + '</span>';
-  } else {
-    advEl.className = 'advice-box bad';
-    advEl.innerHTML = '<span class="advice-status">⚠ 社交時差偏高（' + jetlagHr.toFixed(1) + 'h）</span><span class="advice-detail">' + mondayNote + '<br>等同於每週經歷一次跨時區，對代謝與認知的影響接近輕度時差反應。<br>建議週末盡量固定起床時間（即使晚睡），避免生理時鐘持續漂移。<br>' + idealBedNote + '</span>';
   }
 }
 
