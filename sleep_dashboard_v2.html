@@ -1820,7 +1820,12 @@ function updateSleepDebt(allData) {
     ` / 49h（${weekDays} 天）` +
     (weekRemaining > 0 ? `　還差 <strong style="color:#a05858">${(weekRemaining/60).toFixed(1)}h</strong>` : `　<strong style="color:#5e8f7e">本週目標達成！</strong>`);
 
-  return totalDebt; // for combat power debt adjustment
+  // 戰力（單夜/3夜加權）用的負債一律用未過濾的實際近7夜計算，不受「排除週末」
+  // 顯示開關影響——負債本身是當下真實生理狀態，跟債務長條圖要不要濾掉週末是兩件事
+  const realLast7 = RAW.summary.slice(-7);
+  const realTotalDebt = realLast7.reduce((sum, d) => sum + (TARGET - d.total_min), 0);
+
+  return realTotalDebt; // for combat power debt adjustment
 }
 
 function updateCombatPower(totalDebt) {
