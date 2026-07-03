@@ -1829,29 +1829,39 @@ function updateSleepDebt(allData) {
 }
 
 function updateCombatPower(totalDebt) {
-  const nights = RAW.summary.slice(-3);
-  if (!nights.length) return { score: 0, singleScore: 0 };
-  const last = nights[nights.length - 1];
+  // 規格（2026-07-03 重新定義）：
+  // - 單夜：只看最新單日資料，一律不受「排除週末」開關影響
+  // - 3夜加權：看近三夜資料，受「排除週末」開關影響 —— 開啟時只計算週間資料
+  if (!RAW.summary.length) return { score: 0, singleScore: 0 };
+  const last = RAW.summary[RAW.summary.length - 1]; // 真正最後一晚，單夜與顯示用
 
+  const singleRaw = calcNightRaw(last);
+
+  const excludeWE = document.getElementById('excludeWeekend').checked;
+  const weightedPool = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
+  const nights = weightedPool.slice(-3);
   const scores = nights.map(calcNightRaw);
-  // 單夜：只取最後一晚
-  const singleRaw = scores[scores.length - 1];
   // 3夜加權：oldest 10%, middle 30%, latest 60%
   const wts = nights.length >= 3 ? [0.1, 0.3, 0.6] : nights.length === 2 ? [0.4, 0.6] : [1.0];
   const rawScore = scores.reduce((sum, s, i) => sum + s * wts[i], 0);
 
-  // For display bars, use last night only
+  // For display bars, use last night only（真正最後一晚，不受開關影響）
   const totalSleep = last.deep_min + last.rem_min + last.core_min;
   const remPct  = pctNum(last.rem_min,  totalSleep);
   const deepPct = pctNum(last.deep_min, totalSleep);
   const remScore  = Math.min(remPct  / 22.5 * 100, 100);
   const deepScore = Math.min(deepPct / 18   * 100, 100);
 
-  // Debt adjustment: 3-hour buffer, -2 pts per extra hour of debt
+  // 單夜負債：一律用未過濾的真實近7夜（totalDebt 參數，來自 updateSleepDebt 的 realTotalDebt）
   const debtHours = (totalDebt || 0) / 60;
   const debtPenalty = Math.max(0, debtHours - 3) * 2;
-  const score = Math.round(Math.max(0, rawScore - debtPenalty));
   const singleScore = Math.round(Math.max(0, singleRaw - debtPenalty));
+
+  // 3夜加權負債：受「排除週末」開關影響，開啟時只用週間 7 夜計算
+  const weightedDebt = weightedPool.slice(-7).reduce((sum, d) => sum + (480 - d.total_min), 0);
+  const weightedDebtHours = weightedDebt / 60;
+  const weightedDebtPenalty = Math.max(0, weightedDebtHours - 3) * 2;
+  const score = Math.round(Math.max(0, rawScore - weightedDebtPenalty));
 
   // Thresholds: <60 Critical, <70 Caution, 70-79 Stable, ≥80 Peak
   let label, color, tasks;
@@ -1969,13 +1979,14 @@ function updateCombatPower(totalDebt) {
 
   const DOW = ['日','一','二','三','四','五','六'];
   const dow = DOW[new Date(last.date + 'T12:00:00').getDay()];
-  const penaltyNote = debtPenalty > 0
-    ? `<br><span style="color:#e67e22;font-size:10px">⚠ 睡眠債扣分 −${debtPenalty.toFixed(1)}（原始分 ${Math.round(rawScore)}）</span>`
+  const penaltyNote = weightedDebtPenalty > 0
+    ? `<br><span style="color:#e67e22;font-size:10px">⚠ 睡眠債扣分 −${weightedDebtPenalty.toFixed(1)}（原始分 ${Math.round(rawScore)}）</span>`
     : '';
   const n0 = nights.length >= 3 ? nights[0].date.slice(5) : null;
   const n1 = nights.length >= 2 ? nights[nights.length-2].date.slice(5) : null;
+  const nLatest = nights.length ? nights[nights.length-1].date.slice(5) : last.date.slice(5);
   const weightNote = nights.length >= 3
-    ? `<br><span style="font-size:10px;color:var(--text-dim)">${n0}×10% + ${n1}×30% + ${last.date.slice(5)}×60%</span>`
+    ? `<br><span style="font-size:10px;color:var(--text-dim)">${n0}×10% + ${n1}×30% + ${nLatest}×60%${excludeWE ? '　（已排除週末）' : ''}</span>`
     : '';
   document.getElementById('combatSub').innerHTML = `基於 ${last.date}（${dow}）昨晚數據${penaltyNote}${weightNote}`;
 
