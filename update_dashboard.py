@@ -168,21 +168,17 @@ def git_push():
         else:
             subprocess.run(["git", "commit", "-m", f"auto update: {today}"], check=True)
 
-        # 從持久檔案讀取 PAT（LaunchAgent 無法存取 osxkeychain）
-        pat_file = os.path.expanduser("~/.sleep_dashboard_pat")
-        if os.path.exists(pat_file):
-            with open(pat_file) as f:
-                pat = f.read().strip()
-            push_url = f"https://{pat}@github.com/resolutetinging/sleep-dashboard.git"
-        else:
-            push_url = "origin"
-            print("⚠️  ~/.sleep_dashboard_pat 不存在，以預設 origin 推送")
+        # 2026-07-07 改走 SSH key（Git Push SOP：本機一律 SSH，禁 PAT 嵌 URL）
+        # 舊機制（~/.sleep_dashboard_pat 明文 PAT 嵌 HTTPS URL）於 PAT 輪替後失效且不安全
+        ssh_env = dict(os.environ)
+        ssh_env["GIT_SSH_COMMAND"] = "ssh -i /Users/tinayu/.ssh/github_ed25519 -o IdentitiesOnly=yes"
+        push_url = "git@github.com:resolutetinging/sleep-dashboard.git"
 
         stash_result = subprocess.run(['git', 'stash'], capture_output=True, text=True)
         stashed = 'No local changes' not in stash_result.stdout
         try:
-            subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True)
-            subprocess.run(['git', 'push', push_url, 'main'], check=True)
+            subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True, env=ssh_env)
+            subprocess.run(['git', 'push', push_url, 'main'], check=True, env=ssh_env)
         finally:
             if stashed:
                 subprocess.run(['git', 'stash', 'pop'], check=False)
