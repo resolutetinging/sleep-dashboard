@@ -183,6 +183,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .scr-quote-date{font-weight:600;font-size:.65rem;color:var(--text);margin-bottom:.1rem;}
 .scr-day-block{background:var(--bg2);border-radius:var(--rsm);padding:.5rem .7rem .35rem;margin:.4rem 0;}
 .scr-day-block .scr-quote{margin:.15rem 0 0 .1rem;}
+.scr-t1-card{background:var(--bg2);border-radius:var(--rsm);padding:.6rem .8rem;margin:.35rem 0 .6rem;}
+.scr-t1-card .scr-panel-row{padding:.15rem 0;font-size:.7rem;color:var(--text);}
+.scr-t1-card .scr-panel-k{min-width:6.5em;color:var(--faint);}
+.scr-mini-row{display:flex;gap:.45rem;flex-wrap:wrap;margin:.3rem 0 .6rem;}
+.scr-mini-tag{position:relative;background:var(--bg2);border:1px solid var(--bstr);border-radius:5px;padding:.28rem .6rem;font-size:.65rem;font-weight:700;color:var(--text);cursor:pointer;}
+.scr-mini-tag .scr-mini-detail{display:none;position:absolute;left:0;top:100%;margin-top:.35rem;z-index:20;background:var(--bg2);border:1px solid var(--bstr);border-radius:var(--rsm);padding:.55rem .65rem;width:15rem;max-width:70vw;box-shadow:0 4px 14px rgba(0,0,0,.2);font-size:.66rem;line-height:1.75;font-weight:400;color:var(--sub);text-align:left;}
+.scr-mini-tag:hover .scr-mini-detail,.scr-mini-tag.expanded .scr-mini-detail{display:block;}
+.scr-mini-detail div{margin:.1rem 0;}
+.scr-mini-empty{color:var(--faint);}
 .scr-bar-marker{font-size:.55rem;text-align:center;margin-bottom:2px;line-height:1;color:var(--warn);}
 .scr-corr-tag{display:inline-block;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(230,126,34,.12);color:var(--warn);margin-left:6px;vertical-align:middle;}
 .em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.75rem 0 1rem}
@@ -2225,9 +2234,38 @@ function renderDualTrackCard(){
 
   function appendNote(parent,msg){
     var d=document.createElement('div');
-    d.style.cssText='color:var(--faint);font-style:italic;padding-left:1.4rem;font-size:.67rem;margin-top:.3rem;';
+    d.style.cssText='color:var(--faint);padding-left:1.4rem;font-size:.67rem;margin-top:.3rem;';
     d.textContent=msg;
     parent.appendChild(d);
+  }
+
+  function appendStatRow(parent,k,v){
+    var row=document.createElement('div');
+    row.className='scr-panel-row';
+    var kEl=document.createElement('div');
+    kEl.className='scr-panel-k';
+    kEl.textContent=k;
+    var vEl=document.createElement('div');
+    vEl.textContent=v;
+    row.appendChild(kEl);row.appendChild(vEl);
+    parent.appendChild(row);
+  }
+
+  // 讀取 Refueler 同源資料（refueler_v1），按日期彙總咖啡杯數與飲水量
+  function getRefuelerByDate(dateStr){
+    var rfRaw=null;
+    try{rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
+    var all=rfRaw&&rfRaw.entries?rfRaw.entries:[];
+    var dayEntries=all.filter(function(e){return e.timestamp&&e.timestamp.slice(0,10)===dateStr;});
+    var coffee=dayEntries.filter(function(e){return e.type==='coffee';});
+    var water=dayEntries.filter(function(e){return e.type==='water';});
+    var waterTotal=water.reduce(function(s,e){return s+(e.amount||0);},0);
+    return{
+      coffeeCount:coffee.length,
+      coffeeHas:coffee.length>0,
+      waterTotal:waterTotal,
+      waterHas:water.length>0
+    };
   }
 
   function getMentalByDate(){
@@ -2337,7 +2375,10 @@ function renderDualTrackCard(){
     title.textContent='📅 '+date+'（醒來）  深睡 '+(entry.deepP||0)+'%  '+deltaStr+'  總時 '+(entry.durH||0)+'h';
     panel.appendChild(title);
 
-    // ⏰ 入睡時刻（Day_N-1 當晚）
+    // 🎯 T-1（Day_N-1 入睡當日）行為對照：任務完成率／入睡時刻／進水量／咖啡攝取量
+    // 跨日邏輯：bedtime 為純時刻字串（無日期），與 entry.date 已由資料管線固定綁定為
+    // 「醒來日 Day_N」，故 dayN1=offsetDate(date,-1) 永遠對應 bedtime 實際所屬的入睡當日
+    // （例：Day_N=2026-07-02、bedtime=00:16 → 顯示於 dayN1=2026-07-01 當晚，不誤判為當天）。
     var bedtime=entry.bedtime||null;
     if(!bedtime){
       try{
@@ -2345,32 +2386,33 @@ function renderDualTrackCard(){
         if(sl2.date===date) bedtime=sl2.bedtime||null;
       }catch(ex){}
     }
-    appendSectionHdr(panel,'⏰ 入睡時刻（'+dayN1+' 當晚）');
-    appendQuote(panel,null,[bedtime||'需重新開啟 Sleep Dashboard 以同步']);
+    var rev1=null;
+    try{rev1=JSON.parse(localStorage.getItem('review_'+dayN1)||'null');}catch(e){}
+    var taskStr='無記錄';
+    if(rev1){
+      if(rev1.restMode){
+        taskStr='🌿 休假中'+(rev1.restNote?' — '+rev1.restNote:'');
+      } else {
+        var items1=rev1.items||[];
+        var done1=items1.filter(function(t){return t.status==='done';}).length;
+        taskStr=done1+'/'+items1.length+' 件完成（'+(rev1.mode||'未知')+' · '+(rev1.feel||'未知')+'）';
+      }
+    }
+    var rf1=getRefuelerByDate(dayN1);
+
+    appendSectionHdr(panel,'🎯 T-1（'+dayN1+' 入睡當日）行為對照');
+    var t1Card=document.createElement('div');
+    t1Card.className='scr-t1-card';
+    panel.appendChild(t1Card);
+    appendStatRow(t1Card,'✅ 任務完成率',taskStr);
+    appendStatRow(t1Card,'⏰ 入睡時刻',bedtime?bedtime+'（'+dayN1+' 當晚）':'無記錄');
+    appendStatRow(t1Card,'💧 進水量',rf1.waterHas?rf1.waterTotal+' ml':'無記錄');
+    appendStatRow(t1Card,'☕ 咖啡攝取量',rf1.coffeeHas?rf1.coffeeCount+' 杯':'無記錄');
 
     // 一次讀取 mental map，後面兩個區塊共用
     var mentalMap=getMentalByDate();
 
-    // 📋 入睡當日行程安排（Day_N-1）
-    appendSectionHdr(panel,'📋 入睡當日行程安排');
-    var rev1=null;
-    try{rev1=JSON.parse(localStorage.getItem('review_'+dayN1)||'null');}catch(e){}
-    if(rev1){
-      if(rev1.restMode){
-        appendQuote(panel,dayN1,['🌿 休假中'+(rev1.restNote?' — '+rev1.restNote:'')]);
-      } else {
-        var items1=rev1.items||[];
-        var done1=items1.filter(function(t){return t.status==='done';}).length;
-        appendQuote(panel,dayN1,[
-          (rev1.mode||'未知')+' · '+(rev1.feel||'未知'),
-          done1+'/'+items1.length+' 件完成'
-        ]);
-      }
-    } else {
-      appendNote(panel,'[入睡當日（'+dayN1+'）無 Optimizer 紀錄]');
-    }
-
-    // 📝 入睡當日心理日誌足跡（Day_N-1）
+    // 📝 入睡當日心理日誌足跡（Day_N-1，補充脈絡，非四項統計之一）
     appendSectionHdr(panel,'📝 入睡當日心理日誌足跡');
     var es1=mentalMap[dayN1]||[];
     if(es1.length){
@@ -2418,32 +2460,64 @@ function renderDualTrackCard(){
     }
     if(!hasOpt) appendNote(panel,'[往前 3 日無紀錄 — 高機率為離線或休假回程狀態]');
 
-    // 📝 往前 3 日心理日誌累積（Day_N-2, N-3, N-4）
-    appendSectionHdr(panel,'📝 往前 3 日心理日誌累積');
+    // 📝 往前 3 日心理日誌足跡（Day_N-2, N-3, N-4）— 微型日期標籤
+    // hover 顯示完整足跡；觸控裝置備援：點擊標籤 toggle .expanded class 展開/收合
+    appendSectionHdr(panel,'📝 往前 3 日心理日誌足跡');
+    var miniRow=document.createElement('div');
+    miniRow.className='scr-mini-row';
+    panel.appendChild(miniRow);
     var hasJournal=false;
     for(var i=2;i<=4;i++){
-      var d=offsetDate(date,-i);
-      var es=mentalMap[d]||[];
-      if(es.length){
-        hasJournal=true;
-        var dayBlock2=document.createElement('div');
-        dayBlock2.className='scr-day-block';
-        panel.appendChild(dayBlock2);
-        es.forEach(function(e){
-          var lines=[];
-          if(e.moodScore) lines.push('心情 '+e.moodScore+'/10');
-          var tags=(e.emotionTags||[]).filter(Boolean);
-          if(tags.length) lines.push(tags.join(' / '));
-          var factors=(e.impactFactors||[]).filter(function(f){return f&&(f.detail||f.name||typeof f==='string');});
-          factors.forEach(function(f){
-            var lbl=f.detail||f.name||(typeof f==='string'?f:'');
-            if(lbl) lines.push(lbl);
+      (function(d){
+        var es=mentalMap[d]||[];
+        var tag=document.createElement('div');
+        tag.className='scr-mini-tag';
+
+        var tagLbl=document.createElement('div');
+        tagLbl.textContent=d.slice(5)+'（'+_WD_ZH[new Date(d+'T12:00:00').getDay()]+'）';
+        tag.appendChild(tagLbl);
+
+        var detail=document.createElement('div');
+        detail.className='scr-mini-detail';
+        if(es.length){
+          hasJournal=true;
+          es.forEach(function(e){
+            var lines=[];
+            if(e.moodScore) lines.push('心情 '+e.moodScore+'/10');
+            var tags=(e.emotionTags||[]).filter(Boolean);
+            if(tags.length) lines.push(tags.join(' / '));
+            var factors=(e.impactFactors||[]).filter(function(f){return f&&(f.detail||f.name||typeof f==='string');});
+            factors.forEach(function(f){
+              var lbl=f.detail||f.name||(typeof f==='string'?f:'');
+              if(lbl) lines.push(lbl);
+            });
+            if(e.notes&&e.notes.trim())
+              e.notes.trim().split('\n').forEach(function(l){if(l.trim()) lines.push(l.trim());});
+            lines.forEach(function(line){
+              if(line==null||line==='') return;
+              var p=document.createElement('div');
+              p.textContent=String(line);
+              detail.appendChild(p);
+            });
           });
-          if(e.notes&&e.notes.trim())
-            e.notes.trim().split('\n').forEach(function(l){if(l.trim()) lines.push(l.trim());});
-          appendQuote(dayBlock2,d,lines);
+        } else {
+          var noneEl=document.createElement('div');
+          noneEl.className='scr-mini-empty';
+          noneEl.textContent='無記錄';
+          detail.appendChild(noneEl);
+        }
+        tag.appendChild(detail);
+
+        // 觸控備援：點擊 toggle 展開（不依賴 hover），同時收起其他已展開的標籤
+        tag.addEventListener('click',function(ev){
+          ev.stopPropagation();
+          var wasExpanded=tag.classList.contains('expanded');
+          miniRow.querySelectorAll('.scr-mini-tag.expanded').forEach(function(t){t.classList.remove('expanded');});
+          if(!wasExpanded) tag.classList.add('expanded');
         });
-      }
+
+        miniRow.appendChild(tag);
+      })(offsetDate(date,-i));
     }
     if(!hasJournal) appendNote(panel,'[往前 3 日無 Mental Dashboard 日誌記錄]');
 
