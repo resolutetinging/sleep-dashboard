@@ -1747,6 +1747,20 @@ function updateCombatPower(totalDebt) {
     localStorage.setItem('sas_combat_date',todayStr);
   }catch(e){}
 
+  // 恆排除週末的 3 夜加權（2026-07-07 新規）：不受「排除週末」開關影響，
+  // 一律以週間池計算，寫入 sas_combat_weekday 供 Daily Optimizer 等下游讀取。
+  // 公式與上方 3 夜加權完全相同（含 debt 不 clamp 規則），僅資料池固定為排除週末。
+  try{
+    const wdPool = RAW.summary.filter(d => !isWeekend(d.date));
+    const wdNights = wdPool.slice(-3);
+    const wdScores = wdNights.map(calcNightRaw);
+    const wdWts = wdNights.length >= 3 ? [0.1, 0.3, 0.6] : wdNights.length === 2 ? [0.4, 0.6] : [1.0];
+    const wdRaw = wdScores.reduce((sum, s, i) => sum + s * wdWts[i], 0);
+    const wdDebt = wdPool.slice(-7).reduce((sum, d) => sum + (480 - d.total_min), 0);
+    const wdPenalty = Math.max(0, wdDebt / 60 - 3) * 2;
+    localStorage.setItem('sas_combat_weekday', String(Math.round(Math.max(0, wdRaw - wdPenalty))));
+  }catch(e){}
+
   // 單夜顯示
   const singleColor = singleScore>=80?'#5e8f7e':singleScore>=70?'#5c7a96':singleScore>=60?'#e67e22':'#c0392b';
   document.getElementById('combatSingle').textContent = singleScore;
