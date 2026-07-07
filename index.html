@@ -181,6 +181,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .scr-sec-hdr{font-weight:700;font-size:.72rem;color:var(--text);margin:.85rem 0 .3rem;}
 .scr-quote{border-left:2px solid var(--bstr);padding:.25rem 0 .25rem .65rem;margin:.15rem 0 .15rem .75rem;font-size:.68rem;line-height:1.75;color:var(--sub);}
 .scr-quote-date{font-weight:600;font-size:.65rem;color:var(--text);margin-bottom:.1rem;}
+.scr-day-block{background:var(--bg2);border-radius:var(--rsm);padding:.5rem .7rem .35rem;margin:.4rem 0;}
+.scr-day-block .scr-quote{margin:.15rem 0 0 .1rem;}
 .scr-bar-marker{font-size:.55rem;text-align:center;margin-bottom:2px;line-height:1;color:var(--warn);}
 .scr-corr-tag{display:inline-block;font-size:.6rem;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(230,126,34,.12);color:var(--warn);margin-left:6px;vertical-align:middle;}
 .em-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.75rem 0 1rem}
@@ -2399,12 +2401,15 @@ function renderDualTrackCard(){
       try{rev=JSON.parse(localStorage.getItem('review_'+d)||'null');}catch(e){}
       if(rev){
         hasOpt=true;
+        var dayBlock1=document.createElement('div');
+        dayBlock1.className='scr-day-block';
+        panel.appendChild(dayBlock1);
         if(rev.restMode){
-          appendQuote(panel,d,['🌿 休假中'+(rev.restNote?' — '+rev.restNote:'')]);
+          appendQuote(dayBlock1,d,['🌿 休假中'+(rev.restNote?' — '+rev.restNote:'')]);
         } else {
           var items=rev.items||[];
           var done=items.filter(function(t){return t.status==='done';}).length;
-          appendQuote(panel,d,[
+          appendQuote(dayBlock1,d,[
             (rev.mode||'未知')+' · '+(rev.feel||'未知'),
             done+'/'+items.length+' 件完成'
           ]);
@@ -2421,6 +2426,9 @@ function renderDualTrackCard(){
       var es=mentalMap[d]||[];
       if(es.length){
         hasJournal=true;
+        var dayBlock2=document.createElement('div');
+        dayBlock2.className='scr-day-block';
+        panel.appendChild(dayBlock2);
         es.forEach(function(e){
           var lines=[];
           if(e.moodScore) lines.push('心情 '+e.moodScore+'/10');
@@ -2433,7 +2441,7 @@ function renderDualTrackCard(){
           });
           if(e.notes&&e.notes.trim())
             e.notes.trim().split('\n').forEach(function(l){if(l.trim()) lines.push(l.trim());});
-          appendQuote(panel,d,lines);
+          appendQuote(dayBlock2,d,lines);
         });
       }
     }
