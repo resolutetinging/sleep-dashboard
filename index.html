@@ -1331,15 +1331,7 @@ function setCorrRange(n){
 var _WD_ZH=['日','一','二','三','四','五','六'];
 function rebuildCorrChart(){
   var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
-  var combatMap={};
-  try{
-    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
-    (sl.trend7||[]).forEach(function(n){
-      var dp=Math.min(n.deepP/18*100,100);
-      var rp=Math.min(n.remP/22.5*100,100);
-      combatMap[n.date]=(dp*0.7+rp*0.3)/10;
-    });
-  }catch(e){}
+  var combatMap=getSleepQualityMap();
   var labels=[],moodLine=[],compLine=[],compColors=[],compRadius=[],combatLine=[];
   var moodArr=[],pairedArr=[];
   var over=0,under=0,ok=0;
@@ -2705,6 +2697,19 @@ function renderDualTrackCard(){
 
 /* LEVERAGE BARS */
 var _levTab='combat';
+// 共用：睡眠品質 map（日期→代理值）。統一「永遠抓現有最長 trend 陣列」，
+// 由外層依日期查表的迴圈自行決定實際用到幾天，不需依 range 條件判斷該挑哪組 trend。
+function getSleepQualityMap(){
+  var sl={};
+  try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+  var src=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
+  var map={};
+  src.forEach(function(n){
+    var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
+    map[n.date]=(dp*0.7+rp*0.3)/10;
+  });
+  return map;
+}
 function pearson(xs,ys){
   var n=xs.length;if(n<3)return null;
   var mx=0,my=0;
@@ -2962,17 +2967,8 @@ var FACTOR_RADAR_COOL='#5c7a96';   // 負向影響（冷色，沿用既有 --dee
 var FACTOR_RADAR_FAINT='rgba(122,117,112,.55)'; // 對應 --faint，樣本不足灰化用（canvas 需解析色值，不可直接寫 var()）
 
 function _frSleepQualityMap(){
-  var map={};
-  try{
-    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
-    var trendSrc=sl.trend30||sl.trend14||sl.trend7||[];
-    trendSrc.forEach(function(n){
-      var dp=Math.min((n.deepP||0)/18*100,100);
-      var rp=Math.min((n.remP||0)/22.5*100,100);
-      map[n.date]=dp*0.7+rp*0.3; // 與 rebuildCorrChart combatMap 同一換算公式（0–100 代理值）
-    });
-  }catch(e){}
-  return map;
+  // 統一改呼叫共用 getSleepQualityMap()（永遠抓現有最長 trend 陣列，含 trend180）
+  return getSleepQualityMap();
 }
 function _frMoodMap(){
   var map={};
