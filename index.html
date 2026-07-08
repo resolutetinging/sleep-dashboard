@@ -571,6 +571,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div style="display:flex;gap:5px;flex-wrap:wrap">
           <button class="fr-tab-btn active" data-fr-tab="coffee" onclick="setFactorRadarTab('coffee')">☕ 咖啡攝取</button>
           <button class="fr-tab-btn" data-fr-tab="mood" onclick="setFactorRadarTab('mood')">💭 情緒分數</button>
+          <button class="fr-tab-btn" data-fr-tab="family" onclick="setFactorRadarTab('family')">🏠 家庭</button>
+          <button class="fr-tab-btn" data-fr-tab="social" onclick="setFactorRadarTab('social')">🤝 外部人際</button>
+          <button class="fr-tab-btn" data-fr-tab="work" onclick="setFactorRadarTab('work')">💼 工作/任務壓力</button>
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap">
           <button class="fr-range-btn" onclick="setFrRange(7)">1週</button>
@@ -595,8 +598,26 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
       <div id="factor-radar-detail-mood" class="fr-detail"></div>
     </div>
+    <div id="factor-radar-wrap-family" style="display:none">
+      <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-family"></canvas></div>
+      <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
+      <div id="factor-radar-detail-family" class="fr-detail"></div>
+    </div>
+    <div id="factor-radar-wrap-social" style="display:none">
+      <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-social"></canvas></div>
+      <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
+      <div id="factor-radar-detail-social" class="fr-detail"></div>
+    </div>
+    <div id="factor-radar-wrap-work" style="display:none">
+      <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-work"></canvas></div>
+      <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
+      <div id="factor-radar-detail-work" class="fr-detail"></div>
+    </div>
     <div id="factor-radar-empty-coffee" class="fr-empty" style="display:none"></div>
     <div id="factor-radar-empty-mood" class="fr-empty" style="display:none"></div>
+    <div id="factor-radar-empty-family" class="fr-empty" style="display:none"></div>
+    <div id="factor-radar-empty-social" class="fr-empty" style="display:none"></div>
+    <div id="factor-radar-empty-work" class="fr-empty" style="display:none"></div>
   </div>
 
   <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
@@ -2991,7 +3012,34 @@ function _frCoffeeMap(days){
   });
   return map;
 }
+// 二元因子（點二系列相關）：家庭／外部人際／工作·任務壓力
+// 分類字串須與 Mental Dashboard（wellness-tracker/mental-dashboard.html）FIXED_CATEGORIES 逐字一致
+var CATEGORY_FACTOR_MAP={family:'家庭',social:'外部人際',work:'工作/任務壓力'};
+function _frCategoryMap(catName,days){
+  var hitSet={};
+  try{
+    var data=null;
+    var v5=localStorage.getItem('wellness_v5');
+    var v4=localStorage.getItem('wellness_v4');
+    if(v5){try{data=JSON.parse(v5);}catch(e){}}
+    if(!data&&v4){try{data=JSON.parse(v4);}catch(e){}}
+    (data&&data.entries||[]).forEach(function(e){
+      var raw=e.timestamp||e.date||e.created_at||e.recordedAt||'';
+      if(!raw)return;
+      var d=new Date(raw);
+      if(typeof raw==='string'&&raw.match(/^\d{4}-\d{2}-\d{2}$/)){
+        var parts=raw.split('-');d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+      }
+      var k=dkey(d);
+      if((e.categories||[]).indexOf(catName)!==-1)hitSet[k]=1;
+    });
+  }catch(e){}
+  var map={};
+  days.forEach(function(k){map[k]=hitSet[k]?1:0;});
+  return map;
+}
 // 三個候選陣列（因子/結果）須同一天皆有值才配對進 pearson/calcSlope，缺值日期整天跳過，不得以 0 或插值假造
+// （二元因子例外：依定義每一天恆為 0 或 1，不會缺值，故只有結果端 undefined 時才跳過該日）
 function buildFactorRadarSeries(factorType){
   var days=[];
   for(var i=frRange-1;i>=0;i--){
@@ -3002,8 +3050,9 @@ function buildFactorRadarSeries(factorType){
   var moodMap=_frMoodMap();
   var doneMap=_frDoneRateMap(days);
   var coffeeMap=_frCoffeeMap(days);
-  var factorMap=factorType==='coffee'?coffeeMap:moodMap;
-  var outcomeDefs=factorType==='coffee'?[
+  var catName=CATEGORY_FACTOR_MAP[factorType];
+  var factorMap=factorType==='coffee'?coffeeMap:catName?_frCategoryMap(catName,days):moodMap;
+  var outcomeDefs=(factorType==='coffee'||catName)?[
     {id:'sleep',label:'睡眠品質',map:sleepMap},
     {id:'mood', label:'情緒分數',map:moodMap},
     {id:'done', label:'任務完成率',map:doneMap}
@@ -3028,7 +3077,8 @@ function buildFactorRadarSeries(factorType){
     };
   });
 }
-var FR_UNIT={coffee:'每+1杯咖啡',mood:'情緒+1分'};
+var FR_UNIT={coffee:'每+1杯咖啡',mood:'情緒+1分',family:'有家庭事件(vs無)',social:'有外部人際事件(vs無)',work:'有工作/任務壓力事件(vs無)'};
+var FR_ALL_TABS=['coffee','mood','family','social','work'];
 function fmtRadarImpact(a,tab){
   if(a.noData)return a.label+'：資料不足（配對天數<3），暫無法計算相關性。';
   var unit=FR_UNIT[tab]||'因子+1';
@@ -3091,7 +3141,7 @@ function renderFactorRadar(tab){
 function setFactorRadarTab(tab){
   _radarTab=tab;
   document.querySelectorAll('.fr-tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.frTab===tab);});
-  ['coffee','mood'].forEach(function(t){
+  FR_ALL_TABS.forEach(function(t){
     var w=$('factor-radar-wrap-'+t),e=$('factor-radar-empty-'+t);
     if(t!==tab){if(w)w.style.display='none';if(e)e.style.display='none';}
   });
