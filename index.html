@@ -71,11 +71,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .chw{grid-column:1/13;grid-row:3}     /* week view */
 .clw{grid-column:1/13;grid-row:4}     /* last week recap */
 .cco{grid-column:1/13;grid-row:5}     /* correlation — full width */
-.cdta{grid-column:1/13;grid-row:6}    /* dual-track beta */
-.csca{grid-column:1/13;grid-row:7}    /* sleep causal analysis */
-.clv{grid-column:1/13;grid-row:8}     /* leverage bars */
-.ctx{grid-column:1/13;grid-row:9}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:10}    /* HD AI */
+.cfr{grid-column:1/13;grid-row:6}     /* factor radar — Phase C */
+.cdta{grid-column:1/13;grid-row:7}    /* dual-track beta */
+.csca{grid-column:1/13;grid-row:8}    /* sleep causal analysis */
+.clv{grid-column:1/13;grid-row:9}     /* leverage bars */
+.ctx{grid-column:1/13;grid-row:10}     /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:11}    /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -151,8 +152,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-leg-item{display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--sub)}
 .xa-insight{display:flex;flex-wrap:wrap;gap:7px;margin-top:.75rem}
 .xa-tag{font-size:.68rem;padding:4px 11px;border-radius:20px;font-weight:500}
-.corr-range-btn{font-size:.62rem;padding:3px 10px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s}
-.corr-range-btn.active,.corr-range-btn:hover{background:var(--text);color:var(--card);border-color:var(--text)}
+.corr-range-btn,.fr-tab-btn{font-size:.62rem;padding:3px 10px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s}
+.corr-range-btn.active,.corr-range-btn:hover,.fr-tab-btn.active,.fr-tab-btn:hover{background:var(--text);color:var(--card);border-color:var(--text)}
+/* 因子導向雷達圖 Phase C */
+.fr-empty{font-size:.72rem;color:var(--faint);text-align:center;padding:1.6rem 0}
+.fr-detail{font-size:.68rem;color:var(--sub);line-height:1.6;margin-top:.6rem;padding:.5rem .7rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border);display:none}
+.fr-swatch{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px}
 .corr-rec{font-size:.7rem;color:var(--sub);line-height:1.7;margin-top:7px;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border-left:2px solid var(--mental)}
 .corr-defs{margin-top:1rem;padding:.9rem 1rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)}
 .corr-action-block{margin-bottom:.75rem;padding:.55rem .65rem;background:var(--bg2);border-radius:var(--rsm);border-left:2.5px solid var(--bstr);}
@@ -262,7 +267,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.ctx,.cha,.clw,.cdta,.csca,.clv{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.cfr,.ctx,.cha,.clw,.cdta,.csca,.clv{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -553,6 +558,37 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 因子導向雷達圖 Phase C -->
+  <div class="card cfr">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
+      <div>
+        <div class="lbl" style="margin-bottom:2px">🎯 因子導向雷達圖</div>
+        <div style="font-size:.65rem;color:var(--faint)">近 30 日 · 以因子為中心，一次檢視對多項結果的影響方向與強度</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="fr-tab-btn active" data-fr-tab="coffee" onclick="setFactorRadarTab('coffee')">☕ 咖啡攝取</button>
+        <button class="fr-tab-btn" data-fr-tab="mood" onclick="setFactorRadarTab('mood')">💭 情緒分數</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.65rem;color:var(--faint);margin-bottom:.4rem">
+      <span><span class="fr-swatch" style="background:#b8763c"></span>正向助益（暖色）</span>
+      <span><span class="fr-swatch" style="background:#5c7a96"></span>負向影響（冷色）</span>
+      <span><span class="fr-swatch" style="background:var(--faint)"></span>樣本不足（&lt;14天，灰化）</span>
+    </div>
+    <div id="factor-radar-wrap-coffee">
+      <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-coffee"></canvas></div>
+      <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
+      <div id="factor-radar-detail-coffee" class="fr-detail"></div>
+    </div>
+    <div id="factor-radar-wrap-mood" style="display:none">
+      <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-mood"></canvas></div>
+      <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
+      <div id="factor-radar-detail-mood" class="fr-detail"></div>
+    </div>
+    <div id="factor-radar-empty-coffee" class="fr-empty" style="display:none"></div>
+    <div id="factor-radar-empty-mood" class="fr-empty" style="display:none"></div>
   </div>
 
   <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
@@ -2270,6 +2306,9 @@ function renderDualTrackCard(){
       waterHas:water.length>0
     };
   }
+  // Phase C 因子雷達圖需在全域呼叫 getRefuelerByDate（本函式原僅為此 IIFE 內部使用），
+  // 加此別名不改動任何 Phase A 既有行為，僅新增外部可見性。
+  window.getRefuelerByDate=getRefuelerByDate;
 
   function getMentalByDate(){
     var map={};
@@ -2895,6 +2934,158 @@ function setLevTab(tab){
   try{buildLeverageBars();}catch(e){}
 }
 
+/* FACTOR RADAR — Phase C（因子導向雷達圖）
+   資料來源：getRefuelerByDate() / getMoods() / sas_sleep_latest / getReview()（原始每日數據，非 Phase B Categories）
+   計算邏輯共用既有 pearson() / calcSlope()（見上方 v2.3 槓桿條區塊），僅改呈現形式為雷達圖。
+   取捨：範圍固定「近 30 天」，不提供 7/14/30/180 range 切換（槓桿條/三維相關性已有 range 選擇，
+   本卡片重點在「因子↔多結果」的橫向比較，固定窗格可簡化 UI；未來如需可仿 corrRange 擴充。 */
+var FACTOR_RADAR_WINDOW=30;
+var _radarTab='coffee';
+var FACTOR_RADAR_WARM='#b8763c';   // 正向助益（暖色）
+var FACTOR_RADAR_COOL='#5c7a96';   // 負向影響（冷色，沿用既有 --deep 色值）
+var FACTOR_RADAR_FAINT='rgba(122,117,112,.55)'; // 對應 --faint，樣本不足灰化用（canvas 需解析色值，不可直接寫 var()）
+
+function _frSleepQualityMap(){
+  var map={};
+  try{
+    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
+    var trendSrc=sl.trend30||sl.trend14||sl.trend7||[];
+    trendSrc.forEach(function(n){
+      var dp=Math.min((n.deepP||0)/18*100,100);
+      var rp=Math.min((n.remP||0)/22.5*100,100);
+      map[n.date]=dp*0.7+rp*0.3; // 與 rebuildCorrChart combatMap 同一換算公式（0–100 代理值）
+    });
+  }catch(e){}
+  return map;
+}
+function _frMoodMap(){
+  var map={};
+  getMoods().forEach(function(m){map[m.date]=m.score;});
+  return map;
+}
+function _frDoneRateMap(days){
+  var map={};
+  days.forEach(function(k){
+    var rev=getReview(k);
+    if(rev&&rev.items&&rev.items.length)map[k]=rev.items.filter(function(t){return t.status==='done';}).length/rev.items.length*100;
+  });
+  return map;
+}
+function _frCoffeeMap(days){
+  var map={};
+  days.forEach(function(k){
+    var rf=getRefuelerByDate(k);
+    if(rf.coffeeHas)map[k]=rf.coffeeCount;
+  });
+  return map;
+}
+// 三個候選陣列（因子/結果）須同一天皆有值才配對進 pearson/calcSlope，缺值日期整天跳過，不得以 0 或插值假造
+function buildFactorRadarSeries(factorType){
+  var days=[];
+  for(var i=FACTOR_RADAR_WINDOW-1;i>=0;i--){
+    var d=new Date();d.setDate(d.getDate()-i);
+    days.push(dkey(d));
+  }
+  var sleepMap=_frSleepQualityMap();
+  var moodMap=_frMoodMap();
+  var doneMap=_frDoneRateMap(days);
+  var coffeeMap=_frCoffeeMap(days);
+  var factorMap=factorType==='coffee'?coffeeMap:moodMap;
+  var outcomeDefs=factorType==='coffee'?[
+    {id:'sleep',label:'睡眠品質',map:sleepMap},
+    {id:'mood', label:'情緒分數',map:moodMap},
+    {id:'done', label:'任務完成率',map:doneMap}
+  ]:[
+    {id:'sleep',label:'睡眠品質',map:sleepMap},
+    {id:'done', label:'任務完成率',map:doneMap}
+  ];
+  return outcomeDefs.map(function(o){
+    var xs=[],ys=[];
+    days.forEach(function(k){
+      var fv=factorMap[k],ov=o.map[k];
+      if(fv!==undefined&&fv!==null&&ov!==undefined&&ov!==null){xs.push(fv);ys.push(ov);}
+    });
+    var r=pearson(xs,ys);
+    var slope=calcSlope(xs,ys);
+    var n=xs.length;
+    return{
+      id:o.id,label:o.label,r:r,slope:slope,n:n,
+      radius:r===null?0:Math.round(Math.abs(r)*100),
+      insufficient:n<14,
+      noData:r===null
+    };
+  });
+}
+var FR_UNIT={coffee:'每+1杯咖啡',mood:'情緒+1分'};
+function fmtRadarImpact(a,tab){
+  if(a.noData)return a.label+'：資料不足（配對天數<3），暫無法計算相關性。';
+  var unit=FR_UNIT[tab]||'因子+1';
+  var strength=Math.abs(a.r)>=0.5?'強相關':Math.abs(a.r)>=0.3?'中度相關':'弱相關';
+  var dirTxt=a.slope>=0?'正向助益':'負向影響';
+  var slopeTxt=a.slope!==null?(unit+' → '+a.label+' '+(a.slope>=0?'+':'')+a.slope.toFixed(2)):'';
+  var sampleTxt=a.insufficient?'樣本僅 '+a.n+' 天（<14天門檻，僅供參考）':'樣本 '+a.n+' 天';
+  return a.label+'　r='+(a.r>=0?'+':'')+a.r.toFixed(2)+'　'+strength+'·'+dirTxt+(slopeTxt?'　'+slopeTxt:'')+'　'+sampleTxt;
+}
+function toggleFactorRadarDetail(tab,axes,idx){
+  var a=axes[idx];if(!a)return;
+  var el=$('factor-radar-detail-'+tab);if(!el)return;
+  var text=fmtRadarImpact(a,tab);
+  if(el.textContent===text&&el.style.display==='block'){el.textContent='';el.style.display='none';}
+  else{el.textContent=text;el.style.display='block';}
+}
+function renderFactorRadar(tab){
+  var axes=buildFactorRadarSeries(tab);
+  var maxN=axes.reduce(function(m,a){return Math.max(m,a.n);},0);
+  var allInsufficient=axes.every(function(a){return a.noData||a.insufficient;});
+  var wrapEl=$('factor-radar-wrap-'+tab);
+  var emptyEl=$('factor-radar-empty-'+tab);
+  if(allInsufficient){
+    if(wrapEl)wrapEl.style.display='none';
+    if(emptyEl){emptyEl.style.display='block';emptyEl.textContent='📊 資料累積中（目前 '+maxN+' 天，建議 14 天以上更準確）';}
+    return;
+  }
+  if(wrapEl)wrapEl.style.display='';
+  if(emptyEl)emptyEl.style.display='none';
+  var labels=axes.map(function(a){return a.insufficient?[a.label,'樣本不足 n='+a.n]:[a.label,'n='+a.n];});
+  var pointBg=axes.map(function(a){
+    if(a.noData||a.insufficient)return'transparent';
+    return a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;
+  });
+  var pointBorder=axes.map(function(a){
+    if(a.noData||a.insufficient)return FACTOR_RADAR_FAINT;
+    return a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;
+  });
+  var pointR=axes.map(function(a){return a.insufficient?4:6;});
+  var data=axes.map(function(a){return a.radius;});
+  var canvasId='factor-radar-'+tab;
+  mk(canvasId,{type:'radar',data:{labels:labels,datasets:[{
+    data:data,fill:false,showLine:false,
+    pointRadius:pointR,pointHoverRadius:pointR.map(function(r){return r+2;}),
+    pointBackgroundColor:pointBg,pointBorderColor:pointBorder,pointBorderWidth:2
+  }]},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtRadarImpact(axes[ctx.dataIndex],tab);}}}},
+    scales:{r:{min:0,max:100,ticks:{display:false},
+      grid:{color:TC},
+      angleLines:{color:function(ctx){var a=axes[ctx.index];return a&&(a.noData||a.insufficient)?FACTOR_RADAR_FAINT:TC;}},
+      pointLabels:{color:function(ctx){var a=axes[ctx.index];return a&&(a.noData||a.insufficient)?FACTOR_RADAR_FAINT:LC;},font:{size:9.5}}
+    }},
+    onClick:function(evt,elements){
+      if(!elements||!elements.length)return;
+      toggleFactorRadarDetail(tab,axes,elements[0].index);
+    }
+  }});
+}
+function setFactorRadarTab(tab){
+  _radarTab=tab;
+  document.querySelectorAll('.fr-tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.frTab===tab);});
+  ['coffee','mood'].forEach(function(t){
+    var w=$('factor-radar-wrap-'+t),e=$('factor-radar-empty-'+t);
+    if(t!==tab){if(w)w.style.display='none';if(e)e.style.display='none';}
+  });
+  try{renderFactorRadar(tab);}catch(err){console.warn('renderFactorRadar',err);}
+}
+
 /* INIT */
 window._catMap=loadCatMap();
 var _initTab=sessionStorage.getItem('sas_tab')||'ov';
@@ -2903,6 +3094,7 @@ initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
 try{buildLeverageBars();}catch(e){}
+try{renderFactorRadar(_radarTab);}catch(e){}
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sas-hub" data-cc-label="SAS Hub"></script>
 </body>
