@@ -152,8 +152,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-leg-item{display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--sub)}
 .xa-insight{display:flex;flex-wrap:wrap;gap:7px;margin-top:.75rem}
 .xa-tag{font-size:.68rem;padding:4px 11px;border-radius:20px;font-weight:500}
-.corr-range-btn,.fr-tab-btn{font-size:.62rem;padding:3px 10px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s}
-.corr-range-btn.active,.corr-range-btn:hover,.fr-tab-btn.active,.fr-tab-btn:hover{background:var(--text);color:var(--card);border-color:var(--text)}
+.corr-range-btn,.fr-tab-btn,.fr-range-btn{font-size:.62rem;padding:3px 10px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s}
+.corr-range-btn.active,.corr-range-btn:hover,.fr-tab-btn.active,.fr-tab-btn:hover,.fr-range-btn.active,.fr-range-btn:hover{background:var(--text);color:var(--card);border-color:var(--text)}
 /* 因子導向雷達圖 Phase C */
 .fr-empty{font-size:.72rem;color:var(--faint);text-align:center;padding:1.6rem 0}
 .fr-detail{font-size:.68rem;color:var(--sub);line-height:1.6;margin-top:.6rem;padding:.5rem .7rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border);display:none}
@@ -565,11 +565,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
       <div>
         <div class="lbl" style="margin-bottom:2px">🎯 因子導向雷達圖</div>
-        <div style="font-size:.65rem;color:var(--faint)">近 30 日 · 以因子為中心，一次檢視對多項結果的影響方向與強度</div>
+        <div id="fr-range-desc" style="font-size:.65rem;color:var(--faint)">近 14 日 · 以因子為中心，一次檢視對多項結果的影響方向與強度</div>
       </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="fr-tab-btn active" data-fr-tab="coffee" onclick="setFactorRadarTab('coffee')">☕ 咖啡攝取</button>
-        <button class="fr-tab-btn" data-fr-tab="mood" onclick="setFactorRadarTab('mood')">💭 情緒分數</button>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="fr-tab-btn active" data-fr-tab="coffee" onclick="setFactorRadarTab('coffee')">☕ 咖啡攝取</button>
+          <button class="fr-tab-btn" data-fr-tab="mood" onclick="setFactorRadarTab('mood')">💭 情緒分數</button>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="fr-range-btn" onclick="setFrRange(7)">1週</button>
+          <button class="fr-range-btn active" onclick="setFrRange(14)">2週</button>
+          <button class="fr-range-btn" onclick="setFrRange(30)">1月</button>
+          <button class="fr-range-btn" onclick="setFrRange(180)">半年</button>
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.65rem;color:var(--faint);margin-bottom:.4rem">
@@ -2937,10 +2945,18 @@ function setLevTab(tab){
 /* FACTOR RADAR — Phase C（因子導向雷達圖）
    資料來源：getRefuelerByDate() / getMoods() / sas_sleep_latest / getReview()（原始每日數據，非 Phase B Categories）
    計算邏輯共用既有 pearson() / calcSlope()（見上方 v2.3 槓桿條區塊），僅改呈現形式為雷達圖。
-   取捨：範圍固定「近 30 天」，不提供 7/14/30/180 range 切換（槓桿條/三維相關性已有 range 選擇，
-   本卡片重點在「因子↔多結果」的橫向比較，固定窗格可簡化 UI；未來如需可仿 corrRange 擴充。 */
-var FACTOR_RADAR_WINDOW=30;
+   範圍可切換 7/14/30/180 天（frRange），比照三維相關性卡片 corrRange/setCorrRange 模式，
+   但獨立管理狀態與按鈕 class（.fr-range-btn），避免與 .corr-range-btn 的 querySelectorAll 互相干擾。 */
+var frRange=14;
 var _radarTab='coffee';
+function setFrRange(n){
+  frRange=n;
+  document.querySelectorAll('.fr-range-btn').forEach(function(b){b.classList.remove('active');});
+  event.target.classList.add('active');
+  var descEl=$('fr-range-desc');
+  if(descEl)descEl.textContent='近 '+frRange+' 日 · 以因子為中心，一次檢視對多項結果的影響方向與強度';
+  try{renderFactorRadar(_radarTab);}catch(err){console.warn('renderFactorRadar',err);}
+}
 var FACTOR_RADAR_WARM='#b8763c';   // 正向助益（暖色）
 var FACTOR_RADAR_COOL='#5c7a96';   // 負向影響（冷色，沿用既有 --deep 色值）
 var FACTOR_RADAR_FAINT='rgba(122,117,112,.55)'; // 對應 --faint，樣本不足灰化用（canvas 需解析色值，不可直接寫 var()）
@@ -2982,7 +2998,7 @@ function _frCoffeeMap(days){
 // 三個候選陣列（因子/結果）須同一天皆有值才配對進 pearson/calcSlope，缺值日期整天跳過，不得以 0 或插值假造
 function buildFactorRadarSeries(factorType){
   var days=[];
-  for(var i=FACTOR_RADAR_WINDOW-1;i>=0;i--){
+  for(var i=frRange-1;i>=0;i--){
     var d=new Date();d.setDate(d.getDate()-i);
     days.push(dkey(d));
   }
