@@ -940,7 +940,9 @@ function getMoods(){
         date:dkey(d),
         score:parseFloat(e.moodScore||e.score||e.mood||e.value||0),
         tags:e.emotionTags||e.tags||[],
-        factors:(e.impactFactors||e.factors||[]).filter(f=>f&&(f.detail||f.name||typeof f==='string')).map(f=>f.detail||f.name||f)
+        factors:(e.impactFactors||e.factors||[]).filter(f=>f&&(f.detail||f.name||typeof f==='string')).map(f=>f.detail||f.name||f),
+        // Phase B：因子重構 categories 欄位，舊資料無此欄位時防呆為空陣列（本階段僅讀取穿透，不新增顯示 UI）
+        categories:e.categories||[]
       };
     }).filter(m=>m.score>0);
   }catch(e){console.warn('getMoods',e);return[];}
