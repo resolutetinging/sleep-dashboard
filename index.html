@@ -117,6 +117,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .inertia-box.danger{border-color:var(--danger);background:rgba(192,57,43,.07)}
 .inertia-label{font-weight:700;font-size:.7rem;color:inherit;margin-bottom:2px}
 
+/* RISK LIGHT — 常駐綜合風險燈號（戰力/續航/睡眠負債/意志力透支四訊號合成） */
+.risk-light{display:flex;align-items:center;gap:9px;padding:8px 14px;border-radius:var(--rsm);border:.5px solid var(--border);background:var(--card);margin-bottom:.9rem;flex-wrap:wrap}
+.risk-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--faint)}
+.risk-dot.g{background:var(--ok)}
+.risk-dot.a{background:var(--warn)}
+.risk-dot.r{background:var(--danger)}
+.risk-text{font-weight:700;font-size:.78rem;color:var(--text)}
+.risk-detail{font-size:.68rem;color:var(--faint)}
+
 /* MENTAL */
 .msr{display:flex;gap:1rem;margin-top:.65rem;flex-wrap:wrap}
 .mst .val{font-size:.82rem;font-weight:600}
@@ -324,6 +333,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div class="view-ov" id="v-ov">
 <div class="vh">
   <div><div class="vtitle">今日總覽</div><div class="vsub" id="ov-ds">—</div></div>
+</div>
+<div class="risk-light" id="risk-light" title="綜合戰力/續航/睡眠負債/意志力透支四項訊號">
+  <span class="risk-dot" id="risk-dot"></span>
+  <span class="risk-text" id="risk-text">—</span>
+  <span class="risk-detail" id="risk-detail"></span>
 </div>
 <div class="bento">
 
@@ -918,6 +932,7 @@ function updateCombat(score,skipAnim){
   buildPacePills(score);
   buildInertiaAlert(score);
   buildAlignToday(score);
+  try{buildRiskLight(score);}catch(e){}
   rebuildCorrChart();
 }
 
@@ -1070,6 +1085,45 @@ function buildInertiaAlert(combat){
     cls='warn';html='<div class="inertia-label" style="color:var(--warn)">⏱ 慣性提醒 — 情緒修復具備滯後性</div>戰力已回升，但情緒波谷後修復通常滯後1–2天。今日建議維持「防禦性排程」，不宜貿然衝量。';
   }else{el.style.display='none';return;}
   el.className='inertia-box '+cls;el.innerHTML=html;el.style.display='block';
+}
+
+/* RISK LIGHT — 常駐綜合風險燈號：戰力偏低(≤55，同配速熔斷門檻) / 已過續航終點 / 睡眠負債危險(sas_dta) / 今日意志力透支(alignClass)，
+   四項訊號各自獨立判斷後計數，0項=綠／1項=橘／≥2項=紅。刻意用「同時出現幾項」而非任一項單獨判斷，
+   避免單一指標誤報，同時不用等到單一指標達到最嚴重才示警。 */
+function buildRiskLight(combat){
+  var dot=$('risk-dot'),txt=$('risk-text'),det=$('risk-detail');
+  if(!dot||!txt||!det)return;
+  var flags=[];
+  var c=combat||_combat||0;
+
+  if(c>0&&c<=55)flags.push('戰力偏低');
+
+  var endStr=localStorage.getItem('sas_endurance');
+  if(endStr){
+    var ep=endStr.split(':');
+    if(ep.length===2){
+      var endD=new Date();endD.setHours(parseInt(ep[0],10),parseInt(ep[1],10)||0,0,0);
+      if(new Date()>endD)flags.push('已過續航終點');
+    }
+  }
+
+  var dta={};try{dta=JSON.parse(localStorage.getItem('sas_dta')||'{}');}catch(e){}
+  if(dta.debtDynamics&&dta.debtDynamics.isCritical)flags.push('睡眠負債偏高');
+
+  var moods=getMoods();var todayMood=moods.find(m=>m.date===today());
+  var rev=getReview(today());var items=rev?(rev.items||[]):[];
+  if(todayMood&&items.length){
+    var dr=items.filter(function(i){return i.status==='done';}).length/items.length;
+    if(alignClass(todayMood.score,c,dr)==='over')flags.push('意志力透支');
+  }
+
+  if(flags.length>=2){
+    dot.className='risk-dot r';txt.textContent='🔴 接近極限';det.textContent=flags.join('、');
+  }else if(flags.length===1){
+    dot.className='risk-dot a';txt.textContent='🟠 需要注意';det.textContent=flags[0];
+  }else{
+    dot.className='risk-dot g';txt.textContent='🟢 狀態良好';det.textContent='目前沒有偵測到風險訊號';
+  }
 }
 
 /* PACE PILLS */
@@ -3154,6 +3208,7 @@ var _initTab=sessionStorage.getItem('sas_tab')||'ov';
 go(_initTab);
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
+try{buildRiskLight(_combat);}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
 try{buildLeverageBars();}catch(e){}
 try{renderFactorRadar(_radarTab);}catch(e){}
