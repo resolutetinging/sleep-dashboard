@@ -121,10 +121,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .risk-light{display:flex;flex-direction:column;gap:6px;padding:8px 14px;border-radius:var(--rsm);border:.5px solid var(--border);background:var(--card);margin-bottom:.9rem}
 .risk-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .risk-label{font-size:.65rem;color:var(--faint);min-width:34px;flex-shrink:0}
-.risk-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--faint)}
-.risk-dot.g{background:var(--ok)}
-.risk-dot.a{background:var(--warn)}
-.risk-dot.r{background:var(--danger)}
 .risk-text{font-weight:700;font-size:.78rem;color:var(--text)}
 .risk-detail{font-size:.68rem;color:var(--faint)}
 
@@ -339,13 +335,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div class="risk-light" id="risk-light">
   <div class="risk-row" title="今日：戰力/續航/睡眠負債/意志力透支四項訊號">
     <span class="risk-label">今日</span>
-    <span class="risk-dot" id="risk-dot"></span>
     <span class="risk-text" id="risk-text">—</span>
     <span class="risk-detail" id="risk-detail"></span>
   </div>
   <div class="risk-row" title="近7天：高效超頻日/全面充能日/低能耗防禦日三項累積訊號">
     <span class="risk-label">近7天</span>
-    <span class="risk-dot" id="week-dot"></span>
     <span class="risk-text" id="week-text">—</span>
     <span class="risk-detail" id="week-detail"></span>
   </div>
@@ -1103,8 +1097,8 @@ function buildInertiaAlert(combat){
    四項訊號各自獨立判斷後計數，0項=綠／1項=橘／≥2項=紅。刻意用「同時出現幾項」而非任一項單獨判斷，
    避免單一指標誤報，同時不用等到單一指標達到最嚴重才示警。 */
 function buildRiskLight(combat){
-  var dot=$('risk-dot'),txt=$('risk-text'),det=$('risk-detail');
-  if(!dot||!txt||!det)return;
+  var txt=$('risk-text'),det=$('risk-detail');
+  if(!txt||!det)return;
   var flags=[];
   var c=combat||_combat||0;
 
@@ -1134,11 +1128,11 @@ function buildRiskLight(combat){
 
   var level=flags.length>=2?'r':flags.length===1?'a':'g';
   if(level==='r'){
-    dot.className='risk-dot r';txt.textContent='🔴 接近極限';det.textContent=flags.join('、');
+    txt.textContent='🔴 接近極限';det.textContent=flags.join('、');
   }else if(level==='a'){
-    dot.className='risk-dot a';txt.textContent='🟠 需要注意';det.textContent=flags[0];
+    txt.textContent='🟠 需要注意';det.textContent=flags[0];
   }else{
-    dot.className='risk-dot g';txt.textContent='🟢 狀態良好';det.textContent='目前沒有偵測到風險訊號';
+    txt.textContent='🟢 狀態良好';det.textContent='目前沒有偵測到風險訊號';
   }
   // 供 Control Center Guard 讀取的下游輸出：SAS Hub 是這組複合判斷的唯一事實來源，
   // Guard 端只讀這個 flag 不重算 alignClass/debt 邏輯，避免兩處各長一套判斷互相對不上
@@ -1148,8 +1142,8 @@ function buildRiskLight(combat){
 // 近7天壓力指數：回顧過去7夜的能量矩陣分布（buildDualTrackAggregation 已算好寫入 sas_dta.energyMatrix），
 // 跟「今日」燈號互補——今日看當下是否已臨近極限，這個看這週累積下來是否已經在往極限逼近的軌跡上
 function buildWeekPressure(){
-  var dot=$('week-dot'),txt=$('week-text'),det=$('week-detail');
-  if(!dot||!txt||!det)return;
+  var txt=$('week-text'),det=$('week-detail');
+  if(!txt||!det)return;
   var dta={};try{dta=JSON.parse(localStorage.getItem('sas_dta')||'{}');}catch(e){}
   var counts=(dta.energyMatrix&&dta.energyMatrix.counts)||{};
   var nOc=counts['High-Brain-Overclock']||0;
@@ -1164,11 +1158,11 @@ function buildWeekPressure(){
   // nOc>=5 沿用既有「極端紅線」門檻，單一指標嚴重到直接判紅，不必等湊滿2項
   var level=(nOc>=5||flags.length>=2)?'r':flags.length===1?'a':'g';
   if(level==='r'){
-    dot.className='risk-dot r';txt.textContent='🔴 壓力過高';det.textContent=flags.length?flags.join('、'):'高效超頻日達'+nOc+'天';
+    txt.textContent='🔴 壓力過高';det.textContent=flags.length?flags.join('、'):'高效超頻日達'+nOc+'天';
   }else if(level==='a'){
-    dot.className='risk-dot a';txt.textContent='🟠 略有壓力';det.textContent=flags[0];
+    txt.textContent='🟠 略有壓力';det.textContent=flags[0];
   }else{
-    dot.className='risk-dot g';txt.textContent='🟢 節奏健康';det.textContent='過去7天能量分布正常';
+    txt.textContent='🟢 節奏健康';det.textContent='過去7天能量分布正常';
   }
 }
 
