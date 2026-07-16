@@ -343,6 +343,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <span class="risk-text" id="week-text">—</span>
     <span class="risk-detail" id="week-detail"></span>
   </div>
+  <div style="margin-top:2px;padding-top:6px;border-top:.5px solid var(--border)">
+    <span onclick="toggleExpand('risk-def')" style="font-size:.65rem;color:var(--faint);cursor:pointer;text-decoration:underline;text-underline-offset:2px">燈號定義 ▾</span>
+    <div id="risk-def" style="display:none;margin-top:6px;font-size:.65rem;color:var(--faint);line-height:1.75">
+      <div><strong style="color:var(--text)">今日</strong>：戰力≤55分／已過推算的續航時刻／本週睡眠負債已達危險值／昨天是否硬撐做完任務(意志力透支)。符合0項🟢、1項🟠、2項以上🔴。</div>
+      <div style="margin-top:5px"><strong style="color:var(--text)">近7天</strong>：過去7夜裡「高效超頻日」是否達3天以上／有沒有出現過「全面充能日」／有沒有出現過「低能耗防禦日」。符合0項🟢、1項🟠、2項以上或超頻天數達5天以上🔴。</div>
+    </div>
+  </div>
 </div>
 <div class="bento">
 
