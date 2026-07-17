@@ -3199,7 +3199,10 @@ function toggleFactorRadarDetail(tab,axes,idx){
 function renderFactorRadar(tab){
   var axes=buildFactorRadarSeries(tab);
   var maxN=axes.reduce(function(m,a){return Math.max(m,a.n);},0);
-  var allInsufficient=axes.every(function(a){return a.noData||a.insufficient;});
+  // 只有「完全算不出相關性」(noData，配對天數<3) 才整卡隱藏；
+  // insufficient(配對天數<14) 只是信心不足，仍要畫出來並用既有淡化樣式標示，
+  // 否則14天視窗內只要有一天缺值(如當天沒喝咖啡)就整卡消失，變成時有時無。
+  var allInsufficient=axes.every(function(a){return a.noData;});
   var wrapEl=$('factor-radar-wrap-'+tab);
   var emptyEl=$('factor-radar-empty-'+tab);
   if(allInsufficient){
