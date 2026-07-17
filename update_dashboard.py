@@ -172,17 +172,33 @@ def git_push():
         # 舊機制（~/.sleep_dashboard_pat 明文 PAT 嵌 HTTPS URL）於 PAT 輪替後失效且不安全
         ssh_env = dict(os.environ)
         ssh_env["GIT_SSH_COMMAND"] = "ssh -i /Users/tinayu/.ssh/github_ed25519 -o IdentitiesOnly=yes"
-        push_url = "git@github.com:resolutetinging/sleep-dashboard.git"
+        # 2026-07-17：改用已設定好的 origin（跟寫死網址指向同一個repo），
+        # 寫死完整網址 push 不會更新本機 origin/main 追蹤紀錄，導致每天 log 都誤報「ahead of origin」
+        push_url = "origin"
 
         stash_result = subprocess.run(['git', 'stash'], capture_output=True, text=True)
         stashed = 'No local changes' not in stash_result.stdout
         try:
             subprocess.run(['git', 'pull', '--rebase', push_url, 'main'], check=True, env=ssh_env)
-            subprocess.run(['git', 'push', push_url, 'main'], check=True, env=ssh_env)
+            # 2026-07-17：push 指令回傳 0 不保證真的送達 GitHub（2026-07-12 曾發生 push 回報成功
+            # 但 origin 實際沒收到，連續好幾天靜默沒被發現）。push 完一律 fetch 遠端最新 HEAD
+            # 跟本機 HEAD 比對，對不上就重試一次；兩次都對不上才視為真失敗，丟例外讓下面的
+            # except 印出 ❌（不再無條件印✅）。
+            local_head = None
+            for attempt in range(2):
+                subprocess.run(['git', 'push', push_url, 'main'], check=True, env=ssh_env)
+                subprocess.run(['git', 'fetch', push_url, 'main'], check=True, env=ssh_env)
+                local_head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+                remote_head = subprocess.run(['git', 'rev-parse', 'FETCH_HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+                if local_head == remote_head:
+                    break
+                print(f"⚠️ push 後驗證不一致（本機 {local_head[:7]} ≠ 遠端 {remote_head[:7]}），重試中…")
+            else:
+                raise RuntimeError(f"push 驗證失敗：重試後本機仍與遠端不一致（本機 {local_head[:7] if local_head else '?'}）")
         finally:
             if stashed:
                 subprocess.run(['git', 'stash', 'pop'], check=False)
-        print(f"✅ 已 push 到 GitHub")
+        print(f"✅ 已 push 到 GitHub 並驗證成功")
     except Exception as e:
         print(f"❌ Git 操作失敗：{e}")
 
