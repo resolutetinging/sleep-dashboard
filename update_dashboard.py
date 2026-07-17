@@ -19,8 +19,9 @@ ICLOUD_FOLDER = os.path.expanduser(
 # 優先讀本機 cache（由 run_update.sh 複製而來，避免 iCloud EAGAIN）
 JSON_CACHE = "/Users/tinayu/sleep-dashboard/json_cache"
 DATA_FOLDER = JSON_CACHE if os.path.isdir(JSON_CACHE) and os.listdir(JSON_CACHE) else ICLOUD_FOLDER
-DASHBOARD_PATH    = "/Users/tinayu/sleep-dashboard/sleep_dashboard.html"
 DASHBOARD_V2_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard_v2.html"
+# 舊版 sleep_dashboard.html（v1）已於 2026-07-17 archive 至 archive/，
+# 沒有任何頁面引用它，不再自動更新，移到 archive/ 保留當歷史快照
 GITHUB_REPO_DIR   = "/Users/tinayu/sleep-dashboard"
 # ────────────────────────────────────────────────────────────────────────
 
@@ -135,7 +136,7 @@ def update_html(summary):
     marker_start = 'const RAW = '
     marker_end   = ';\n\nconst COLORS'
     success = False
-    for path in [DASHBOARD_PATH, DASHBOARD_V2_PATH]:
+    for path in [DASHBOARD_V2_PATH]:
         if not os.path.exists(path):
             print(f"⚠  找不到檔案，略過：{os.path.basename(path)}")
             continue
@@ -161,7 +162,7 @@ def git_push():
     try:
         os.chdir(GITHUB_REPO_DIR)
         today = datetime.now().strftime("%Y-%m-%d")
-        subprocess.run(["git", "add", "sleep_dashboard.html", "sleep_dashboard_v2.html"], check=True)
+        subprocess.run(["git", "add", "sleep_dashboard_v2.html"], check=True)
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if result.returncode == 0:
             print("ℹ️  HTML 無新變更，略過 commit")
