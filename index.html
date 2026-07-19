@@ -332,6 +332,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div class="vh">
   <div><div class="vtitle">今日總覽</div><div class="vsub" id="ov-ds">—</div></div>
 </div>
+<div id="data-stale-alert" style="display:none;margin-bottom:.9rem;padding:.65rem .75rem;border-radius:var(--rsm);background:rgba(168,90,40,.10);border:.5px solid rgba(168,90,40,.35)">
+  <div style="font-size:.7rem;font-weight:700;color:var(--ink);margin-bottom:2px">⚠️ 資料已停止更新</div>
+  <div id="data-stale-alert-text" style="font-size:.67rem;color:var(--sub);line-height:1.8"></div>
+</div>
 <div class="risk-light" id="risk-light">
   <div class="risk-row" title="今日：戰力/續航/睡眠負債/意志力透支四項訊號">
     <span class="risk-label">今日</span>
@@ -944,6 +948,7 @@ function updateCombat(score,skipAnim){
   buildPacePills(score);
   buildInertiaAlert(score);
   buildAlignToday(score);
+  try{checkDataFreshness();}catch(e){}
   try{buildRiskLight(score);}catch(e){}
   try{buildWeekPressure();}catch(e){}
   rebuildCorrChart();
@@ -1098,6 +1103,28 @@ function buildInertiaAlert(combat){
     cls='warn';html='<div class="inertia-label" style="color:var(--warn)">⏱ 慣性提醒 — 情緒修復具備滯後性</div>戰力已回升，但情緒波谷後修復通常滯後1–2天。今日建議維持「防禦性排程」，不宜貿然衝量。';
   }else{el.style.display='none';return;}
   el.className='inertia-box '+cls;el.innerHTML=html;el.style.display='block';
+}
+
+/* 資料新鮮度檢查（2026-07-19）：sas_sleep_latest 最新一夜的日期若比今天早2天以上，
+   代表至少完整漏了一天沒同步（自動化排程卡住/手機端匯出中斷都可能造成），
+   直接在總覽頁最上方示警，不必等使用者自己發現 dashboard 沒更新。 */
+function checkDataFreshness(){
+  var el=$('data-stale-alert'),txt=$('data-stale-alert-text');
+  if(!el||!txt)return;
+  var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+  var trend=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
+  if(!trend.length){el.style.display='none';return;}
+  var lastDateStr=trend[trend.length-1].date;
+  if(!lastDateStr){el.style.display='none';return;}
+  var last=new Date(lastDateStr+'T12:00:00');
+  var now=new Date(dkey(new Date())+'T12:00:00');
+  var gapDays=Math.round((now-last)/86400000);
+  if(gapDays>=2){
+    el.style.display='block';
+    txt.textContent='最新睡眠資料停留在 '+lastDateStr+'，已經 '+gapDays+' 天沒有新資料同步。可能是 LaunchAgent 排程卡住或手機端匯出中斷，建議檢查 ~/sleep-dashboard/update.log 與 update_error.log。';
+  }else{
+    el.style.display='none';
+  }
 }
 
 /* RISK LIGHT — 常駐綜合風險燈號：戰力偏低(≤55，同配速熔斷門檻) / 已過續航終點 / 睡眠負債危險(sas_dta) / 今日意志力透支(alignClass)，
@@ -3258,6 +3285,7 @@ var _initTab=sessionStorage.getItem('sas_tab')||'ov';
 go(_initTab);
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
+try{checkDataFreshness();}catch(e){}
 try{buildRiskLight(_combat);}catch(e){}
 try{buildWeekPressure();}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
