@@ -101,7 +101,8 @@
   .range-btn.active, .range-btn:hover, .pct-range-btn.active, .pct-range-btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
 
   /* CHART CONTAINERS */
-  .chart-wrap { position:relative; }
+  .chart-wrap { position:relative; height:120px; }
+  .chart-wrap.h100 { height:100px; }
   canvas { max-width:100%; }
 
   /* NIGHT SELECTOR */
@@ -281,8 +282,9 @@
     /* Combat power score */
     #combatNum { font-size:38px !important; }
 
-    /* Charts: reduce to avoid dominating card layout */
-    .chart-wrap canvas { height:90px !important; }
+    /* Charts: reduce to avoid dominating card layout（高度設在wrapper上，
+       搭配Chart.js的maintainAspectRatio:false，避免CSS高度跟Chart.js內部比例計算打架致擠壓變形） */
+    .chart-wrap { height:90px !important; }
 
     /* Toggle row */
     .toggle-wrap { margin-top:4px; }
@@ -742,7 +744,7 @@
     <div id="regularityAdvice" style="margin-top:12px"></div>
     <div style="margin-top:18px">
       <div style="font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">入睡 &amp; 起床時間趨勢</div>
-      <div class="chart-wrap"><canvas id="regularityTrendChart" height="100"></canvas></div>
+      <div class="chart-wrap h100"><canvas id="regularityTrendChart" height="100"></canvas></div>
     </div>
   </div>
 
@@ -760,7 +762,7 @@
         <button class="eff-range-btn range-btn" onclick="setEffRange(9999)">全部</button>
       </div>
     </div>
-    <div class="chart-wrap"><canvas id="effChart" height="100"></canvas></div>
+    <div class="chart-wrap h100"><canvas id="effChart" height="100"></canvas></div>
   </div>
 
 
@@ -942,7 +944,7 @@ function updateTrend(data) {
       ]
     },
     options: {
-      responsive:true, animation:{duration:300},
+      responsive:true, maintainAspectRatio:false, animation:{duration:300},
       plugins:{
         legend:{ display:false },
         tooltip:{ callbacks:{
@@ -1116,7 +1118,7 @@ function updateRegularity(data) {
       {label:'起床',data:wakePts,borderColor:COLORS.rem,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
     ]},
     options:{
-      responsive:true,animation:{duration:300},
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
       plugins:{
         legend:{labels:{color:tickColor,boxWidth:12,font:{size:11,weight:'bold'}}},
         tooltip:{callbacks:{
@@ -1458,7 +1460,7 @@ function updatePctTrend(data) {
       ]
     },
     options: {
-      responsive: true, animation: { duration: 300 },
+      responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: {
@@ -1528,7 +1530,7 @@ function updateEffTrend(data) {
       tension: 0.3, fill: true
     }]},
     options: {
-      responsive: true, animation: { duration: 300 },
+      responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: {
@@ -2124,7 +2126,7 @@ function renderWeightedChart() {
     ]},
     plugins: [_verticalDropPlugin],
     options: {
-      responsive: true,
+      responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false },
         tooltip: { filter: i => i.datasetIndex === 0,
           callbacks: { label: c => `戰力 ${c.raw}` },
