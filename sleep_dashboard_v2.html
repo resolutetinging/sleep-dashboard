@@ -726,6 +726,7 @@
     </div>
     <div class="chart-wrap"><canvas id="pctTrendChart" height="120"></canvas></div>
     <div id="personalBaseline" style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
+    <div id="stageCompensation" style="margin-top:12px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
   </div>
 
   <!-- REGULARITY CARD -->
@@ -1294,6 +1295,71 @@ function setPctRange(range) {
   const data = getFilteredData(currentPctRange);
   updatePctTrend(data);
   updatePersonalBaseline();
+  updateStageCompensation(data);
+}
+
+// 分期代償分析：以「佔當夜總睡眠時間比例」算相關係數，已排除總睡眠長短的影響，
+// 只反映睡眠結構本身的分配傾向（例如 core 佔比低的晚上，rem 佔比是否真的偏高）
+function _stagePctFor(d, key) {
+  const total = d.deep_min + d.rem_min + d.core_min;
+  return total > 0 ? d[key] / total * 100 : 0;
+}
+function pearsonCorr(xs, ys) {
+  const n = xs.length;
+  if (n < 3) return null;
+  let mx = 0, my = 0;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; }
+  mx /= n; my /= n;
+  let num = 0, sdx = 0, sdy = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - mx, dy = ys[i] - my;
+    num += dx * dy; sdx += dx * dx; sdy += dy * dy;
+  }
+  const denom = Math.sqrt(sdx * sdy);
+  return denom < 1e-10 ? null : Math.round(num / denom * 100) / 100;
+}
+function updateStageCompensation(data) {
+  const el = document.getElementById('stageCompensation');
+  if (!el) return;
+  if (data.length < 3) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">資料量不足，暫不分析代償關係</div>';
+    return;
+  }
+  const deepPcts = data.map(d => _stagePctFor(d, 'deep_min'));
+  const remPcts  = data.map(d => _stagePctFor(d, 'rem_min'));
+  const corePcts = data.map(d => _stagePctFor(d, 'core_min'));
+  const lowConfidence = data.length < 14;
+  function describe(r, labelA, labelB) {
+    if (r === null) return { verdict: '資料不足', color: 'var(--text-dim)' };
+    const abs = Math.abs(r);
+    const strength = abs < 0.2 ? '幾乎無關聯' : abs < 0.4 ? '弱相關' : abs < 0.6 ? '中度相關' : '強相關';
+    if (abs < 0.2) return { verdict: `${strength}（各自獨立波動）`, color: 'var(--text-dim)' };
+    const color = r < 0 ? '#5c7a96' : '#e67e22';
+    const verdict = r < 0
+      ? `${strength}負相關 — ${labelA} 佔比低的晚上，${labelB} 佔比有偏高傾向（互相取代）`
+      : `${strength}正相關 — ${labelA} 與 ${labelB} 佔比同升同降（沒有互相取代）`;
+    return { verdict, color };
+  }
+  const rCoreRem  = pearsonCorr(corePcts, remPcts);
+  const rDeepRem  = pearsonCorr(deepPcts, remPcts);
+  const rDeepCore = pearsonCorr(deepPcts, corePcts);
+  const dCoreRem  = describe(rCoreRem,  'Core', 'REM');
+  const dDeepRem  = describe(rDeepRem,  'Deep', 'REM');
+  const dDeepCore = describe(rDeepCore, 'Deep', 'Core');
+  function row(label, r, d) {
+    return `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">
+      <span style="font-weight:600;color:var(--text)">${label}</span>
+      <span style="font-family:'DM Mono',monospace;margin-left:6px">r=${r === null ? '—' : r}</span>
+      <span style="color:${d.color};margin-left:6px">${d.verdict}</span>
+    </div>`;
+  }
+  el.innerHTML = `
+    <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">分期代償分析（${data.length} 夜${lowConfidence ? '，樣本數少僅供參考' : ''}）</div>
+    ${row('Core ↔ REM', rCoreRem, dCoreRem)}
+    ${row('Deep ↔ REM', rDeepRem, dDeepRem)}
+    ${row('Deep ↔ Core', rDeepCore, dDeepCore)}
+    <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">＊以佔當夜總睡眠時間比例計算，已排除總睡眠長短的影響</div>
+  `;
 }
 
 function updatePctTrend(data) {
@@ -1897,6 +1963,7 @@ function refreshAll() {
   updateTrend(data);
   updatePctTrend(getFilteredData(currentPctRange));
   updatePersonalBaseline();
+  updateStageCompensation(getFilteredData(currentPctRange));
   updateRegularity(data);
   updateEffTrend(getFilteredData(currentEffRange));
   const totalDebt = updateSleepDebt(data);
