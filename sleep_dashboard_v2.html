@@ -1346,19 +1346,45 @@ function updateStageCompensation(data) {
   const dCoreRem  = describe(rCoreRem,  'Core', 'REM');
   const dDeepRem  = describe(rDeepRem,  'Deep', 'REM');
   const dDeepCore = describe(rDeepCore, 'Deep', 'Core');
-  function row(label, r, d) {
-    return `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">
+  // 相關性強度達門檻(|r|>=0.4)才給解讀與建議，太弱的關聯給建議沒有意義、只是噪音
+  function compensationAdvice(pairKey, r) {
+    if (r === null || Math.abs(r) < 0.4) return null;
+    if (pairKey === 'core_rem') {
+      return r < 0
+        ? { note: 'REM 主要集中在後半夜的睡眠週期，總睡眠被壓縮（熬夜／提早醒）時身體傾向優先保留 REM，Core 因此被犧牲——多半是正常的生理代償，不代表出問題。', tip: '若 Core 常態偏低，優先確保總睡眠時數與規律入睡時間，讓身體不需要靠壓縮 Core 來搶救 REM。' }
+        : { note: 'Core 與 REM 同升同降較不尋常，較可能是整體睡眠被外在因素（作息大幅變動、睡眠中斷）同時拖累，而非分期各自的正常週期分配。', tip: '留意是否有整晚睡眠品質同時變差的日子（如深夜多次醒來），從改善整體睡眠連續性著手，而非分開處理單一分期。' };
+    }
+    if (pairKey === 'deep_core') {
+      return r < 0
+        ? { note: 'Deep 主要集中在前半夜，若入睡延遲或前段睡眠被打斷，Deep 可能被壓縮，身體在後續週期用 Core 補足時間，屬正常代償。', tip: '留意入睡後頭 1–2 小時是否容易被中斷（剛睡著就淺眠／易醒），這段品質直接影響 Deep 佔比。' }
+        : { note: 'Deep 與 Core 同升同降較不常見，值得留意整體睡眠效率是否有變動。', tip: '對照「睡眠時長趨勢」與效率數據，確認是否是整晚睡眠中斷次數增加所致。' };
+    }
+    // deep_rem：生理上分屬前/後半夜不同機制，理論上該接近獨立，出現顯著關聯較不尋常
+    return { note: 'Deep 與 REM 分屬不同睡眠週期機制（前半夜／後半夜為主），出現顯著關聯較不尋常，可能是這段時間區間資料量還不夠穩定。', tip: '建議切換到更長的時間區間（30天以上）再觀察這組數字是否持續存在。' };
+  }
+  const aCoreRem  = compensationAdvice('core_rem',  rCoreRem);
+  const aDeepCore = compensationAdvice('deep_core', rDeepCore);
+  const aDeepRem  = compensationAdvice('deep_rem',  rDeepRem);
+  function row(label, r, d, advice) {
+    const adviceHtml = advice
+      ? `<div style="margin-top:3px;margin-left:2px;font-size:10.5px;color:var(--text-dim);line-height:1.6">
+           <span style="opacity:.85">可能狀況：${advice.note}</span><br>
+           <span style="color:${d.color}">建議：${advice.tip}</span>
+         </div>`
+      : '';
+    return `<div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
       <span style="font-weight:600;color:var(--text)">${label}</span>
       <span style="font-family:'DM Mono',monospace;margin-left:6px">r=${r === null ? '—' : r}</span>
       <span style="color:${d.color};margin-left:6px">${d.verdict}</span>
+      ${adviceHtml}
     </div>`;
   }
   el.innerHTML = `
     <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">分期代償分析（${data.length} 夜${lowConfidence ? '，樣本數少僅供參考' : ''}）</div>
-    ${row('Core ↔ REM', rCoreRem, dCoreRem)}
-    ${row('Deep ↔ REM', rDeepRem, dDeepRem)}
-    ${row('Deep ↔ Core', rDeepCore, dDeepCore)}
-    <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">＊以佔當夜總睡眠時間比例計算，已排除總睡眠長短的影響</div>
+    ${row('Core ↔ REM', rCoreRem, dCoreRem, aCoreRem)}
+    ${row('Deep ↔ REM', rDeepRem, dDeepRem, aDeepRem)}
+    ${row('Deep ↔ Core', rDeepCore, dDeepCore, aDeepCore)}
+    <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">＊以佔當夜總睡眠時間比例計算，已排除總睡眠長短的影響；可能狀況為生理機制推論，非醫療診斷</div>
   `;
 }
 
