@@ -1438,6 +1438,14 @@ function updateFragmentationCorrelation(data) {
   }
   const aAwakeDeep = fragAdvice('awake_deep', rAwakeDeep);
   const aAwakeRem  = fragAdvice('awake_rem',  rAwakeRem);
+  // 兩者都幾乎無關聯(|r|<0.2)時，「沒關聯」本身就是站得住腳的結論，不必套代償卡片那套
+  // 「|r|>=0.4 才給建議」的門檻——那是為了避免對中度雜訊誤判方向，這裡是明確無關聯。
+  const bothNull = rAwakeDeep !== null && rAwakeRem !== null && Math.abs(rAwakeDeep) < 0.2 && Math.abs(rAwakeRem) < 0.2;
+  const nullFindingHtml = bothNull
+    ? `<div style="margin-top:10px;padding:8px 10px;background:var(--bg2);border-radius:8px;font-size:10.5px;color:var(--text-dim);line-height:1.6">
+         解讀：清醒時間長短跟 Deep／REM 佔比幾乎無關聯，代表片段化壓縮到的主要是總睡眠時長，不是身體分配睡眠結構的方式。樣本數（${data.length} 夜）仍有限，這類弱關聯適合觀察更長時間再確認是否持續成立。
+       </div>`
+    : '';
   function row(label, r, d, advice) {
     const adviceHtml = advice
       ? `<div style="margin-top:3px;margin-left:2px;font-size:10.5px;color:var(--text-dim);line-height:1.6">
@@ -1456,6 +1464,7 @@ function updateFragmentationCorrelation(data) {
     <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">清醒時間與睡眠結構關聯（${data.length} 夜${lowConfidence ? '，樣本數少僅供參考' : ''}）</div>
     ${row('清醒分鐘 ↔ Deep 佔比', rAwakeDeep, dAwakeDeep, aAwakeDeep)}
     ${row('清醒分鐘 ↔ REM 佔比', rAwakeRem, dAwakeRem, aAwakeRem)}
+    ${nullFindingHtml}
     <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">＊清醒分鐘為原始值，Deep／REM 為佔當夜總睡眠時間比例；回答「片段化是否犧牲睡眠結構」，與上方代償分析（結構內部三階段互相消長）是不同問題</div>
   `;
 }
