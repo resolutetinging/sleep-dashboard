@@ -729,6 +729,7 @@
     <div class="chart-wrap"><canvas id="pctTrendChart" height="120"></canvas></div>
     <div id="personalBaseline" style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
     <div id="stageCompensation" style="margin-top:12px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
+    <div id="fragmentationCorrelation" style="margin-top:12px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
   </div>
 
   <!-- REGULARITY CARD -->
@@ -1302,6 +1303,7 @@ function setPctRange(range) {
   updatePctTrend(data);
   updatePersonalBaseline();
   updateStageCompensation(data);
+  updateFragmentationCorrelation(data);
 }
 
 // 分期代償分析：以「佔當夜總睡眠時間比例」算相關係數，已排除總睡眠長短的影響，
@@ -1391,6 +1393,70 @@ function updateStageCompensation(data) {
     ${row('Deep ↔ REM', rDeepRem, dDeepRem, aDeepRem)}
     ${row('Deep ↔ Core', rDeepCore, dDeepCore, aDeepCore)}
     <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">＊以佔當夜總睡眠時間比例計算，已排除總睡眠長短的影響；可能狀況為生理機制推論，非醫療診斷</div>
+  `;
+}
+
+// 清醒時間與睡眠結構的關聯：與上方代償分析是不同問題——代償分析看「睡著之後三階段互相消長」，
+// 這裡看「片段化（清醒）是否犧牲了 Deep/REM 的結構佔比」。awake_min 用原始分鐘數（它本身不屬於
+// 「已睡著」的結構餅），Deep/REM 沿用 _stagePctFor 的佔比，避免「總睡眠時間短→所有分期絕對值都變少」的假關聯。
+function updateFragmentationCorrelation(data) {
+  const el = document.getElementById('fragmentationCorrelation');
+  if (!el) return;
+  if (data.length < 3) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">資料量不足，暫不分析</div>';
+    return;
+  }
+  const awakeMins = data.map(d => d.awake_min);
+  const deepPcts  = data.map(d => _stagePctFor(d, 'deep_min'));
+  const remPcts   = data.map(d => _stagePctFor(d, 'rem_min'));
+  const lowConfidence = data.length < 14;
+  function describe(r, label) {
+    if (r === null) return { verdict: '資料不足', color: 'var(--text-dim)' };
+    const abs = Math.abs(r);
+    const strength = abs < 0.2 ? '幾乎無關聯' : abs < 0.4 ? '弱相關' : abs < 0.6 ? '中度相關' : '強相關';
+    if (abs < 0.2) return { verdict: strength, color: 'var(--text-dim)' };
+    const color = r < 0 ? '#5c7a96' : '#e67e22';
+    const verdict = r < 0
+      ? `${strength}負相關 — 清醒時間長的晚上，${label} 佔比有偏低傾向`
+      : `${strength}正相關 — 清醒時間與 ${label} 佔比同升同降`;
+    return { verdict, color };
+  }
+  const rAwakeDeep = pearsonCorr(awakeMins, deepPcts);
+  const rAwakeRem  = pearsonCorr(awakeMins, remPcts);
+  const dAwakeDeep = describe(rAwakeDeep, 'Deep');
+  const dAwakeRem  = describe(rAwakeRem, 'REM');
+  function fragAdvice(pairKey, r) {
+    if (r === null || Math.abs(r) < 0.4) return null;
+    if (pairKey === 'awake_deep') {
+      return r < 0
+        ? { note: '清醒時間增加時 Deep 佔比明顯下降，可能是入睡後頻繁醒來直接打斷了深睡週期。', tip: '留意入睡後前 1–2 小時是否容易中斷，這段時間是 Deep 累積的主要窗口。' }
+        : { note: '清醒時間與 Deep 佔比同升同降較不尋常，建議對照當晚作息紀錄確認是否為離群夜晚拉動。', tip: '排除偶發離群夜晚後再觀察趨勢是否持續。' };
+    }
+    return r < 0
+      ? { note: '清醒時間增加時 REM 佔比明顯下降，片段化的睡眠可能壓縮了後半夜的 REM 週期。', tip: '留意後半夜（凌晨後）是否容易醒來，這段時間 REM 佔比最高。' }
+      : { note: '清醒時間與 REM 佔比同升同降較不尋常，建議對照當晚作息紀錄確認是否為離群夜晚拉動。', tip: '排除偶發離群夜晚後再觀察趨勢是否持續。' };
+  }
+  const aAwakeDeep = fragAdvice('awake_deep', rAwakeDeep);
+  const aAwakeRem  = fragAdvice('awake_rem',  rAwakeRem);
+  function row(label, r, d, advice) {
+    const adviceHtml = advice
+      ? `<div style="margin-top:3px;margin-left:2px;font-size:10.5px;color:var(--text-dim);line-height:1.6">
+           <span style="opacity:.85">可能狀況：${advice.note}</span><br>
+           <span style="color:${d.color}">建議：${advice.tip}</span>
+         </div>`
+      : '';
+    return `<div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+      <span style="font-weight:600;color:var(--text)">${label}</span>
+      <span style="font-family:'DM Mono',monospace;margin-left:6px">r=${r === null ? '—' : r}</span>
+      <span style="color:${d.color};margin-left:6px">${d.verdict}</span>
+      ${adviceHtml}
+    </div>`;
+  }
+  el.innerHTML = `
+    <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">清醒時間與睡眠結構關聯（${data.length} 夜${lowConfidence ? '，樣本數少僅供參考' : ''}）</div>
+    ${row('清醒分鐘 ↔ Deep 佔比', rAwakeDeep, dAwakeDeep, aAwakeDeep)}
+    ${row('清醒分鐘 ↔ REM 佔比', rAwakeRem, dAwakeRem, aAwakeRem)}
+    <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">＊清醒分鐘為原始值，Deep／REM 為佔當夜總睡眠時間比例；回答「片段化是否犧牲睡眠結構」，與上方代償分析（結構內部三階段互相消長）是不同問題</div>
   `;
 }
 
@@ -1996,6 +2062,7 @@ function refreshAll() {
   updatePctTrend(getFilteredData(currentPctRange));
   updatePersonalBaseline();
   updateStageCompensation(getFilteredData(currentPctRange));
+  updateFragmentationCorrelation(getFilteredData(currentPctRange));
   updateRegularity(data);
   updateEffTrend(getFilteredData(currentEffRange));
   const totalDebt = updateSleepDebt(data);
