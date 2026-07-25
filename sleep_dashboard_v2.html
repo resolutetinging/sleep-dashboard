@@ -390,10 +390,11 @@
       <div class="page-sub" id="dateRangeLabel">載入中...</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;padding-bottom:4px;flex-wrap:wrap">
-      <button id="icloud-btn" onclick="loadFromICloud()"
+      <button id="icloud-btn" onclick="loadFromICloud()" title="電腦端 LaunchAgent 每日自動於 09:30/13:00/18:00/22:00 執行 run_update.sh，此按鈕僅供臨時手動補跑"
         style="padding:5px 13px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
         📥 iCloud 更新
       </button>
+      <span style="font-size:11px;color:var(--text-dim);white-space:nowrap">自動更新 09:30/13:00/18:00/22:00</span>
       <div class="toggle-wrap">
         <span class="toggle-label">排除週末</span>
         <label class="toggle">
