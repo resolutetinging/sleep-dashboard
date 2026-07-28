@@ -347,7 +347,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <span class="risk-text" id="week-text">—</span>
     <span class="risk-detail" id="week-detail"></span>
   </div>
-  <div class="risk-row" title="近14天：Daily Optimizer白天任務水管過載天數，及過載當天是否仍完成（扛過去）或沒做完（沒扛住）">
+  <div class="risk-row" title="近14筆Daily Optimizer使用記錄（略過沒開的日子，例如週末）：白天任務水管過載次數，及過載當天是否仍完成（扛過去）或沒做完（沒扛住）">
     <span class="risk-label">配速</span>
     <span class="risk-text" id="overload-text">—</span>
     <span class="risk-detail" id="overload-detail"></span>
@@ -357,7 +357,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div id="risk-def" style="display:none;margin-top:6px;font-size:.65rem;color:var(--faint);line-height:1.75">
       <div><strong style="color:var(--text)">今日</strong>：戰力≤55分／已過推算的續航時刻／本週睡眠負債已達危險值／昨天是否硬撐做完任務(意志力透支)。符合0項🟢、1項🟠、2項以上🔴。</div>
       <div style="margin-top:5px"><strong style="color:var(--text)">近7天</strong>：過去7夜裡「高效超頻日」是否達3天以上／有沒有出現過「全面充能日」／有沒有出現過「低能耗防禦日」。符合0項🟢、1項🟠、2項以上或超頻天數達5天以上🔴。</div>
-      <div style="margin-top:5px"><strong style="color:var(--text)">配速</strong>：近14天Daily Optimizer任務水管被判定過載的天數，區分「扛過去」（過載但當天任務全做完）與「沒扛住」（過載且沒做完）。這是跨天頻率訊號，只反映白天任務配速，跟上面兩排讀的睡眠/生理指標無關。門檻為初版設定，尚待實際資料校準。</div>
+      <div style="margin-top:5px"><strong style="color:var(--text)">配速</strong>：近14筆Daily Optimizer使用記錄（不是14個日曆天——沒開的日子如週末不計入分母，避免稀釋門檻基準）中，任務水管被判定過載的次數，區分「扛過去」（過載但當天任務全做完）與「沒扛住」（過載且沒做完）。這是跨天頻率訊號，只反映白天任務配速，跟上面兩排讀的睡眠/生理指標無關。門檻為初版設定，尚待實際資料校準。</div>
     </div>
   </div>
 </div>
@@ -1214,10 +1214,12 @@ function buildOverloadFreq(){
   var txt=$('overload-text'),det=$('overload-detail');
   if(!txt||!det)return;
   var log=[];try{log=JSON.parse(localStorage.getItem('sas_overload_log')||'[]');}catch(e){}
-  var cutoff=dkey(new Date(Date.now()-14*86400000));
-  var recent=log.filter(function(d){return d.date>=cutoff;});
+  var WINDOW=14;
+  // 近14「筆有記錄的」使用天，不是近14個日曆天——沒開Optimizer的日子(如週末)不進log，
+  // 用日曆天窗口會讓分母被稀釋、門檻變得比設計時假設的更難觸發，改抓最近WINDOW筆記錄維持樣本數穩定
+  var recent=log.slice(-WINDOW);
   if(!recent.length){
-    txt.textContent='—';det.textContent='近14天無水管排程記錄';
+    txt.textContent='—';det.textContent='尚無水管排程記錄';
     return;
   }
   var overloadDays=recent.filter(function(d){return d.overloadCount>0;});
@@ -1225,17 +1227,17 @@ function buildOverloadFreq(){
   var survived=overloadDays.filter(function(d){return d.allDone===true;}).length;
 
   var flags=[];
-  if(overloadDays.length>=8)flags.push('過載天數達'+overloadDays.length+'/'+recent.length+'天');
-  if(notSurvived>=3)flags.push('沒扛住'+notSurvived+'天');
+  if(overloadDays.length>=8)flags.push('過載達'+overloadDays.length+'/'+recent.length+'筆');
+  if(notSurvived>=3)flags.push('沒扛住'+notSurvived+'次');
 
   // 初版門檻，尚無長期真實資料校準，待實測後再調整
   var level=(notSurvived>=3||overloadDays.length>=10)?'r':(overloadDays.length>=5||notSurvived>=1)?'a':'g';
   if(level==='r'){
-    txt.textContent='🔴 長期緊繃';det.textContent=flags.length?flags.join('、'):'過載'+overloadDays.length+'天';
+    txt.textContent='🔴 長期緊繃';det.textContent=flags.length?flags.join('、'):'過載'+overloadDays.length+'/'+recent.length+'筆';
   }else if(level==='a'){
-    txt.textContent='🟠 偶有超載';det.textContent='過載'+overloadDays.length+'天（扛過去'+survived+'／沒扛住'+notSurvived+'）';
+    txt.textContent='🟠 偶有超載';det.textContent='近'+recent.length+'筆中過載'+overloadDays.length+'（扛過去'+survived+'／沒扛住'+notSurvived+'）';
   }else{
-    txt.textContent='🟢 配速穩定';det.textContent='近'+recent.length+'天追蹤中，過載'+overloadDays.length+'天';
+    txt.textContent='🟢 配速穩定';det.textContent='近'+recent.length+'筆記錄中，過載'+overloadDays.length+'筆';
   }
 }
 
