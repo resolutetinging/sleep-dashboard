@@ -1117,11 +1117,12 @@ function updateRegularity(data) {
   const bedPts=data.map(d=>bedToPlot(d.bedtime));
   const wakePts=data.map(d=>wakeToPlot(d.wake));
   const tickColor='#4a4540'; const gridColor='#cdc8c033';
+  const pointR=data.length>60?0:2;
   const cfg={
     type:'line',
     data:{labels,datasets:[
-      {label:'入睡',data:bedPts,borderColor:COLORS.deep,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false},
-      {label:'起床',data:wakePts,borderColor:COLORS.rem,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
+      {label:'入睡',data:bedPts,borderColor:COLORS.deep,borderWidth:1.5,pointRadius:pointR,pointHoverRadius:4,tension:0.3,fill:false},
+      {label:'起床',data:wakePts,borderColor:COLORS.rem,borderWidth:1.5,pointRadius:pointR,pointHoverRadius:4,tension:0.3,fill:false}
     ]},
     options:{
       responsive:true,maintainAspectRatio:!_isMobileChart(),animation:{duration:300},
