@@ -1914,7 +1914,8 @@ function fmtAI(raw){
 async function aiCall(prompt,maxTokens){
   var key=localStorage.getItem('tina_groq')||'';
   if(!key)throw new Error('找不到 Groq API Key，請在設定頁輸入（localStorage: tina_groq）');
-  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:.7})});
+  var sysMsg='你只能輸出繁體中文（台灣標準）與必要的英文專有名詞（如Human Design、閘道編號等既有詞彙）。絕對禁止出現簡體字、日文假名、或任何非中文語言拼湊出的亂碼字詞（如「咖啑」這種不存在的錯字）；若不確定某個字怎麼寫，換一個確定寫法正確的詞彙表達，不要冒險輸出不存在的字。所有具體數字建議（時間、劑量、攝取量等）必須落在真實世界合理安全範圍內，不可為了湊出「有具體數字」而誇大或捏造超出常識的數值。';
+  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'system',content:sysMsg},{role:'user',content:prompt}],max_tokens:maxTokens,temperature:.7})});
   var txt=await r.text();
   var d;try{d=JSON.parse(txt);}catch(e){throw new Error('Groq 非 JSON 回應（'+r.status+'）: '+txt.slice(0,120));}
   if(d.choices&&d.choices[0])return d.choices[0].message.content;
@@ -2087,11 +2088,11 @@ ${hasRfData?`- 咖啡：${rfCoffeeSummary}
 睡眠、情緒、行為、補給四個面向的整合解讀（補給無資料時僅評估前三維）
 
 **2. 跨維度模式洞察**
-維度間的交互關係，每個相關性結論必須明確說明影響方向（正向/負向）與影響程度（如「咖啡攝取多的日子情緒正向提升約X分，但睡眠戰力降低約X分」），不可只描述相關性而不評判好壞或程度。分析行為完成率與狀態的滯後關係、影響因子規律、與人類圖設計的對應或背離
+維度間的交互關係，每個相關性結論必須明確說明影響方向（正向/負向）與影響程度，句型格式可參考「咖啡攝取多的日子情緒正向提升約X分，但睡眠戰力降低約X分」，但X與方向必須依據上方提供的真實數據推導，不可直接照抄這個範例句子本身當作你的分析結論。不可只描述相關性而不評判好壞或程度。分析行為完成率與狀態的滯後關係、影響因子規律、與人類圖設計的對應或背離
 
 **3. 本週具體建議**（3-4條，每條針對不同維度或交叉點）
 - 睡眠調整：針對睡眠債/戰力現狀的實際作法
-- 補給優化：咖啡攝取時機/水分補充策略（補給有資料時）
+- 補給優化：咖啡攝取時機/水分補充策略（補給有資料時）。事實錨定（不可違反）：咖啡因半衰期約5-6小時，攝取時機建議應鎖定避免「下午/傍晚、尤其睡前6-8小時內」，不可建議避免早晨攝取；一般成人每日水分建議攝取量約2000-3000ml，除非資料明確顯示當週有高強度運動或大量流汗紀錄，否則不可建議超過3000ml/日
 - 行為策略：下週任務安排與節奏建議
 - 人類圖落地：從設計角度對本人能量管理的提醒
 
