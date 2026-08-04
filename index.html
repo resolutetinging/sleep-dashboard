@@ -952,10 +952,12 @@ function updateCombat(score,skipAnim){
   var eEl=$('g-endurance');if(eEl)eEl.textContent=String(8+Math.floor(score/100*14)).padStart(2,'0')+':00';
   var eb=$('g-endurance-bar');if(eb)eb.style.width=score+'%';
   buildPacePills(score);
-  buildInertiaAlert(score);
+  // 08-04：兩函式同一輪都要用睡眠代理值，算一次共用，避免各自重解析sas_sleep_latest
+  var _sqShared=getSleepQualityMap();
+  buildInertiaAlert(score,_sqShared);
   buildAlignToday(score);
   try{checkDataFreshness();}catch(e){}
-  try{buildRiskLight(score);}catch(e){}
+  try{buildRiskLight(score,_sqShared);}catch(e){}
   try{buildWeekPressure();}catch(e){}
   try{buildOverloadFreq();}catch(e){}
   rebuildCorrChart();
@@ -1089,11 +1091,12 @@ function buildAlignToday(combat){
 }
 
 /* INERTIA ALERT */
-function buildInertiaAlert(combat){
+function buildInertiaAlert(combat,sqMap){
   var el=$('inertia-alert');if(!el)return;
   var moods=getMoods().slice(-7);
   if(moods.length<3){el.style.display='none';return;}
-  var _sqMap=getSleepQualityMap();
+  // 08-04：可選傳入sqMap避免與buildRiskLight在同一次updateCombat()裡各自重解析sas_sleep_latest
+  var _sqMap=sqMap||getSleepQualityMap();
   var overDays=0;
   for(var i=moods.length-3;i<moods.length-1;i++){
     var rev=getReview(moods[i].date);if(!rev)continue;
@@ -1140,7 +1143,7 @@ function checkDataFreshness(){
 /* RISK LIGHT — 常駐綜合風險燈號：戰力偏低(≤55，同配速熔斷門檻) / 已過續航終點 / 睡眠負債危險(sas_dta) / 今日意志力透支(alignClass)，
    四項訊號各自獨立判斷後計數，0項=綠／1項=橘／≥2項=紅。刻意用「同時出現幾項」而非任一項單獨判斷，
    避免單一指標誤報，同時不用等到單一指標達到最嚴重才示警。 */
-function buildRiskLight(combat){
+function buildRiskLight(combat,sqMap){
   var txt=$('risk-text'),det=$('risk-detail');
   if(!txt||!det)return;
   var flags=[];
@@ -1168,7 +1171,8 @@ function buildRiskLight(combat){
   if(yMood&&items.length){
     var dr=items.filter(function(i){return i.status==='done';}).length/items.length;
     // 用「昨天」當日的睡眠代理值，不套用今天的c（否則昨日透支判定會隨今天狀態漂移）
-    var _sqY=getSleepQualityMap();
+    // 08-04：可選傳入sqMap避免與buildInertiaAlert在同一次updateCombat()裡各自重解析
+    var _sqY=sqMap||getSleepQualityMap();
     var yProxy=_sqY[ykey]!==undefined?_sqY[ykey]*10:c;
     if(alignClass(yMood.score,yProxy,dr)==='over')flags.push('昨日意志力透支');
   }
@@ -1250,11 +1254,13 @@ function buildOverloadFreq(){
 /* PACE PILLS */
 function buildPacePills(score){
   var el=$('pace-pills');if(!el)return;
-  var ss={};try{ss=JSON.parse(localStorage.getItem('sas_settings')||'{}');}catch(e){}
-  var strat=ss.hdStrat||'';
+  // 08-04：原本讀sas_settings（全生態系無寫入端，恆空），改讀window._hdData.strat——
+  // 這個全域變數由loadHDProfile()填入，該函式已有wellness_v5.profile→sas_settings的
+  // 備援邏輯，跟人類圖資料卡片（#hd-profile-display）同一個事實來源，不再另立資料流
+  var strat=(window._hdData&&window._hdData.strat)||'';
   var base=score>=70?'<span class="pill p-ok">✓ 深度工作</span><span class="pill p-ok">✓ 重要談判</span><span class="pill p-no">✗ 衝動承諾</span>'
     :'<span class="pill p-warn">⚠ 輕量任務</span><span class="pill p-no">✗ 重大決策</span>';
-  el.innerHTML=base+(strat?'<span class="pill p-purple">⚠ '+strat+'</span>':'');
+  el.innerHTML=base+(strat?'<span class="pill p-info">⚠ '+strat+'</span>':'');
 }
 
 /* LAG EFFECT — 跨維度滯後：情緒下滑 → 行為完成率下滑的平均天數 */
@@ -2928,6 +2934,10 @@ function getSleepQualityMap(){
   var src=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
   var map={};
   src.forEach(function(n){
+    // 08-04：deepP/remP缺失或非數字時不寫入map，讓下游各處的!==undefined判斷正確視為
+    // 「當日無代理值」並fallback，而不是靜默算出NaN——NaN參與比較式一律為false，
+    // 會讓alignClass()等判定誤判成「狀態正常/沒有透支」，比明確缺資料更危險
+    if(!Number.isFinite(n.deepP)||!Number.isFinite(n.remP))return;
     var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
     map[n.date]=(dp*0.7+rp*0.3)/10;
   });
