@@ -2606,12 +2606,16 @@ function renderDualTrackCard(){
     }
     var weights={};
     try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
-    if(consecutive>=3){
+    // 08-04修正：原本每次呼叫都會疊加校正，同一天內切換時間範圍按鈕（setScrRange）
+    // 會連續重跑此函式，短時間內把highIntensity衝到上限。這個係數08-04起已接上
+    // Daily Optimizer的實際排程權重（見cc_energy_weights），不再只是顯示文案，
+    // 必須節流成每天最多校正一次，否則排程會吃到失真的權重。
+    if(consecutive>=3 && weights.lastCorrected!==today()){
       var prev=weights.highIntensity||1.0;
       var bump=consecutive>=5?0.2:0.1;
       weights.highIntensity=Math.min(+(prev+bump).toFixed(2),2.0);
       weights.correctionCount=(weights.correctionCount||0)+1;
-      weights.lastCorrected=new Date().toISOString().slice(0,10);
+      weights.lastCorrected=today();
       weights.trigger=consecutive;
       try{localStorage.setItem('cc_energy_weights',JSON.stringify(weights));}catch(e){}
     }
