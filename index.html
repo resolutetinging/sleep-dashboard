@@ -1093,12 +1093,15 @@ function buildInertiaAlert(combat){
   var el=$('inertia-alert');if(!el)return;
   var moods=getMoods().slice(-7);
   if(moods.length<3){el.style.display='none';return;}
+  var _sqMap=getSleepQualityMap();
   var overDays=0;
   for(var i=moods.length-3;i<moods.length-1;i++){
     var rev=getReview(moods[i].date);if(!rev)continue;
     var items=rev.items||[];if(!items.length)continue;
     var dr=items.filter(t=>t.status==='done').length/items.length;
-    if(alignClass(moods[i].score,combat,dr)==='over')overDays++;
+    // 過去日期用當日睡眠代理值，不套用今天的combat（否則歷史紅點會隨今天狀態每天漂移）
+    var proxyC=_sqMap[moods[i].date]!==undefined?_sqMap[moods[i].date]*10:combat;
+    if(alignClass(moods[i].score,proxyC,dr)==='over')overDays++;
   }
   var last3=moods.slice(-3);
   var hadLow=last3.length>=2&&last3.slice(0,2).every(m=>m.score<5);
@@ -1164,7 +1167,10 @@ function buildRiskLight(combat){
   var rev=getReview(ykey);var items=rev?(rev.items||[]):[];
   if(yMood&&items.length){
     var dr=items.filter(function(i){return i.status==='done';}).length/items.length;
-    if(alignClass(yMood.score,c,dr)==='over')flags.push('昨日意志力透支');
+    // 用「昨天」當日的睡眠代理值，不套用今天的c（否則昨日透支判定會隨今天狀態漂移）
+    var _sqY=getSleepQualityMap();
+    var yProxy=_sqY[ykey]!==undefined?_sqY[ykey]*10:c;
+    if(alignClass(yMood.score,yProxy,dr)==='over')flags.push('昨日意志力透支');
   }
 
   var level=flags.length>=2?'r':flags.length===1?'a':'g';
@@ -1541,7 +1547,8 @@ function rebuildCorrChart(){
       var items=rev.items||[];
       if(items.length>0){
         var dr=items.filter(t=>t.status==='done').length/items.length;
-        var cls=alignClass(ms,_combat||50,dr);
+        // 用當天已算出的cs（睡眠代理值）而非今天的_combat，避免歷史對齊判定隨今天狀態漂移
+        var cls=alignClass(ms,cs!==null?cs*10:(_combat||50),dr);
         compLine.push(parseFloat((dr*10).toFixed(1)));
         var cc=cls==='over'?'rgba(192,57,43,.85)':cls==='under'?'rgba(78,110,138,.85)':'rgba(39,174,96,.85)';
         compColors.push(cc);compRadius.push(8);
@@ -1581,7 +1588,8 @@ function rebuildCorrChart(){
     var revj=getReview(kj);if(!revj)continue;
     var itmj=revj.items||[];if(!itmj.length)continue;
     var drj=itmj.filter(t=>t.status==='done').length/itmj.length;
-    if(alignClass(msj,_combat||50,drj)==='over')overDates.push(kj);
+    var csj=combatMap[kj]!==undefined?combatMap[kj]:null;
+    if(alignClass(msj,csj!==null?csj*10:(_combat||50),drj)==='over')overDates.push(kj);
   }
   var debtEl=$('corr-debtbomb');
   if(debtEl){
@@ -2060,6 +2068,21 @@ async function analyzeLastWeek(){
     statRow.innerHTML=statItems.map(function(r){return '<div class="week-stat-item"><span class="week-stat-label">'+r[0]+'</span><span class="week-stat-val" style="color:'+r[2]+'">'+r[1]+'</span></div>';}).join('');
   }
 
+  // 系統已計算的量化訊號：把sas_dta/sas_overload_log的既有結果直接餵給LLM，
+  // 避免它從頭用猜的重算一次系統已經精算過的答案（08-04優化）
+  var _dtaForPrompt={};try{_dtaForPrompt=JSON.parse(localStorage.getItem('sas_dta')||'{}');}catch(e){}
+  var _emCounts=(_dtaForPrompt.energyMatrix&&_dtaForPrompt.energyMatrix.counts)||{};
+  var _emLabels={'High-Brain-Overclock':'高效超頻日','Full-Charge':'全面充能日','Total-Defense':'低能耗防禦日','Physical-Only':'鈍感平穩日','Mixed':'混合中間態'};
+  var _emSummary=Object.keys(_emCounts).filter(function(k){return _emCounts[k]>0;}).map(function(k){return _emLabels[k]+' '+_emCounts[k]+'天';}).join('、')||'無資料';
+  var _debtSlope=_dtaForPrompt.debtDynamics&&_dtaForPrompt.debtDynamics.slopeMinPerDay;
+  var _debtCritical=_dtaForPrompt.debtDynamics&&_dtaForPrompt.debtDynamics.isCritical;
+  var _debtSummary=(_debtSlope!==undefined&&_debtSlope!==null)?'負債斜率'+(_debtSlope>0?'+':'')+Math.round(_debtSlope)+'分鐘/天（正值=惡化中，負值=恢復中）'+(_debtCritical?'，目前已達危險水位':''):'無資料';
+  var _ovLog=[];try{_ovLog=JSON.parse(localStorage.getItem('sas_overload_log')||'[]');}catch(e){}
+  var _ovRecent=_ovLog.slice(-14);
+  var _ovDays=_ovRecent.filter(function(d){return d.overloadCount>0;});
+  var _ovNotSurvived=_ovDays.filter(function(d){return d.allDone===false;}).length;
+  var _ovSummary=_ovRecent.length?('近14天過載'+_ovDays.length+'天，其中沒扛住'+_ovNotSurvived+'天'):'無資料';
+
   var hd=window._hdData||{};
   var prompt=`整合人類圖與身心數據的週報顧問。
 
@@ -2080,6 +2103,11 @@ async function analyzeLastWeek(){
 ${hasRfData?`- 咖啡：${rfCoffeeSummary}
 - 水分：${rfWaterSummary}`:'- 本週無 Refueler 記錄（功能較晚啟用，資料累積中）'}
 
+【系統已計算的量化訊號（分析時請直接引用這些數字，不要自己重新用猜的推算）】
+- 近7夜能量矩陣：${_emSummary}
+- 睡眠負債動態：${_debtSummary}
+- 白天過載頻率：${_ovSummary}
+
 人類圖：類型 ${hd.type||'未知'}，策略 ${hd.strat||'未知'}，權威 ${hd.auth||'未知'}，非自己 ${hd.notself||'未知'}
 
 請提供上週回顧（繁體中文）：
@@ -2088,7 +2116,7 @@ ${hasRfData?`- 咖啡：${rfCoffeeSummary}
 睡眠、情緒、行為、補給四個面向的整合解讀（補給無資料時僅評估前三維）
 
 **2. 跨維度模式洞察**
-維度間的交互關係，每個相關性結論必須明確說明影響方向（正向/負向）與影響程度，句型格式可參考「咖啡攝取多的日子情緒正向提升約X分，但睡眠戰力降低約X分」，但X與方向必須依據上方提供的真實數據推導，不可直接照抄這個範例句子本身當作你的分析結論。不可只描述相關性而不評判好壞或程度。分析行為完成率與狀態的滯後關係、影響因子規律、與人類圖設計的對應或背離
+維度間的交互關係，每個相關性結論必須明確說明影響方向（正向/負向）與影響程度，句型格式可參考「咖啡攝取多的日子情緒正向提升約X分，但睡眠戰力降低約X分」，但X與方向必須依據上方提供的真實數據推導，不可直接照抄這個範例句子本身當作你的分析結論。不可只描述相關性而不評判好壞或程度。分析行為完成率與狀態的滯後關係、影響因子規律、與人類圖設計的對應或背離；上方【系統已計算的量化訊號】三項必須至少引用兩項在分析裡，不可略過不提
 
 **3. 本週具體建議**（3-4條，每條針對不同維度或交叉點）
 - 睡眠調整：針對睡眠債/戰力現狀的實際作法
@@ -2257,7 +2285,7 @@ function buildDualTrackAggregation() {
     });
 
     // 覆盤停損統計
-    var items=rev.reviewItems||[];
+    var items=rev.items||[];
     var totalIt=items.length;
     var skipIt=items.filter(function(it){return it.status==='skip';}).length;
     var doneIt=items.filter(function(it){return it.status==='done';}).length;
@@ -2299,7 +2327,7 @@ function buildDualTrackAggregation() {
     insight:{
       overloadAtHighREM:tiers.high.overloadRate,
       stopLossAtLowREM :tiers.low.avgStopLossRate,
-      note:'overloadRate=pipe壓力≥3的天數%；stopLossRate=reviewItems中skip%'
+      note:'overloadRate=pipe壓力≥3的天數%；stopLossRate=items中skip%'
     },
     raw:corrRows
   };
