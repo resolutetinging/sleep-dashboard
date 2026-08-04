@@ -2037,14 +2037,14 @@ async function analyzeLastWeek(){
   var rfRaw=null;try{rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
   var rfAll=rfRaw&&rfRaw.entries?rfRaw.entries:[];
   var lwSet=new Set(lwDates);
-  var lwRf=rfAll.filter(function(e){return e.timestamp&&lwSet.has(e.timestamp.slice(0,10));});
+  var lwRf=rfAll.filter(function(e){return e.timestamp&&lwSet.has(dkey(new Date(e.timestamp)));});
   var rfCoffee=lwRf.filter(function(e){return e.type==='coffee';});
   var rfWater=lwRf.filter(function(e){return e.type==='water';});
-  var coffeeDaySet=new Set(rfCoffee.map(function(e){return e.timestamp.slice(0,10);}));
+  var coffeeDaySet=new Set(rfCoffee.map(function(e){return dkey(new Date(e.timestamp));}));
   var coffeeCups=rfCoffee.length;
   var coffeeAvgPerDay=coffeeCups>0?(coffeeCups/7).toFixed(1):null;
   var coffeeSpend=rfCoffee.reduce(function(s,e){return s+(e.coffeePrice||e.price||0)+(e.dessertPrice||0);},0);
-  var waterDaySet=new Set(rfWater.map(function(e){return e.timestamp.slice(0,10);}));
+  var waterDaySet=new Set(rfWater.map(function(e){return dkey(new Date(e.timestamp));}));
   var waterTotal=rfWater.reduce(function(s,e){return s+(e.amount||0);},0);
   var waterAvgPerDay=waterDaySet.size>0?Math.round(waterTotal/waterDaySet.size):null;
   var hasRfData=coffeeDaySet.size>0||waterDaySet.size>0;
@@ -2514,7 +2514,7 @@ function renderDualTrackCard(){
     var rfRaw=null;
     try{rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
     var all=rfRaw&&rfRaw.entries?rfRaw.entries:[];
-    var dayEntries=all.filter(function(e){return e.timestamp&&e.timestamp.slice(0,10)===dateStr;});
+    var dayEntries=all.filter(function(e){return e.timestamp&&dkey(new Date(e.timestamp))===dateStr;});
     var coffee=dayEntries.filter(function(e){return e.type==='coffee';});
     var water=dayEntries.filter(function(e){return e.type==='water';});
     var waterTotal=water.reduce(function(s,e){return s+(e.amount||0);},0);
@@ -2963,7 +2963,8 @@ function buildLeverageBars(){
     var rfRaw=JSON.parse(localStorage.getItem('refueler_v1')||'null');
     var rfArr=(rfRaw&&rfRaw.entries)?rfRaw.entries:[];
     rfArr.forEach(function(e){
-      var dk=(e.timestamp||'').slice(0,10);if(!dk)return;
+      if(!e.timestamp)return;
+      var dk=dkey(new Date(e.timestamp));
       if(e.type==='coffee')coffeeByDate[dk]=(coffeeByDate[dk]||0)+1;
       if(e.type==='water')waterByDate[dk]=(waterByDate[dk]||0)+(e.amount||0);
     });
