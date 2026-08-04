@@ -580,7 +580,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
           <div style="font-weight:700;color:var(--text);margin-bottom:3px">完成度點分類邏輯</div>
           <div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px">
             <span style="width:9px;height:9px;border-radius:50%;background:var(--danger);flex-shrink:0;margin-top:2px;display:inline-block"></span>
-            <span><strong style="color:var(--text)">意志力透支</strong>：情緒/戰力均值 &lt; 55，但完成率 &gt; 83%</span>
+            <span><strong style="color:var(--text)">意志力透支</strong>：情緒/睡眠品質分均值 &lt; 55，但完成率 &gt; 83%</span>
           </div>
           <div style="display:flex;gap:6px;align-items:baseline;margin-bottom:3px">
             <span style="width:9px;height:9px;border-radius:50%;background:var(--ok);flex-shrink:0;margin-top:2px;display:inline-block"></span>
@@ -1562,10 +1562,10 @@ function rebuildCorrChart(){
   var maxTicks=corrRange<=7?7:corrRange<=14?8:corrRange<=30?10:12;
   mk('corr-chart',{type:'line',data:{labels,datasets:[
     {label:'情緒',data:moodLine,borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.08)',tension:.4,pointRadius:3,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:2,spanGaps:true,order:2},
-    {label:'戰力',data:combatLine,borderColor:'#5c7a96',backgroundColor:'transparent',tension:.4,pointRadius:2,pointBackgroundColor:'#5c7a96',borderWidth:1.5,borderDash:[4,3],spanGaps:false,order:3},
+    {label:'睡眠品質分',data:combatLine,borderColor:'#5c7a96',backgroundColor:'transparent',tension:.4,pointRadius:2,pointBackgroundColor:'#5c7a96',borderWidth:1.5,borderDash:[4,3],spanGaps:false,order:3},
     {label:'完成度',data:compLine,borderWidth:0,showLine:false,pointRadius:compRadius,pointBackgroundColor:compColors,pointBorderWidth:0,order:1}
   ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw!=null?ctx.raw:'—'):ctx.datasetIndex===1?ctx.raw!=null?'戰力: '+Math.round(ctx.raw*10):null:ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw!=null?ctx.raw:'—'):ctx.datasetIndex===1?ctx.raw!=null?'睡眠品質分: '+Math.round(ctx.raw*10):null:ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
     scales:{x:{ticks:{color:LC,font:{size:9},maxTicksLimit:maxTicks},grid:{display:false}},y:{min:0,max:10,ticks:{color:LC,font:{size:9},maxTicksLimit:4},grid:{color:TC}}}}});
 
   // ── 三大防禦行動面板 ──
@@ -3076,7 +3076,7 @@ function buildLeverageBars(){
     if(fid==='water'){var v=Math.round(s*500);return'每+500ml → 次日'+tgt+' '+sg(v)+' 分';}
     if(fid==='mood')return'情緒+1 → 次日'+tgt+' '+sg(Math.round(s*10)/10)+' 分';
     if(fid==='done'){var v2=Math.round(s*10*10)/10;return'完成率+10% → 次日'+tgt+' '+sg(v2)+' 分';}
-    if(fid==='combat'){var v3=Math.round(s*10*10)/10;return'戰力+10 → 次日'+tgt+' '+sg(v3)+(tgt==='完成率'?'%':' 分');}
+    if(fid==='combat'){var v3=Math.round(s*10*10)/10;return'睡眠品質分+10 → 次日'+tgt+' '+sg(v3)+(tgt==='完成率'?'%':' 分');}
     if(fid==='deepP')return'深睡%+1 → 次日'+tgt+' '+sg(Math.round(s*10)/10)+' 分';
     if(fid==='remP')return'REM%+1 → 次日'+tgt+' '+sg(Math.round(s*10)/10)+' 分';
     if(fid==='durH'){var v4=Math.round(s*0.5*10)/10;return'睡眠+0.5h → 次日'+tgt+' '+sg(v4)+' 分';}
@@ -3154,7 +3154,7 @@ function buildLeverageBars(){
       if(tm!==undefined){
         var mr=rIdx['mood'];
         if(mr!==undefined&&Math.abs(mr)>0.2){
-          if(tm>=7&&mr>0)insights.push('🌊 今日情緒良好（'+tm+' 分），依規律（r=+'+mr.toFixed(2)+'）有助鎖入明日高戰力，維持今晚穩定作息。');
+          if(tm>=7&&mr>0)insights.push('🌊 今日情緒良好（'+tm+' 分），依規律（r=+'+mr.toFixed(2)+'）有助鎖入明日高睡眠品質分，維持今晚穩定作息。');
           else if(tm<5&&mr>0)insights.push('🌊 今日情緒低谷（'+tm+' 分），依規律次日睡眠品質分承壓。今晚以靜息防禦為主，22:30 前上床。');
         }
       }
