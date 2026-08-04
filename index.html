@@ -525,7 +525,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   <!-- 三維相關性圖 -->
   <div class="card cco">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
-      <div class="lbl" style="margin-bottom:0">🔬 三維相關性 — 情緒 × 睡眠戰力 × 行為完成度</div>
+      <div class="lbl" style="margin-bottom:0">🔬 三維相關性 — 情緒 × 睡眠品質分 × 行為完成度</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="corr-range-btn" onclick="setCorrRange(7)">1週</button>
         <button class="corr-range-btn active" onclick="setCorrRange(14)">2週</button>
@@ -539,7 +539,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div class="ch-lg" style="position:relative;"><canvas id="corr-chart"></canvas></div>
         <div class="corr-legend">
           <span class="corr-leg-item"><span style="width:14px;height:3px;background:var(--mental);border-radius:2px;display:inline-block"></span>情緒分（折線）</span>
-          <span class="corr-leg-item"><span style="display:inline-block;width:14px;height:0;border-top:2px dashed #5c7a96"></span>睡眠戰力（虛線）</span>
+          <span class="corr-leg-item"><span style="display:inline-block;width:14px;height:0;border-top:2px dashed #5c7a96"></span>睡眠品質分（虛線）</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--danger);display:inline-block"></span>意志力透支</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--ok);display:inline-block"></span>狀態對齊</span>
           <span class="corr-leg-item"><span style="width:11px;height:11px;border-radius:50%;background:var(--info);display:inline-block"></span>低輸出</span>
@@ -571,10 +571,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div>
           <div style="font-weight:700;color:var(--text);margin-bottom:3px">Y 軸尺度（統一 0–10）</div>
           <div>情緒分：wellness journal 原始值（0–10）</div>
-          <div>睡眠戰力：原始分（0–100）÷ 10，圖上 7 = 戰力 70</div>
+          <div>睡眠品質分：原始分（0–100）÷ 10，圖上 7 = 品質分 70</div>
           <div>完成度點：完成率（0–1）× 10，圖上 7 = 完成 70%</div>
           <div style="margin-top:5px;color:var(--faint)">⚠ 三條線數值可對齊比較，但語意不同，用於觀察趨勢相關性。</div>
-          <div style="margin-top:4px;color:var(--faint)">睡眠戰力歷史僅保留近 7 天，超出範圍顯示為空白。</div>
+          <div style="margin-top:4px;color:var(--faint)">睡眠品質分歷史僅保留近 7 天，超出範圍顯示為空白。</div>
         </div>
         <div>
           <div style="font-weight:700;color:var(--text);margin-bottom:3px">完成度點分類邏輯</div>
@@ -759,7 +759,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div style="font-size:.65rem;color:var(--faint)">近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）</div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="lev-tab active" data-tab="combat" onclick="setLevTab('combat')">⚡ 睡眠戰力</button>
+        <button class="lev-tab active" data-tab="combat" onclick="setLevTab('combat')">⚡ 睡眠品質分</button>
         <button class="lev-tab" data-tab="mood" onclick="setLevTab('mood')">🌊 情緒分數</button>
         <button class="lev-tab" data-tab="done" onclick="setLevTab('done')">✓ 任務完成率</button>
       </div>
@@ -790,7 +790,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <!-- 計算方法說明 -->
     <div style="margin-top:.6rem;padding:.65rem .8rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border);display:flex;flex-direction:column;gap:.38rem">
       <div style="font-size:.63rem;font-weight:700;color:var(--sub);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.05rem">計算方法說明</div>
-      <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--text);font-weight:600">T-1 因果對齊</strong>：所有行為因子（咖啡、飲水、情緒、任務完成率）皆已套用前一日偏移——前日行為數據對齊次日睡眠戰力，符合真實生理因果律。</div>
+      <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--text);font-weight:600">T-1 因果對齊</strong>：所有行為因子（咖啡、飲水、情緒、任務完成率）皆已套用前一日偏移——前日行為數據對齊次日睡眠品質分，符合真實生理因果律。</div>
       <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--text);font-weight:600">Pearson r</strong> = Σ(Xᵢ−X̄)(Yᵢ−Ȳ) / √[Σ(Xᵢ−X̄)²·Σ(Yᵢ−Ȳ)²]　取值 −1 ～ +1，需至少 5 天配對資料；排序按 |r| 絕對值由大到小。</div>
       <div style="font-size:.65rem;color:var(--faint);line-height:1.65"><strong style="color:var(--ok);font-weight:600">正向 ▶ 綠條</strong>：該行為量增加 → 目標指標傾向提升。　<strong style="color:var(--danger);font-weight:600">負向 ◀ 紅條</strong>：該行為量增加 → 目標指標傾向下降。</div>
       <div style="font-size:.65rem;color:var(--faint);line-height:1.65">⚠ |r| ≥ 0.5 深色顯示，|r| ≥ 0.3 淺色顯示；相關性≠因果，僅供戰略參考。Refueler 未啟用時咖啡/飲水自動略過。</div>
@@ -1337,14 +1337,9 @@ function calcRealCycle(smoothed){
   return Math.round(intervals.reduce(function(a,b){return a+b;},0)/intervals.length);
 }
 function calcSleepToMoodLag(smoothedArr,days){
-  var combatMap={};
-  try{
-    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
-    (sl.trend7||[]).forEach(function(n){
-      var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
-      combatMap[n.date]=(dp*0.7+rp*0.3)/10;
-    });
-  }catch(e){}
+  // 08-04：改呼叫共用getSleepQualityMap('trend7')，明確指定只用trend7維持原本7天視窗
+  // ——不可改用預設的trend180 fallback，否則掃描天數暴增會改變「情緒真實週期」算出的結果
+  var combatMap=getSleepQualityMap('trend7');
   var moodByDate={};
   for(var i=0;i<days;i++){var d=new Date();d.setDate(d.getDate()-(days-1-i));moodByDate[dkey(d)]=smoothedArr[i];}
   var cdates=Object.keys(combatMap).sort(),lags=[];
@@ -1392,14 +1387,16 @@ function buildMoodRealChart(moodData,realCycle){
 }
 function buildCausalChainNarrative(moodData,avgLag){
   try{
-    var sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
-    var td=sl.trend30||sl.trend14||sl.trend7||[];
-    if(td.length<3)return null;
-    var ca=td.map(function(n){
-      var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
-      return{date:n.date,c:Math.round((dp*0.7+rp*0.3)*10)/10};
+    // 08-04：改呼叫共用getSleepQualityMap()（預設trend180 fallback），視窗從原本
+    // trend30上限放寬到最多180天——刻意接受的行為改善（能看到更久的驟降事件），
+    // 非本次教訓的「不可任意放寬視窗」情形，因為此函式本身沒有「只看近期」的設計意圖
+    var sqMap=getSleepQualityMap();
+    var ca=Object.keys(sqMap).map(function(date){
+      return{date:date,c:Math.round(sqMap[date]*10*10)/10};
     }).sort(function(a,b){return a.date.localeCompare(b.date);});
-    if(ca.length<2)return null;
+    // 08-04複核教訓：原本有td.length<3（搬移時漏掉）+ca.length<2兩層門檻，改用map後
+    // 補回最低3筆有效資料才生成因果敘事，避免只憑2個資料點就推論「驟降→N天後情緒低谷」
+    if(ca.length<3)return null;
     var avg=ca.reduce(function(s,x){return s+x.c;},0)/ca.length;
     var drops=[];
     for(var i=1;i<ca.length;i++){
@@ -1424,7 +1421,7 @@ function buildCausalChainNarrative(moodData,avgLag){
     var lag=Math.round((new Date(minK.replace(/-/g,'/'))-wd)/864e5);
     var dmd=worst.date.substring(5).replace('-','/');
     var tmd=minK.substring(5).replace('-','/');
-    return '追溯生理因果：'+dmd+' 的睡眠戰力驟降（戰力 '+Math.round(worst.c)+'）'
+    return '追溯生理因果：'+dmd+' 的睡眠品質分驟降（品質分 '+Math.round(worst.c)+'）'
       +'，經過 '+lag+' 天延遲傳導，導致了 '+tmd+' 的情緒低谷（MA5 = '+Math.round(minV*10)/10+'）。';
   }catch(e){return null;}
 }
@@ -1478,7 +1475,7 @@ function buildMoodAnalysis(moodData,realCycle,sleepLag){
   if(sleepLag){
     lLines.push('⏳ 實測滯後效應：平均 '+sleepLag+' 天後情緒跟進下滑');
     var chain=buildCausalChainNarrative(moodData,sleepLag);
-    lLines.push(chain||'（近期未偵測到顯著睡眠戰力驟降事件，或滯後窗口內情緒資料不足）');
+    lLines.push(chain||'（近期未偵測到顯著睡眠品質分驟降事件，或滯後窗口內情緒資料不足）');
   }else{
     lLines.push('⏳ 實測滯後效應：積累中（需更多「睡眠下滑 → N天後情緒低谷」配對事件）');
     lLines.push('系統需偵測到至少 2 組配對事件方可推算滯後天數。');
@@ -1811,14 +1808,11 @@ function renderWeekStrip(moodMap){
   var mondayOffset=dow===0?-6:1-dow;
   var monday=new Date(now);monday.setDate(now.getDate()+mondayOffset);
   var lastMonday=new Date(monday);lastMonday.setDate(monday.getDate()-7);
+  // 08-04：改呼叫共用getSleepQualityMap()並*10轉回0-100尺度；此widget只查±14天內的
+  // 日期，視窗放寬到180天不影響顯示範圍，純粹修正邊界日期查不到值的既有風險
+  var _cwSrc=getSleepQualityMap();
   var _cwByDate={};
-  try{
-    var _slRaw3=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');
-    (_slRaw3.trend30||_slRaw3.trend14||_slRaw3.trend7||[]).forEach(function(n){
-      var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
-      _cwByDate[n.date]=Math.round(dp*0.7+rp*0.3);
-    });
-  }catch(e){}
+  Object.keys(_cwSrc).forEach(function(d){_cwByDate[d]=Math.round(_cwSrc[d]*10);});
   function makeWeekCols(startDate){
     var cols='';
     for(var i=0;i<7;i++){
@@ -2588,6 +2582,10 @@ function renderDualTrackCard(){
   }
 
   function predictedEndurance(entry){
+    // 08-04教訓：曾試圖改呼叫共用_sleepProxyScore()，但該函式是「deepP/remP任一缺就整筆
+    // 回傳null」，這裡原本是「單一欄位各自防呆(||0)」——語意不同，部分缺資料時兩者算出的
+    // h差很大（例：deepP=18,remP缺，逐欄位算h=17，整筆否決算h=8），會誤導
+    // runEnergyCorrection()的連續斷電天數判定。複核抓到後改回原地計算，不強行共用。
     var deepScore=Math.min((entry.deepP||0)/18*100,100);
     var remScore =Math.min((entry.remP ||0)/22.5*100,100);
     var score=deepScore*0.7+remScore*0.3;
@@ -2926,20 +2924,28 @@ function renderDualTrackCard(){
 
 /* LEVERAGE BARS */
 var _levTab='combat';
-// 共用：睡眠品質 map（日期→代理值）。統一「永遠抓現有最長 trend 陣列」，
-// 由外層依日期查表的迴圈自行決定實際用到幾天，不需依 range 條件判斷該挑哪組 trend。
-function getSleepQualityMap(){
+// 08-04：核心公式抽出共用，供getSleepQualityMap()與predictedEndurance()共用。
+// 回傳0-100尺度；deepP/remP缺失或非數字回傳null（呼叫端須自行判斷null）。
+function _sleepProxyScore(entry){
+  if(!entry||!Number.isFinite(entry.deepP)||!Number.isFinite(entry.remP))return null;
+  var dp=Math.min(entry.deepP/18*100,100),rp=Math.min(entry.remP/22.5*100,100);
+  return dp*0.7+rp*0.3;
+}
+// 共用：睡眠品質 map（日期→代理值，0-10尺度）。預設「永遠抓現有最長 trend 陣列」，
+// 由外層依日期查表的迴圈自行決定實際用到幾天。onlyKey可指定強制只用單一trend視窗
+// （例：'trend7'），供需要維持原本較窄視窗行為、不隨資料累積擴大範圍的呼叫端使用。
+function getSleepQualityMap(onlyKey){
   var sl={};
   try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
-  var src=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
+  var src=onlyKey?(sl[onlyKey]||[]):(sl.trend180||sl.trend30||sl.trend14||sl.trend7||[]);
   var map={};
   src.forEach(function(n){
+    var score=_sleepProxyScore(n);
     // 08-04：deepP/remP缺失或非數字時不寫入map，讓下游各處的!==undefined判斷正確視為
     // 「當日無代理值」並fallback，而不是靜默算出NaN——NaN參與比較式一律為false，
     // 會讓alignClass()等判定誤判成「狀態正常/沒有透支」，比明確缺資料更危險
-    if(!Number.isFinite(n.deepP)||!Number.isFinite(n.remP))return;
-    var dp=Math.min(n.deepP/18*100,100),rp=Math.min(n.remP/22.5*100,100);
-    map[n.date]=(dp*0.7+rp*0.3)/10;
+    if(score===null)return;
+    map[n.date]=score/10;
   });
   return map;
 }
@@ -2964,12 +2970,19 @@ function calcSlope(predictors,outcomes){
 }
 function buildLeverageBars(){
   var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
-  var trendSrc=sl.trend30||sl.trend14||sl.trend7||[];
+  // 08-04：視窗放寬到trend180（原trend30上限），combat欄位改呼叫共用_sleepProxyScore()，
+  // deepP/remP兩個獨立顯示欄位維持原地計算（非本次教訓所指的「合成分數」重複，不強行併入）
+  // 08-04複核教訓：combat缺資料時原本想fallback成0分，但0是合法真實分數，跟「沒資料」
+  // 混在一起會讓Pearson相關係數被一筆假的極端低值拉扯，且跟三維相關性圖（同一天直接
+  // 略過不畫）呈現不一致。改成null，getV()/後續配對迴圈（3055行）本來就有
+  // tv!==null&&fv!==null的判斷會正確排除，不需額外改動下游。
+  var trendSrc=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
   var sleepByDate={};
   trendSrc.forEach(function(n){
+    var score=_sleepProxyScore(n);
     var dp=Math.min((n.deepP||0)/18*100,100);
     var rp=Math.min((n.remP||0)/22.5*100,100);
-    sleepByDate[n.date]={combat:Math.round(dp*0.7+rp*0.3),deepP:Math.round(dp),remP:Math.round(rp),durH:n.durH||0};
+    sleepByDate[n.date]={combat:score===null?null:Math.round(score),deepP:Math.round(dp),remP:Math.round(rp),durH:n.durH||0};
   });
   var moodByDate={};getMoods().forEach(function(m){moodByDate[m.date]=m.score;});
   var doneByDate={},coffeeByDate={},waterByDate={};
@@ -3020,7 +3033,7 @@ function buildLeverageBars(){
       {id:'water',  label:'💧 每日飲水'}
     ],
     mood:[
-      {id:'combat', label:'⚡ 睡眠戰力'},
+      {id:'combat', label:'⚡ 睡眠品質分'},
       {id:'done',   label:'✓ 任務完成率'},
       {id:'coffee', label:'☕ 咖啡攝取'},
       {id:'water',  label:'💧 每日飲水'},
@@ -3028,7 +3041,7 @@ function buildLeverageBars(){
       {id:'remP',   label:'💭 REM 比例'}
     ],
     done:[
-      {id:'combat', label:'⚡ 睡眠戰力'},
+      {id:'combat', label:'⚡ 睡眠品質分'},
       {id:'mood',   label:'🌊 情緒分數'},
       {id:'coffee', label:'☕ 咖啡攝取'},
       {id:'water',  label:'💧 每日飲水'},
@@ -3057,7 +3070,7 @@ function buildLeverageBars(){
   }
   function fmtImpact(fid,slope){
     if(slope===null||slope===undefined||Math.abs(slope)<0.005)return'';
-    var TN={combat:'睡眠戰力',mood:'情緒',done:'完成率'};var tgt=TN[_levTab]||'目標';var s=slope;
+    var TN={combat:'睡眠品質分',mood:'情緒',done:'完成率'};var tgt=TN[_levTab]||'目標';var s=slope;
     var sg=function(v){return(v>=0?'+':'')+v;};
     if(fid==='coffee')return'每+1杯 → 次日'+tgt+' '+sg(Math.round(s))+' 分';
     if(fid==='water'){var v=Math.round(s*500);return'每+500ml → 次日'+tgt+' '+sg(v)+' 分';}
@@ -3097,7 +3110,7 @@ function buildLeverageBars(){
   container.innerHTML=html;
   var footer=$('lev-footer');
   if(footer){
-    var TL={combat:'睡眠戰力',mood:'情緒分數',done:'任務完成率'};
+    var TL={combat:'睡眠品質分',mood:'情緒分數',done:'任務完成率'};
     var sig=results.filter(function(f){return f.r!==null&&Math.abs(f.r)>=0.3;});
     var best=sig.filter(function(f){return f.r>0;}).sort(function(a,b){return b.r-a.r;})[0]||null;
     var worst=sig.filter(function(f){return f.r<0;}).sort(function(a,b){return a.r-b.r;})[0]||null;
@@ -3124,7 +3137,7 @@ function buildLeverageBars(){
         var msg='☕ 今日已投入 '+tc+' 杯咖啡';
         if(cr!==undefined&&cr<-0.15){
           msg+='。依長期規律（r='+cr.toFixed(2)+'）';
-          if(est)msg+='，預估次日睡眠戰力潛在 −'+est+' 分';
+          if(est)msg+='，預估次日睡眠品質分潛在 −'+est+' 分';
           msg+='。今晚請於 22:30 前完成大腦熔斷，以物理抵消殘留影響。';
         }else{msg+='（依現有資料量咖啡影響尚不顯著，持續觀察中）。';}
         insights.push(msg);
@@ -3134,7 +3147,7 @@ function buildLeverageBars(){
         if(wr!==undefined&&wr>0.15){
           var need=2500-tw,est2=ws&&ws*need>=0.5?Math.round(ws*need):null;
           var msg2='💧 今日飲水量 '+tw+'ml，距 2500ml 還差 '+need+'ml';
-          if(est2&&est2>0)msg2+='（補足後次日睡眠戰力估計回升 +'+est2+' 分）';
+          if(est2&&est2>0)msg2+='（補足後次日睡眠品質分估計回升 +'+est2+' 分）';
           insights.push(msg2+'。今晚睡前補足差額。');
         }
       }
@@ -3142,15 +3155,15 @@ function buildLeverageBars(){
         var mr=rIdx['mood'];
         if(mr!==undefined&&Math.abs(mr)>0.2){
           if(tm>=7&&mr>0)insights.push('🌊 今日情緒良好（'+tm+' 分），依規律（r=+'+mr.toFixed(2)+'）有助鎖入明日高戰力，維持今晚穩定作息。');
-          else if(tm<5&&mr>0)insights.push('🌊 今日情緒低谷（'+tm+' 分），依規律次日睡眠戰力承壓。今晚以靜息防禦為主，22:30 前上床。');
+          else if(tm<5&&mr>0)insights.push('🌊 今日情緒低谷（'+tm+' 分），依規律次日睡眠品質分承壓。今晚以靜息防禦為主，22:30 前上床。');
         }
       }
     }else if(_levTab==='mood'){
       if(rawCombat&&rawCombat>0){
         var cr3=rIdx['combat'];
         if(cr3!==undefined&&Math.abs(cr3)>0.2){
-          if(rawCombat>=70)insights.push('⚡ 今日睡眠戰力 '+rawCombat+' 分（r='+(cr3>=0?'+':'')+cr3.toFixed(2)+'），有助情緒穩定，可安排中高強度任務。');
-          else if(rawCombat<55)insights.push('⚡ 今日睡眠戰力偏低（'+rawCombat+' 分），依規律情緒基線承壓，今日避免高情緒耗損場景。');
+          if(rawCombat>=70)insights.push('⚡ 今日睡眠品質分 '+rawCombat+' 分（r='+(cr3>=0?'+':'')+cr3.toFixed(2)+'），有助情緒穩定，可安排中高強度任務。');
+          else if(rawCombat<55)insights.push('⚡ 今日睡眠品質分偏低（'+rawCombat+' 分），依規律情緒基線承壓，今日避免高情緒耗損場景。');
         }
       }
       if(tc!==undefined&&tc>0){
@@ -3161,8 +3174,8 @@ function buildLeverageBars(){
       if(rawCombat&&rawCombat>0){
         var cr5=rIdx['combat'];
         if(cr5!==undefined&&cr5>0.2){
-          if(rawCombat>=70)insights.push('⚡ 今日睡眠戰力 '+rawCombat+' 分（r=+'+cr5.toFixed(2)+'），今日完成率有良好生理支撐，可挑戰高密度任務。');
-          else if(rawCombat<55)insights.push('⚡ 今日睡眠戰力偏低（'+rawCombat+' 分），依規律今日完成率承壓，建議輕量配速。');
+          if(rawCombat>=70)insights.push('⚡ 今日睡眠品質分 '+rawCombat+' 分（r=+'+cr5.toFixed(2)+'），今日完成率有良好生理支撐，可挑戰高密度任務。');
+          else if(rawCombat<55)insights.push('⚡ 今日睡眠品質分偏低（'+rawCombat+' 分），依規律今日完成率承壓，建議輕量配速。');
         }
       }
       if(tm!==undefined){
