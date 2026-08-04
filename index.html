@@ -409,6 +409,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="pace-body" id="pace-body">—</div>
     <div class="dd" id="pace-pills"></div>
     <div id="inertia-alert" style="display:none"></div>
+    <div id="noday-alert" style="display:none"></div>
     <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
       <div class="lbl" style="margin-bottom:.4rem">睡眠負債影響</div>
       <div id="debt-status-pill" style="margin-bottom:.5rem">—</div>
@@ -955,6 +956,7 @@ function updateCombat(score,skipAnim){
   // 08-04：兩函式同一輪都要用睡眠代理值，算一次共用，避免各自重解析sas_sleep_latest
   var _sqShared=getSleepQualityMap();
   buildInertiaAlert(score,_sqShared);
+  try{buildNoDayAlert();}catch(e){}
   buildAlignToday(score);
   try{checkDataFreshness();}catch(e){}
   try{buildRiskLight(score,_sqShared);}catch(e){}
@@ -1026,6 +1028,49 @@ function dkey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0
 function today(){return dkey(new Date());}
 function getReview(k){try{return JSON.parse(localStorage.getItem('review_'+k)||'null');}catch(e){return null;}}
 
+/* ── 任務完成率統一口徑（2026-08-04 使用者定案） ─────────────────────────
+   Daily Optimizer 寫入 review_YYYY-MM-DD 的 items 有四種 status：
+     'done' 完成      → 1 分
+     'part' 部分完成  → 0.5 分
+     'skip' 未做      → 0 分（沒特別理由，維持現況，這狀態不視為問題）
+     'no'   ⊘不做     → 有意識決定不做，不是失敗，分子分母都排除
+   特例：排除 'no' 之後已無可算項目（整天全部 ⊘不做）→ 該日完成率記 1（100%）。
+   真正沒有任何項目（空陣列／無覆盤）→ 回傳 null，由呼叫端決定顯示方式。
+   注意：全 no 天記 100% 可能掩蓋「連續有意識放棄」訊號，故另由 buildNoDayAlert()
+   追蹤連續全 no 天數獨立示警，兩者搭配使用，不要只看完成率。 */
+function taskScore(status){
+  if(status==='done')return 1;
+  if(status==='part')return 0.5;
+  return 0;                                   // 'skip' 與其他未知狀態一律 0 分
+}
+function isNoTask(status){return status==='no';}
+/* 完成率計算要排除的項目：⊘不做，以及 null／非物件的損壞項目
+   （損壞項目若留在分母會被當 0 分，把完成率無故拉低，故一律不計入分子分母）。
+   注意 status 欄位缺漏（{name:'x'}）不算損壞，仍計入分母並得 0 分。 */
+function isExcludedItem(it){return !it||typeof it!=='object'||isNoTask(it.status);}
+function calcCompletionRate(items){
+  if(!items||!items.length)return null;       // 無資料，非 0 也非 1
+  var eff=items.filter(function(it){return !isExcludedItem(it);});
+  if(!eff.length)return 1;                    // 整天全部 ⊘不做 → 記 100%
+  var sum=eff.reduce(function(a,it){return a+taskScore(it.status);},0);
+  return sum/eff.length;
+}
+/* 加權完成「件數」，供跨天/跨類別累加用（分母請用 calcEffectiveCount） */
+function calcDoneScore(items){
+  if(!items||!items.length)return 0;
+  return items.reduce(function(a,it){return a+(isExcludedItem(it)?0:taskScore(it.status));},0);
+}
+/* 排除 ⊘不做 之後的有效項目數（跨天累加時的分母） */
+function calcEffectiveCount(items){
+  if(!items||!items.length)return 0;
+  return items.filter(function(it){return !isExcludedItem(it);}).length;
+}
+/* 這一天是否「有任務、且全部標記為 ⊘不做」
+   刻意用嚴格的 isNoTask 而非 isExcludedItem：整天都是損壞項目不該觸發「連續有意識放棄」假警報。 */
+function isAllNoDay(items){
+  return !!(items&&items.length&&items.every(function(it){return isNoTask(it&&it.status);}));
+}
+
 function getMoods(){
   try{
     // Try wellness_v5 first (current version), fallback to v4
@@ -1080,9 +1125,8 @@ function alignClass(mood,combat,doneRate){
 function buildAlignToday(combat){
   var moods=getMoods();var todayMood=moods.find(m=>m.date===today());
   var rev=getReview(today());var items=rev?(rev.items||[]):[];
-  var done=items.filter(i=>i.status==='done').length;
-  if(!todayMood||!items.length){$('align-today').innerHTML='<span style="font-size:.68rem;color:var(--faint)">今日尚無完整紀錄</span>';return;}
-  var dr=done/items.length;
+  var dr=calcCompletionRate(items);   // 統一口徑：part 0.5、⊘不做排除、全 no 天記 1
+  if(!todayMood||dr===null){$('align-today').innerHTML='<span style="font-size:.68rem;color:var(--faint)">今日尚無完整紀錄</span>';return;}
   var cls=alignClass(todayMood.score,combat,dr);
   var html=cls==='over'?'<span class="align-badge align-over">⚡ 意志力透支</span><div style="font-size:.65rem;color:var(--sub);margin-top:4px">狀態偏低但完成度高，預測'+(_lag?_lag+'天':'1–3天')+'內戰力下行。</div>'
     :cls==='under'?'<span class="align-badge align-under">💭 低輸出</span><div style="font-size:.65rem;color:var(--sub);margin-top:4px">狀態良好但完成度低，確認優先順序。</div>'
@@ -1101,7 +1145,7 @@ function buildInertiaAlert(combat,sqMap){
   for(var i=moods.length-3;i<moods.length-1;i++){
     var rev=getReview(moods[i].date);if(!rev)continue;
     var items=rev.items||[];if(!items.length)continue;
-    var dr=items.filter(t=>t.status==='done').length/items.length;
+    var dr=calcCompletionRate(items);if(dr===null)continue;
     // 過去日期用當日睡眠代理值，不套用今天的combat（否則歷史紅點會隨今天狀態每天漂移）
     var proxyC=_sqMap[moods[i].date]!==undefined?_sqMap[moods[i].date]*10:combat;
     if(alignClass(moods[i].score,proxyC,dr)==='over')overDays++;
@@ -1116,6 +1160,35 @@ function buildInertiaAlert(combat,sqMap){
     cls='warn';html='<div class="inertia-label" style="color:var(--warn)">⏱ 慣性提醒 — 情緒修復具備滯後性</div>戰力已回升，但情緒波谷後修復通常滯後1–2天。今日建議維持「防禦性排程」，不宜貿然衝量。';
   }else{el.style.display='none';return;}
   el.className='inertia-box '+cls;el.innerHTML=html;el.style.display='block';
+}
+
+/* ⊘不做 連續天數警示（2026-08-04）
+   新口徑把「整天所有任務都標記 ⊘不做」的日子算成 100% 完成率，避免有意識的取捨被記為失敗；
+   但這樣一來「連續好幾天整天全放棄」反而會被 100% 掩蓋掉，所以另外獨立追蹤連續天數示警。
+   計數規則：從今天往回掃最多 30 天，遇到「有任務但不是全 no」就中斷；
+   今天尚未覆盤（無 items）不算中斷（覆盤通常晚上才做），其餘無紀錄日視為中斷；
+   restMode 休假日比照本檔其他統計（analyzeLastWeek、週視圖）整天略過，
+   既不累加也不中斷——連休兩天又把任務標⊘不做會誤觸警示，那是假警報。 */
+function buildNoDayAlert(){
+  var el=$('noday-alert');if(!el)return;
+  var streak=0;
+  for(var i=0;i<30;i++){
+    var d=new Date();d.setDate(d.getDate()-i);
+    var rev=getReview(dkey(d));
+    if(rev&&rev.restMode)continue;             // 休假日略過，不計入也不中斷
+    var items=rev?(rev.items||[]):[];
+    if(!items.length){if(i===0)continue;break;}
+    if(isAllNoDay(items))streak++;else break;
+  }
+  if(streak>=2){
+    el.className='inertia-box warn';
+    el.innerHTML='<div class="inertia-label" style="color:var(--warn)">⚠ 連續有意識放棄</div>已連續'+streak+
+      '天全部任務標記為 ⊘不做。這些天的完成率計為 100%（有意識的取捨不算失敗），但連續'+streak+
+      '天整天全放棄本身就是訊號，留意是否過載、或任務設定與現況脫節。';
+    el.style.display='block';
+  }else{
+    el.style.display='none';
+  }
 }
 
 /* 資料新鮮度檢查（2026-07-19）：sas_sleep_latest 最新一夜的日期若比今天早2天以上，
@@ -1169,7 +1242,7 @@ function buildRiskLight(combat,sqMap){
   var moods=getMoods();var yMood=moods.find(m=>m.date===ykey);
   var rev=getReview(ykey);var items=rev?(rev.items||[]):[];
   if(yMood&&items.length){
-    var dr=items.filter(function(i){return i.status==='done';}).length/items.length;
+    var dr=calcCompletionRate(items);
     // 用「昨天」當日的睡眠代理值，不套用今天的c（否則昨日透支判定會隨今天狀態漂移）
     // 08-04：可選傳入sqMap避免與buildInertiaAlert在同一次updateCombat()裡各自重解析
     var _sqY=sqMap||getSleepQualityMap();
@@ -1270,7 +1343,7 @@ function calcLag(moods){
   for(var di=0;di<90;di++){
     var d=new Date();d.setDate(d.getDate()-di);var k=dkey(d);
     var rev=getReview(k);
-    if(rev){var items=rev.items||[];if(items.length>0)doneMap[k]=items.filter(t=>t.status==='done').length/items.length;}
+    if(rev){var items=rev.items||[];var cr=calcCompletionRate(items);if(cr!==null)doneMap[k]=cr;}
   }
   // 情緒依日期升序排列
   var sorted=moods.filter(m=>m.date).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
@@ -1549,7 +1622,7 @@ function rebuildCorrChart(){
     if(rev&&ms!==null){
       var items=rev.items||[];
       if(items.length>0){
-        var dr=items.filter(t=>t.status==='done').length/items.length;
+        var dr=calcCompletionRate(items);
         // 用當天已算出的cs（睡眠代理值）而非今天的_combat，避免歷史對齊判定隨今天狀態漂移
         var cls=alignClass(ms,cs!==null?cs*10:(_combat||50),dr);
         compLine.push(parseFloat((dr*10).toFixed(1)));
@@ -1590,7 +1663,7 @@ function rebuildCorrChart(){
     if(msj===null)continue;
     var revj=getReview(kj);if(!revj)continue;
     var itmj=revj.items||[];if(!itmj.length)continue;
-    var drj=itmj.filter(t=>t.status==='done').length/itmj.length;
+    var drj=calcCompletionRate(itmj);if(drj===null)continue;
     var csj=combatMap[kj]!==undefined?combatMap[kj]:null;
     if(alignClass(msj,csj!==null?csj*10:(_combat||50),drj)==='over')overDates.push(kj);
   }
@@ -1680,7 +1753,8 @@ function renderPipeAlign(){
 
 function buildTaskTaxonomy(){
   var counts={logic:0,social:0,input:0,other:0};
-  var done_counts={logic:0,social:0,input:0,other:0};
+  var done_counts={logic:0,social:0,input:0,other:0};   // 加權完成分（done 1 / part 0.5）
+  var eff_counts={logic:0,social:0,input:0,other:0};    // 排除 ⊘不做 後的有效分母
   var skipsLow={logic:0,social:0,input:0,other:0};
   var skipsLowDetails={logic:[],social:[],input:[],other:[]};
   var taskLists={logic:[],social:[],input:[],other:[]};
@@ -1692,10 +1766,12 @@ function buildTaskTaxonomy(){
     var isLow=ms<5||(_combat&&_combat<40);
     (rev.items||[]).forEach(item=>{
       var cat=classifyTask(item.name);
-      counts[cat]++;
-      var isDone=item.status==='done';
-      if(isDone)done_counts[cat]++;
-      else if(isLow){skipsLow[cat]++;skipsLowDetails[cat].push({name:item.name,date:(d.getMonth()+1)+'/'+(d.getDate())});}
+      counts[cat]++;                                   // 佔比分母保留全部任務（含 ⊘不做）
+      var isDone=item.status==='done';                 // 明細列的 ✓ 圖示仍只看「真的做完」
+      // 完成率分子分母改走統一口徑：⊘不做整筆排除、part 記 0.5
+      if(!isNoTask(item.status)){eff_counts[cat]++;done_counts[cat]+=taskScore(item.status);}
+      // ⊘不做是有意識的決定，不是低狀態下的放棄，不列入 skipsLow
+      if(!isDone&&!isNoTask(item.status)&&isLow){skipsLow[cat]++;skipsLowDetails[cat].push({name:item.name,date:(d.getMonth()+1)+'/'+(d.getDate())});}
       if(i<7){var dd=new Date();dd.setDate(dd.getDate()-i);taskLists[cat].push({name:item.name,status:item.status||'',date:(dd.getMonth()+1)+'/'+(dd.getDate()),done:isDone});}
     });
   }
@@ -1708,9 +1784,10 @@ function buildTaskTaxonomy(){
   var bars=$('tax-bars');
   if(bars)bars.innerHTML=legend+defs.map(d=>{
     var pct=Math.round(counts[d.k]/total*100);
-    var donePct=counts[d.k]?Math.round(done_counts[d.k]/counts[d.k]*100):0;
+    // 分母改用 eff_counts（排除 ⊘不做）；該類全部 ⊘不做時依定案口徑記 100%
+    var donePct=eff_counts[d.k]?Math.round(done_counts[d.k]/eff_counts[d.k]*100):(counts[d.k]?100:0);
     var tasks=taskLists[d.k];
-    var taskHtml=tasks.length?tasks.map(t=>'<div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid var(--border);font-size:.65rem"><span style="color:'+(t.done?'var(--ok)':t.status==='skip'?'var(--warn)':'var(--faint)')+';flex-shrink:0;font-size:.75rem">'+(t.done?'✓':t.status==='skip'?'→':'○')+'</span><span style="color:var(--sub);flex:1">'+t.name+'</span><span style="color:var(--faint);font-size:.6rem;white-space:nowrap">'+t.date+'</span></div>').join(''):
+    var taskHtml=tasks.length?tasks.map(t=>'<div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid var(--border);font-size:.65rem"><span style="color:'+(t.done?'var(--ok)':t.status==='part'?'var(--info)':t.status==='skip'?'var(--warn)':'var(--faint)')+';flex-shrink:0;font-size:.75rem">'+(t.done?'✓':t.status==='part'?'◐':t.status==='skip'?'→':t.status==='no'?'⊘':'○')+'</span><span style="color:var(--sub);flex:1">'+t.name+'</span><span style="color:var(--faint);font-size:.6rem;white-space:nowrap">'+t.date+'</span></div>').join(''):
       '<div style="font-size:.65rem;color:var(--faint);padding:4px 0">近7日無記錄</div>';
     return '<div style="margin-bottom:5px">'+
       '<div class="tax-bar-row" onclick="toggleExpand(&quot;ex-'+d.k+'&quot;)" style="cursor:pointer">'+
@@ -1825,8 +1902,8 @@ function renderWeekStrip(moodMap){
         :'<div class="day-score-ring empty">—</div>';
       var factors=mood?(mood.factors||[]).slice(0,3).map(f=>'<div class="day-factor-tag">'+f+'</div>').join(''):'';
       var wrev=!isFuture?getReview(k):null;var witems=wrev?(wrev.items||[]):[];
-      var wdone=witems.filter(t=>t.status==='done').length;
-      var wpct=witems.length?Math.round(wdone/witems.length*100):null;
+      var wcr=calcCompletionRate(witems);
+      var wpct=wcr!==null?Math.round(wcr*100):null;
       var wpcol=wpct!==null?(wpct>=80?'var(--ok)':wpct>=50?'var(--warn)':'var(--danger)'):'';
       var isVacDay=!isFuture&&(!wrev||wrev.restMode);
       var restTag='<div style="font-size:.55rem;color:#7a9e8a;font-weight:600;margin-top:3px;height:14px;line-height:14px;overflow:hidden">'+(isVacDay?'🌿 休假':'')+'</div>';
@@ -2002,13 +2079,19 @@ async function analyzeLastWeek(){
     if(!rev||rev.restMode){vacCount++;return;}
     if(rev.items&&rev.items.length){
       taskDays++;
-      taskDoneSum+=rev.items.filter(function(t){return t.status==='done';}).length;
-      taskTotalSum+=rev.items.length;
+      // 統一口徑：done 1 分、part 0.5 分、skip 0 分，⊘不做的項目分子分母都排除
+      taskDoneSum+=calcDoneScore(rev.items);
+      taskTotalSum+=calcEffectiveCount(rev.items);
     }
   });
-  var taskDoneRate=taskTotalSum>0?Math.round(taskDoneSum/taskTotalSum*100)+'%':'無資料';
+  // taskTotalSum===0 但 taskDays>0 代表整週有紀錄的日子全部標記 ⊘不做 → 依定案口徑記 100%
+  var taskAllNo=taskTotalSum===0&&taskDays>0;
+  var taskDoneRate=taskTotalSum>0?Math.round(taskDoneSum/taskTotalSum*100)+'%':(taskAllNo?'100%':'無資料');
   var vacNote=vacCount>0?'，'+vacCount+' 天休假':'';
-  var taskSummary=taskTotalSum>0?taskDoneSum+'/'+taskTotalSum+' 項（'+taskDays+' 天有紀錄'+vacNote+'）':'無任務紀錄'+(vacCount>0?'（'+vacCount+' 天休假）':'');
+  var _fmtSum=function(v){return Math.round(v*10)/10;};   // 加權分可能出現 .5
+  var taskSummary=taskTotalSum>0?_fmtSum(taskDoneSum)+'/'+taskTotalSum+' 項（'+taskDays+' 天有紀錄'+vacNote+'）'
+    :taskAllNo?'全部標記 ⊘不做（'+taskDays+' 天有紀錄'+vacNote+'）'
+    :'無任務紀錄'+(vacCount>0?'（'+vacCount+' 天休假）':'');
 
   // 睡眠維度：上週每日三日加權戰力均值
   var lwCombatVals=[];
@@ -2054,7 +2137,7 @@ async function analyzeLastWeek(){
   // 顯示上週數字摘要
   if(statRow){
     var moodColor=parseFloat(avg)>=7?'var(--ok)':parseFloat(avg)>=4?'var(--warn)':'var(--danger)';
-    var taskColor=taskTotalSum>0?(taskDoneSum/taskTotalSum>=0.7?'var(--ok)':taskDoneSum/taskTotalSum>=0.4?'var(--warn)':'var(--danger)'):'var(--faint)';
+    var taskColor=taskTotalSum>0?(taskDoneSum/taskTotalSum>=0.7?'var(--ok)':taskDoneSum/taskTotalSum>=0.4?'var(--warn)':'var(--danger)'):(taskAllNo?'var(--ok)':'var(--faint)');
     var combatStatColor=lwCombatAvg!==null?(lwCombatAvg>=70?'var(--ok)':lwCombatAvg>=60?'var(--warn)':'var(--danger)'):'var(--faint)';
     var statItems=[
       ['情緒均值',avg+' / 10',moodColor],
@@ -2287,8 +2370,11 @@ function buildDualTrackAggregation() {
     // 覆盤停損統計
     var items=rev.items||[];
     var totalIt=items.length;
-    var skipIt=items.filter(function(it){return it.status==='skip';}).length;
-    var doneIt=items.filter(function(it){return it.status==='done';}).length;
+    // 停損率分母改用排除 ⊘不做 後的有效項目數：⊘不做是有意識的取捨，
+    // 留在分母只會稀釋停損率（例：5 項中 3 項⊘不做+1 skip+1 done，舊算法 20%，正確應為 50%）
+    var effIt=calcEffectiveCount(items);
+    var skipIt=items.filter(function(it){return it&&it.status==='skip';}).length;
+    var doneIt=items.filter(function(it){return it&&it.status==='done';}).length;
 
     corrRows.push({
       date:k,
@@ -2297,9 +2383,10 @@ function buildDualTrackAggregation() {
       maxPipePressure:maxPressure,
       isOverloaded:maxPressure>=3,
       totalItems:totalIt,
+      effectiveItems:effIt,
       skipCount:skipIt,
       doneCount:doneIt,
-      stopLossRate:totalIt>0?Math.round(skipIt/totalIt*100):0
+      stopLossRate:effIt>0?Math.round(skipIt/effIt*100):0
     });
   }
 
@@ -2327,7 +2414,7 @@ function buildDualTrackAggregation() {
     insight:{
       overloadAtHighREM:tiers.high.overloadRate,
       stopLossAtLowREM :tiers.low.avgStopLossRate,
-      note:'overloadRate=pipe壓力≥3的天數%；stopLossRate=items中skip%'
+      note:'overloadRate=pipe壓力≥3的天數%；stopLossRate=skip佔有效項目%（分母 effectiveItems 已排除⊘不做）'
     },
     raw:corrRows
   };
@@ -2663,8 +2750,19 @@ function renderDualTrackCard(){
         taskStr='🌿 休假中'+(rev1.restNote?' — '+rev1.restNote:'');
       } else {
         var items1=rev1.items||[];
-        var done1=items1.filter(function(t){return t.status==='done';}).length;
-        taskStr=done1+'/'+items1.length+' 件完成（'+(rev1.mode||'未知')+' · '+(rev1.feel||'未知')+'）';
+        var mf1=(rev1.mode||'未知')+' · '+(rev1.feel||'未知');
+        if(!items1.length){
+          // 當天有覆盤但沒填任何任務（例如只記了 energy_log）→ 就是無記錄，
+          // 不可落進「全部⊘不做」的分支，否則會顯示自相矛盾的假陳述
+          taskStr='無記錄（'+mf1+'）';
+        }else{
+          // 統一口徑：顯示加權完成率，⊘不做的件數不計入分母但單獨標示出來
+          var eff1=calcEffectiveCount(items1);
+          var no1=items1.length-eff1;
+          var detail1=eff1>0?(Math.round(calcDoneScore(items1)*10)/10)+'/'+eff1+' 件'+(no1>0?'，'+no1+' 件⊘不做':'')
+            :'全部 ⊘不做（'+items1.length+' 件）';
+          taskStr=Math.round(calcCompletionRate(items1)*100)+'%（'+detail1+' · '+mf1+'）';
+        }
       }
     }
     var rf1=getRefuelerByDate(dayN1);
@@ -3000,8 +3098,10 @@ function buildLeverageBars(){
   for(var di=31;di>=0;di--){
     var dd=new Date();dd.setDate(dd.getDate()-di);var dk=dkey(dd);
     var drev=getReview(dk);
-    if(drev&&drev.items&&drev.items.length)
-      doneByDate[dk]=drev.items.filter(function(t){return t.status==='done';}).length/drev.items.length;
+    if(drev&&drev.items&&drev.items.length){
+      var dcr=calcCompletionRate(drev.items);
+      if(dcr!==null)doneByDate[dk]=dcr;
+    }
   }
   // ── 建立 (目標日 t, 行為日 f = t-1) 配對 + 週末雙日過濾 ──
   // T-1 因果對齊：前一日行為因子 → 次日睡眠/情緒/完成率
@@ -3228,7 +3328,7 @@ function _frDoneRateMap(days){
   var map={};
   days.forEach(function(k){
     var rev=getReview(k);
-    if(rev&&rev.items&&rev.items.length)map[k]=rev.items.filter(function(t){return t.status==='done';}).length/rev.items.length*100;
+    if(rev&&rev.items&&rev.items.length){var fcr=calcCompletionRate(rev.items);if(fcr!==null)map[k]=fcr*100;}
   });
   return map;
 }
