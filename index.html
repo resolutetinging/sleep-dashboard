@@ -1746,13 +1746,33 @@ function rebuildCorrChart(){
 }
 function renderPipeAlign(){
   var el=$('corr-align');if(!el)return;
-  var pr={};try{pr=JSON.parse(localStorage.getItem('sas_pipe_review')||'{}');}catch(e){}
+  var raw=null;try{raw=JSON.parse(localStorage.getItem('sas_pipe_review')||'[]');}catch(e){}
+  // 新格式為陣列；08-05 前的單一物件舊格式包成一筆陣列，確保舊資料不會突然看不到
+  var log=Array.isArray(raw)?raw:(raw&&raw.date?[raw]:[]);
   var todayStr=dkey(new Date());
-  if(!pr.items||!pr.items.length){
-    el.textContent=pr.date===todayStr?'今日無配速警告事件，模型無需校正。':'尚無今日資料（請在 Daily Optimizer 點「✦ 生成 AI 反饋」後自動更新）。';
+  // 近14天無視警告率：警告任務仍完成（inconsistent）的比例；樣本 <3 筆時不顯示，避免小樣本誤導
+  // 先算好再走 early return，否則最常見的「今日零警告事件」情況永遠看不到這段統計
+  var cut=new Date();cut.setDate(cut.getDate()-13);var cutStr=dkey(cut);
+  var flat=[];log.forEach(function(e){
+    if(!e||!e.date||e.date<cutStr||e.date>todayStr)return;
+    (e.items||[]).forEach(function(i){flat.push(i);});
+  });
+  var ignoreLine='';
+  if(flat.length>=3){
+    var ig=flat.filter(function(i){return i.verdict==='inconsistent';}).length;
+    ignoreLine='📊 <strong>近14天無視警告率</strong>：'+Math.round(ig/flat.length*100)+'%（'+ig+'/'+flat.length+'次警告任務仍完成）';
+  }
+  var pr=null;for(var pi=0;pi<log.length;pi++){if(log[pi]&&log[pi].date===todayStr)pr=log[pi];}
+  if(!pr||!pr.items||!pr.items.length){
+    var msg;
+    if(pr){msg='今日無配速警告事件，模型無需校正。';}
+    else{
+      var last=null;for(var pj=0;pj<log.length;pj++){if(log[pj]&&log[pj].items&&log[pj].items.length)last=log[pj];}
+      msg=last?'資料來自 '+last.date+'，請今日覆盤後重新整頁。':'尚無今日資料（請在 Daily Optimizer 點「✦ 生成 AI 反饋」後自動更新）。';
+    }
+    if(ignoreLine)el.innerHTML=msg+'<br><br>'+ignoreLine;else el.textContent=msg;
     return;
   }
-  if(pr.date!==todayStr){el.textContent='資料來自 '+pr.date+'，請今日覆盤後重新整頁。';return;}
   var consistent=pr.items.filter(function(i){return i.verdict==='consistent';});
   var inconsistent=pr.items.filter(function(i){return i.verdict==='inconsistent';});
   var parts=[];
@@ -1763,6 +1783,7 @@ function renderPipeAlign(){
   if(inconsistent.length)parts.push('⚡ <strong>模型校正信號</strong>：'
     +inconsistent.map(function(i){return'「'+i.task+'」';}).join('')
     +'在預測低能時段完成，可能為心流驅動或疲勞滯後延遲，建議觀察後續狀態，納入下次戰力推論的修正依據。');
+  if(ignoreLine)parts.push(ignoreLine);
   el.innerHTML=parts.join('<br><br>');
 }
 
@@ -2620,11 +2641,18 @@ function renderDualTrackCard(){
     var coffee=dayEntries.filter(function(e){return e.type==='coffee';});
     var water=dayEntries.filter(function(e){return e.type==='water';});
     var waterTotal=water.reduce(function(s,e){return s+(e.amount||0);},0);
+    var lastCoffeeTime=null;
+    if(coffee.length>0){
+      var lastEntry=coffee.reduce(function(a,b){return new Date(b.timestamp)>new Date(a.timestamp)?b:a;});
+      var lct=new Date(lastEntry.timestamp);
+      lastCoffeeTime=String(lct.getHours()).padStart(2,'0')+':'+String(lct.getMinutes()).padStart(2,'0');
+    }
     return{
       coffeeCount:coffee.length,
       coffeeHas:coffee.length>0,
       waterTotal:waterTotal,
-      waterHas:water.length>0
+      waterHas:water.length>0,
+      lastCoffeeTime:lastCoffeeTime
     };
   }
   // Phase C 因子雷達圖需在全域呼叫 getRefuelerByDate（本函式原僅為此 IIFE 內部使用），
@@ -2803,6 +2831,27 @@ function renderDualTrackCard(){
     appendStatRow(t1Card,'⏰ 入睡時刻',bedtime?bedtime+'（'+dayN1+' 當晚）':'無記錄');
     appendStatRow(t1Card,'💧 進水量',rf1.waterHas?rf1.waterTotal+' ml':'無記錄');
     appendStatRow(t1Card,'☕ 咖啡攝取量',rf1.coffeeHas?rf1.coffeeCount+' 杯':'無記錄');
+    // 末杯時刻與入睡間隔：兩者皆為純 HH:MM（無日期），咖啡恆早於入睡，
+    // 若「入睡時刻」在時鐘上早於「咖啡時刻」代表跨過午夜，需補一天分鐘數再相減。
+    var lastCoffeeStr='無記錄';
+    if(rf1.lastCoffeeTime){
+      if(!bedtime){
+        lastCoffeeStr=rf1.lastCoffeeTime;
+      }else{
+        var cParts=rf1.lastCoffeeTime.split(':');
+        var bParts=bedtime.split(':');
+        var cMin=(+cParts[0])*60+(+cParts[1]);
+        var bMin=(+bParts[0])*60+(+bParts[1]);
+        var diffMin=bMin-cMin;
+        if(diffMin<0) diffMin+=24*60;
+        var gapH=Math.round(diffMin/60*10)/10;
+        lastCoffeeStr=rf1.lastCoffeeTime+'（距入睡 '+gapH+' 小時）';
+        if(gapH<6){
+          lastCoffeeStr+=' ⚠️ 距入睡不足6小時，可留意咖啡因是否影響入睡';
+        }
+      }
+    }
+    appendStatRow(t1Card,'☕ 末杯時刻',lastCoffeeStr);
 
     // 一次讀取 mental map，後面兩個區塊共用
     var mentalMap=getMentalByDate();
