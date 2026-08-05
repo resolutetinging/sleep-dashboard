@@ -436,7 +436,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
       <div class="lbl" style="margin-bottom:5px">指標定義</div>
       <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--faint);line-height:1.6">
-        <div><strong style="color:var(--text)">戰力</strong>：Deep×0.7＋REM×0.3，以2h為滿分基準，睡眠債修正後計算（0–100）</div>
+        <div><strong style="color:var(--text)">戰力</strong>：Deep×0.7＋REM×0.3，以2h為滿分基準，睡眠債修正後計算（0–100），取近3晚加權<span style="color:var(--faint)">（代表「現在」真實體感，非單晚）</span></div>
         <div><strong style="color:var(--text)">情緒</strong>：wellness journal 手動紀錄分數（1–10），去噪後的內在基準值</div>
         <div><strong style="color:var(--text)">壓力</strong>：綜合影響因子密度估算，暫為固定示意值（待連接 optimizer 數據）</div>
       </div>
@@ -576,7 +576,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div>
           <div style="font-weight:700;color:var(--text);margin-bottom:3px">Y 軸尺度（統一 0–10）</div>
           <div>情緒分：wellness journal 原始值（0–10）</div>
-          <div>睡眠品質分：原始分（0–100）÷ 10，圖上 7 = 品質分 70</div>
+          <div>睡眠品質分：原始分（0–100）÷ 10，圖上 7 = 品質分 70<span style="color:var(--faint)">（單晚原始值，不做多晚加權或睡眠債修正，跟戰力儀表的「戰力」是不同算法，兩者數值不會一樣）</span></div>
           <div>完成度點：完成率（0–1）× 10，圖上 7 = 完成 70%</div>
           <div style="margin-top:5px;color:var(--faint)">⚠ 三條線數值可對齊比較，但語意不同，用於觀察趨勢相關性。</div>
           <div style="margin-top:4px;color:var(--faint)">睡眠品質分歷史僅保留近 7 天，超出範圍顯示為空白。</div>
