@@ -352,6 +352,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <span class="risk-text" id="overload-text">—</span>
     <span class="risk-detail" id="overload-detail"></span>
   </div>
+  <div class="risk-row" id="energy-corr-row" style="display:none" title="連續提早熄燈（實際斷電時刻早於推算的續航終點）達3天以上時，SAS Hub 會自動調整 Daily Optimizer 的高強度任務權重">
+    <span class="risk-label">校正</span>
+    <span class="pill p-warn" id="energy-corr-text">—</span>
+  </div>
   <div style="margin-top:2px;padding-top:6px;border-top:.5px solid var(--border)">
     <span onclick="toggleExpand('risk-def')" style="font-size:.65rem;color:var(--faint);cursor:pointer;text-decoration:underline;text-underline-offset:2px">燈號定義 ▾</span>
     <div id="risk-def" style="display:none;margin-top:6px;font-size:.65rem;color:var(--faint);line-height:1.75">
@@ -1278,9 +1282,13 @@ function buildWeekPressure(){
   if(nOc>=3)flags.push('高效超頻日'+nOc+'天');
   if(nFc===0)flags.push('無全面充能日');
   if(nDf===0)flags.push('無低能耗防禦日');
+  // 慢性耗竭死角：原本 Total-Defense 只有「===0」算一項命中，但整週都在低能耗防禦
+  // （慢性耗竭）才是最該示警的情況，卻反而不會多算。比照 Overclock 的兩段式門檻補上：
+  // >=4 多算一項命中、>=5 直接判紅。
+  if(nDf>=4)flags.push('持續低能耗防禦'+nDf+'天');
 
-  // nOc>=5 沿用既有「極端紅線」門檻，單一指標嚴重到直接判紅，不必等湊滿2項
-  var level=(nOc>=5||flags.length>=2)?'r':flags.length===1?'a':'g';
+  // nOc>=5 / nDf>=5 沿用既有「極端紅線」門檻，單一指標嚴重到直接判紅，不必等湊滿2項
+  var level=(nOc>=5||nDf>=5||flags.length>=2)?'r':flags.length===1?'a':'g';
   if(level==='r'){
     txt.textContent='🔴 壓力過高';det.textContent=flags.length?flags.join('、'):'高效超頻日達'+nOc+'天';
   }else if(level==='a'){
@@ -1288,6 +1296,9 @@ function buildWeekPressure(){
   }else{
     txt.textContent='🟢 節奏健康';det.textContent='過去7天能量分布正常';
   }
+  // 供 Control Center Guard 讀取（格式比照 sas_risk_flags）。這是「持續性長期狀態」，
+  // Guard 端只做視覺提示不強制中止，理由見 CC checkGuard() 的註解。
+  try{localStorage.setItem('sas_week_flags',JSON.stringify({level:level,flags:flags,ts:Date.now()}));}catch(e){}
 }
 
 // 白天任務配速頻率：讀 Daily Optimizer 寫入的 sas_overload_log（date/overloadCount/allDone），
@@ -1303,6 +1314,8 @@ function buildOverloadFreq(){
   var recent=log.slice(-WINDOW);
   if(!recent.length){
     txt.textContent='—';det.textContent='尚無水管排程記錄';
+    // 無資料時仍寫入綠燈，避免舊的紅燈殘留在 localStorage 讓 Guard 一直提示
+    try{localStorage.setItem('sas_pace_flags',JSON.stringify({level:'g',flags:[],ts:Date.now()}));}catch(e){}
     return;
   }
   var overloadDays=recent.filter(function(d){return d.overloadCount>0;});
@@ -1322,6 +1335,8 @@ function buildOverloadFreq(){
   }else{
     txt.textContent='🟢 配速穩定';det.textContent='近'+recent.length+'筆記錄中，過載'+overloadDays.length+'筆';
   }
+  // 供 Control Center Guard 讀取（格式比照 sas_risk_flags），同樣只做視覺提示不中止
+  try{localStorage.setItem('sas_pace_flags',JSON.stringify({level:level,flags:flags,ts:Date.now()}));}catch(e){}
 }
 
 /* PACE PILLS */
@@ -2709,6 +2724,19 @@ function renderDualTrackCard(){
       weights.lastCorrected=today();
       weights.trigger=consecutive;
       try{localStorage.setItem('cc_energy_weights',JSON.stringify(weights));}catch(e){}
+    }
+    // 常駐提示：沿用上面同一個 consecutive 與 >=3 門檻，不另外重算。
+    // 只看門檻不看 lastCorrected 節流——節流是為了避免權重被重複疊加，
+    // 但提示是狀態陳述，同一天內重繪（切換時間範圍）時仍該持續看得到。
+    var _ecRow=document.getElementById('energy-corr-row');
+    if(_ecRow){
+      if(consecutive>=3){
+        var _ecTxt=document.getElementById('energy-corr-text');
+        if(_ecTxt)_ecTxt.textContent='⚠️ 已連續'+consecutive+'天提早熄燈，已自動調降今日高強度任務配置';
+        _ecRow.style.display='';
+      }else{
+        _ecRow.style.display='none';
+      }
     }
     return{consecutive:consecutive,weights:weights};
   }
