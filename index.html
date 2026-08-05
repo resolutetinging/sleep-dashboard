@@ -68,15 +68,16 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .cp {grid-column:5/10;grid-row:1}     /* pace (debt section merged in) */
 .cb {grid-column:10/13;grid-row:1}    /* 3D bars */
 .cm {grid-column:1/13;grid-row:2}     /* mental dual-track, full-width */
-.chw{grid-column:1/13;grid-row:3}     /* week view */
-.clw{grid-column:1/13;grid-row:4}     /* last week recap */
-.cco{grid-column:1/13;grid-row:5}     /* correlation — full width */
-.cfr{grid-column:1/13;grid-row:6}     /* factor radar — Phase C */
-.cdta{grid-column:1/13;grid-row:7}    /* dual-track beta */
-.csca{grid-column:1/13;grid-row:8}    /* sleep causal analysis */
-.clv{grid-column:1/13;grid-row:9}     /* leverage bars */
-.ctx{grid-column:1/13;grid-row:10}     /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:11}    /* HD AI */
+.csoc{grid-column:1/13;grid-row:3}    /* 人際圈與睡眠/完成率關聯（緊接情緒雙軌，同屬情緒維度） */
+.chw{grid-column:1/13;grid-row:4}     /* week view */
+.clw{grid-column:1/13;grid-row:5}     /* last week recap */
+.cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
+.cfr{grid-column:1/13;grid-row:7}     /* factor radar — Phase C */
+.cdta{grid-column:1/13;grid-row:8}    /* dual-track beta */
+.csca{grid-column:1/13;grid-row:9}    /* sleep causal analysis */
+.clv{grid-column:1/13;grid-row:10}    /* leverage bars */
+.ctx{grid-column:1/13;grid-row:11}    /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:12}    /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -274,7 +275,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.cfr,.ctx,.cha,.clw,.cdta,.csca,.clv{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.cfr,.ctx,.cha,.clw,.cdta,.csca,.clv,.csoc{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -485,6 +486,23 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div><strong style="color:var(--text)">MA5 去噪曲線</strong>：5日移動平均，濾除單日突發情緒波動後的內在情緒基調</div>
         <div><strong style="color:var(--text)">預測虛線</strong>：以近半週期實測斜率外推，供防禦性配速參考</div>
         <div><strong style="color:var(--text)">行為滯後</strong>：情緒下滑後，行為完成率跟著下降所需的平均天數</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 人際圈與睡眠/完成率關聯（跨 App：Mental Dashboard wellness_v5 × SAS Hub） -->
+  <div class="card csoc">
+    <div class="lbl">🧑‍🤝‍🧑 人際圈與睡眠/完成率關聯</div>
+    <div id="sc-coverage" style="font-size:.67rem;color:var(--sub);line-height:1.75;margin-bottom:.35rem"></div>
+    <div id="sc-body"><div style="font-size:.7rem;color:var(--faint);padding:.4rem 0">載入中…</div></div>
+    <div style="margin-top:.75rem;padding-top:.6rem;border-top:.5px solid var(--border)">
+      <div class="lbl" style="margin-bottom:5px">指標定義</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:.65rem;color:var(--faint);line-height:1.6">
+        <div><strong style="color:var(--text)">人際圈分類</strong>：Mental Dashboard 影響因子中標記為「朋友」的人名，回查該處的人際圈分類設定後歸類</div>
+        <div><strong style="color:var(--text)">配對成功率</strong>：人名能對回人際圈分類的比例；自由填寫、事後改過名字、或人物尚未指定分類的都對不回來，屬既有限制</div>
+        <div><strong style="color:var(--text)">平均睡眠品質分</strong>：互動當日的次日（起床日）睡眠品質分平均，0–10 尺度；括號內是實際有睡眠資料的夜數</div>
+        <div><strong style="color:var(--text)">平均完成率</strong>：互動當日的任務完成率平均，口徑同全站統一標準；括號內是實際有覆盤資料的天數</div>
+        <div><strong style="color:var(--text)">資料不足</strong>：實際有數值的夜數／天數少於 5 時不計算平均值；兩個指標各自獨立判斷，可能一邊有值一邊不足</div>
       </div>
     </div>
   </div>
@@ -3556,6 +3574,134 @@ function setFactorRadarTab(tab){
   try{renderFactorRadar(tab);}catch(err){console.warn('renderFactorRadar',err);}
 }
 
+/* ── 🧑‍🤝‍🧑 人際圈與睡眠/完成率關聯（跨 App：Mental Dashboard wellness_v5 × SAS Hub）──
+   資料來源 localStorage.wellness_v5：
+     DB.profile.peopleCats [{id,name}]              分類 id → 人際圈分類名稱
+     DB.profile.people     [{id,name,catId}]        人名 → 分類 id
+     DB.entries[].impactFactors [{category,detail}] category==='friends' 時 detail 是「人名字串」
+   既有限制（不是 bug）：impactFactors 存的是當下的人名快照字串而非 people 的 id。
+   若該人事後改過名字、或當初是自由填寫（不在 people 清單內），就永遠比對不回分類。
+   因此本卡片一律先公開「配對成功率」，讓使用者自行判斷這份分析可不可信，不把未配對筆數藏起來。 */
+var SC_MIN_DAYS=5;      // 樣本天數門檻：<5 天不算平均值，只顯示「資料不足（僅N天）」，避免小樣本誤導
+var SC_LOW_MATCH=0.5;   // 配對成功率警示門檻：低於 50% 代表對不回來的比對得回來的還多，
+                        // 此時下方統計只反映不到半數的互動，須額外加強警示（僅提醒，不阻擋顯示）
+function _scEsc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function _scDateKey(ts){
+  if(!ts)return null;
+  var d=new Date(ts);
+  return isNaN(d.getTime())?null:dkey(d);
+}
+function _scNextDay(k){
+  var p=String(k).split('-');
+  var d=new Date(+p[0],+p[1]-1,+p[2]);
+  d.setDate(d.getDate()+1);
+  return dkey(d);
+}
+/* 第一層：join 與配對成功率統計。回傳
+   {total,matched,unmatched,hasData, dayCats:{日期:{分類名:true}}} */
+function buildSocialCircleJoin(){
+  var out={total:0,matched:0,unmatched:0,hasData:false,dayCats:{}};
+  var db=null;
+  try{db=JSON.parse(localStorage.getItem('wellness_v5')||'null');}catch(e){}
+  if(!db||typeof db!=='object')db={};
+  var prof=(db.profile&&typeof db.profile==='object')?db.profile:{};
+  var catName={};                                   // catId → 分類名稱
+  (prof.peopleCats||[]).forEach(function(c){
+    if(c&&c.id!=null)catName[String(c.id)]=c.name||'（未命名分類）';
+  });
+  var nameToCat={};                                 // 人名（trim 後）→ catId，須完全相同才命中
+  (prof.people||[]).forEach(function(p){
+    if(p&&p.name)nameToCat[String(p.name).trim()]=p.catId;
+  });
+  (db.entries||[]).forEach(function(e){
+    if(!e||!Array.isArray(e.impactFactors))return;
+    var dk2=_scDateKey(e.timestamp||e.date);
+    e.impactFactors.forEach(function(f){
+      if(!f||f.category!=='friends')return;
+      out.total++;
+      var nm=(f.detail==null?'':String(f.detail)).trim();
+      var cid=nm?nameToCat[nm]:undefined;
+      var cn=(cid!=null&&cid!=='')?catName[String(cid)]:undefined;
+      // 查無此人、或人有但 catId 指向已刪除的分類 → 一律計為未配對（不細分原因）
+      if(cn===undefined){out.unmatched++;return;}
+      out.matched++;
+      if(!dk2)return;   // 配對成功但時間戳壞掉：計入成功率，但無法歸入任何一天
+      if(!out.dayCats[dk2])out.dayCats[dk2]={};
+      out.dayCats[dk2][cn]=true;                    // 同一天同分類只算一次（一天可同時有多個分類）
+    });
+  });
+  out.hasData=out.total>0;
+  return out;
+}
+/* 第二層：對每個人際圈分類，抓「當天有互動」的日期集合，算樣本天數＋兩個平均值 */
+function buildSocialCircleStats(join){
+  var sq=getSleepQualityMap();      // 日期 → 睡眠品質分（0-10 尺度）
+  var byCat={};
+  Object.keys(join.dayCats||{}).forEach(function(d){
+    Object.keys(join.dayCats[d]).forEach(function(cn){(byCat[cn]||(byCat[cn]=[])).push(d);});
+  });
+  return Object.keys(byCat).map(function(cn){
+    var days=byCat[cn],sSum=0,sN=0,cSum=0,cN=0;
+    days.forEach(function(d){
+      // 睡眠取「次日」：互動發生在 D 日白天/晚上，影響落在當晚那一覺；而 sas_sleep_latest
+      // 的 trend 陣列以「起床日」為日期鍵，故 D 日當晚的睡眠對應到 D+1 這筆，全卡片一致採此口徑。
+      var s=sq[_scNextDay(d)];
+      if(typeof s==='number'&&isFinite(s)){sSum+=s;sN++;}
+      // 完成率取「當日」：任務是在互動的同一天執行的，不位移。
+      var rv=getReview(d);
+      var r=(rv&&rv.items)?calcCompletionRate(rv.items):null;
+      if(r!==null&&r!==undefined&&isFinite(r)){cSum+=r;cN++;}
+    });
+    // 樣本足夠與否，兩個指標各自獨立判斷，且一律看「真正算進平均的有效樣本數」(sN/cN)
+    // 而不是互動天數(days.length)——互動 6 天但只有 1 夜有睡眠資料時，那個平均是 1 個點撐起來的，
+    // 若拿 days 當門檻就會把它包裝成 6 天樣本的平均，正是本卡片要避免的「小樣本冒充大樣本」。
+    // sN 與 cN 可能不同（有戴錶的夜數 ≠ 有覆盤的天數），故不合併成單一旗標。
+    return {cat:cn,days:days.length,
+            sleep:sN?sSum/sN:null,sleepN:sN,sleepInsufficient:sN<SC_MIN_DAYS,
+            rate:cN?cSum/cN:null,rateN:cN,rateInsufficient:cN<SC_MIN_DAYS};
+  }).sort(function(a,b){return b.days-a.days;});
+}
+function renderSocialCircleCard(){
+  var cov=$('sc-coverage'),body=$('sc-body');
+  if(!cov||!body)return;
+  var join=buildSocialCircleJoin();
+  if(!join.hasData){
+    cov.innerHTML='';
+    body.innerHTML='<div style="font-size:.7rem;color:var(--faint);line-height:1.75">尚無人際互動記錄可供分析。<br>在 Mental Dashboard 記錄情緒時，把影響因子選為「朋友」並填入人名，累積之後這裡就會列出各人際圈的觀察值。</div>';
+    return;
+  }
+  var ratio=join.matched/join.total,pct=Math.round(ratio*100),warn='';
+  if(ratio<SC_LOW_MATCH){
+    warn='<div style="margin-top:.45rem;padding:.5rem .65rem;border-radius:var(--rsm);background:rgba(230,126,34,.10);border:.5px solid rgba(230,126,34,.35);font-size:.67rem;color:var(--sub);line-height:1.75">⚠️ 配對成功率偏低（低於 '+Math.round(SC_LOW_MATCH*100)+'%）：超過半數的人際互動紀錄查不到對應分類，下方結果只反映一部分互動，樣本可能不夠可靠，參考時請留意。</div>';
+  }
+  cov.innerHTML='<div>本卡片分析涵蓋 '+join.matched+'/'+join.total+' 筆人際互動紀錄（配對成功率 '+pct+'%），未成功配對的通常是自由填寫、人名有異動，或人物尚未指定人際圈分類，不列入下方統計。</div>'+warn;
+  var stats=buildSocialCircleStats(join);
+  if(!stats.length){
+    body.innerHTML='<div style="font-size:.7rem;color:var(--faint);line-height:1.75">已配對的紀錄沒有可用的日期，暫時無法依人際圈拆解。</div>';
+    return;
+  }
+  body.innerHTML=stats.map(function(s){
+    var sl,rt;
+    if(s.sleepInsufficient){
+      sl='<strong style="color:var(--faint);font-weight:600">資料不足（僅 '+s.sleepN+' 夜）</strong>';
+    }else{
+      var slc=s.sleep>=7?'var(--ok)':s.sleep>=6?'var(--warn)':'var(--danger)';
+      sl='<strong style="color:'+slc+';font-weight:600">'+(Math.round(s.sleep*10)/10).toFixed(1)+' / 10</strong>（'+s.sleepN+' 夜）';
+    }
+    if(s.rateInsufficient){
+      rt='<strong style="color:var(--faint);font-weight:600">資料不足（僅 '+s.rateN+' 天）</strong>';
+    }else{
+      var rtc=s.rate>=0.8?'var(--ok)':s.rate>=0.5?'var(--warn)':'var(--danger)';
+      rt='<strong style="color:'+rtc+';font-weight:600">'+Math.round(s.rate*100)+'%</strong>（'+s.rateN+' 天）';
+    }
+    var right='<span style="font-size:.67rem;color:var(--faint)">睡眠 '+sl+'　完成率 '+rt+'</span>';
+    return '<div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:.45rem 0;border-top:.5px dashed var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--text);font-weight:600">'+_scEsc(s.cat)
+      +'<span style="color:var(--faint);font-weight:400;font-size:.65rem">　樣本 '+s.days+' 天</span></span>'+right+'</div>';
+  }).join('')
+  +'<div style="margin-top:.55rem;font-size:.65rem;color:var(--faint);line-height:1.75">以上為觀察值：樣本顯示與各人際圈互動的那些天，同期的睡眠與完成率落在什麼水準，不代表因果。「樣本 N 天」是互動天數，各指標括號內才是真正算進該平均的有效樣本數，兩者可能不同。同一天若同時與多個人際圈互動，該天會重複計入各分類。</div>';
+}
+
 /* INIT */
 window._catMap=loadCatMap();
 var _initTab=sessionStorage.getItem('sas_tab')||'ov';
@@ -3569,6 +3715,7 @@ try{buildOverloadFreq();}catch(e){}
 try{buildSleepCausalSection();}catch(e){}
 try{buildLeverageBars();}catch(e){}
 try{renderFactorRadar(_radarTab);}catch(e){}
+try{renderSocialCircleCard();}catch(e){console.warn('renderSocialCircleCard',e);}
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sas-hub" data-cc-label="SAS Hub"></script>
 </body>
