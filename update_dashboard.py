@@ -23,6 +23,9 @@ DASHBOARD_V2_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard_v2.html"
 # 舊版 sleep_dashboard.html（v1）已於 2026-07-17 archive 至 archive/，
 # 沒有任何頁面引用它，不再自動更新，移到 archive/ 保留當歷史快照
 GITHUB_REPO_DIR   = "/Users/tinayu/sleep-dashboard"
+# 2026-08-09：0值資料被靜默continue沒人發現過（8/8事件），近期0值改用本機通知提醒，
+# 這個狀態檔記錄「已經通知過的日期」避免LaunchAgent一天跑4次重複跳通知
+ZERO_ALERT_STATE_PATH = "/Users/tinayu/sleep-dashboard/.zero_data_alerted.json"
 # ────────────────────────────────────────────────────────────────────────
 
 def clean_json_content(content):
@@ -53,6 +56,39 @@ def parse_time(s):
     except:
         return "00:00"
 
+def load_alerted_dates():
+    try:
+        with open(ZERO_ALERT_STATE_PATH, "r") as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+def save_alerted_dates(dates):
+    try:
+        with open(ZERO_ALERT_STATE_PATH, "w") as f:
+            json.dump(sorted(dates), f)
+    except Exception:
+        pass
+
+def notify_zero_data(dates):
+    """近期（今天/昨天）睡眠資料是0值/未同步時本機通知提醒；已通知過的日期不重複跳"""
+    if not dates:
+        return
+    alerted = load_alerted_dates()
+    new_dates = [d for d in dates if d not in alerted]
+    if not new_dates:
+        return
+    msg = "、".join(new_dates) + " 睡眠資料是0值，iCloud可能還沒同步完成，建議稍後重跑 run_update.sh 或手動確認"
+    try:
+        subprocess.run(
+            ["osascript", "-e",
+             f'display notification "{msg}" with title "⚠️ Sleep Dashboard 資料異常" sound name "Basso"'],
+            timeout=10
+        )
+    except Exception as e:
+        print(f"  ⚠ 通知發送失敗：{e}")
+    save_alerted_dates(alerted | set(new_dates))
+
 def parse_json_files():
     """讀取所有 JSON/TXT 檔案，轉成 summary 列表"""
     pattern = os.path.join(DATA_FOLDER, "*.*")
@@ -60,6 +96,8 @@ def parse_json_files():
     print(f"找到 {len(files)} 個資料檔案")
 
     summary = []
+    zero_alert_dates = []
+    cutoff_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     for fpath in files:
         # 只處理 .json 和 .txt
         if not (fpath.endswith(".json") or fpath.endswith(".txt")):
@@ -96,7 +134,10 @@ def parse_json_files():
                 awake_min = hr2min(entry.get("awake", 0))
                 total_min = deep_min + rem_min + core_min
 
-                if total_min < 60: continue
+                if total_min < 60:
+                    if date_str >= cutoff_str:
+                        zero_alert_dates.append(date_str)
+                    continue
 
                 bedtime = parse_time(entry.get("sleepStart", ""))
                 wake    = parse_time(entry.get("sleepEnd", ""))
@@ -125,6 +166,7 @@ def parse_json_files():
         seen[s["date"]] = s
     summary = sorted(seen.values(), key=lambda x: x["date"])
     print(f"解析完成：{len(summary)} 筆有效夜晚數據")
+    notify_zero_data(sorted(set(zero_alert_dates)))
     return summary
 
 # (其餘 update_html, git_push, main 函數保持不變，直接沿用你原有的即可)
