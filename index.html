@@ -169,6 +169,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .fr-summary-row{display:flex;align-items:center;gap:6px;font-size:.66rem;color:var(--sub);line-height:1.5}
 .fr-summary-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .fr-summary-lbl{font-weight:700;color:var(--text)}
+.fr-tt-box{position:absolute;z-index:20;max-width:200px;background:#2c2a28;color:#fff;font-size:.66rem;line-height:1.65;padding:.55rem .7rem;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.2);pointer-events:none}
+.fr-tt-line{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:19;overflow:visible}
+.fr-tt-line line{stroke:var(--faint);stroke-width:1.3;stroke-dasharray:3 3}
 .fr-swatch{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px}
 .corr-rec{font-size:.7rem;color:var(--sub);line-height:1.7;margin-top:7px;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border-left:2px solid var(--mental)}
 .corr-defs{margin-top:1rem;padding:.9rem 1rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)}
@@ -684,6 +687,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div id="factor-radar-empty-family" class="fr-empty" style="display:none"></div>
     <div id="factor-radar-empty-social" class="fr-empty" style="display:none"></div>
     <div id="factor-radar-empty-work" class="fr-empty" style="display:none"></div>
+    <!-- 08-12：使用者反映點都擠在雷達圖中心（相關係數大多偏弱，半徑天生集中），hover原生
+         tooltip疊在擠成一團的點上面很難讀。改成自訂外部tooltip：拉一條線連到卡片空白處顯示，
+         不再貼著點本身畫 -->
+    <svg id="fr-tt-line" class="fr-tt-line" style="display:none"><line id="fr-tt-line-el" x1="0" y1="0" x2="0" y2="0"/></svg>
+    <div id="fr-tt-box" class="fr-tt-box" style="display:none"></div>
   </div>
 
   <!-- 雙軌綜觀與行為相關性分析 -->
@@ -3403,6 +3411,7 @@ var frRange=14;
 var _radarTab='coffee';
 function setFrRange(n){
   frRange=n;
+  hideFrTooltip();
   document.querySelectorAll('.fr-range-btn').forEach(function(b){b.classList.remove('active');});
   event.target.classList.add('active');
   var descEl=$('fr-range-desc');
@@ -3561,6 +3570,56 @@ function renderFactorRadarSummary(tab,axes){
       +'<span class="fr-summary-lbl">'+a.label+'</span>　'+dirTxt+'·'+strength+'　r='+(a.r>=0?'+':'')+a.r.toFixed(2)+faint+'</div>';
   }).join('');
 }
+function hideFrTooltip(){
+  var box=$('fr-tt-box'),svg=$('fr-tt-line');
+  if(box)box.style.display='none';
+  if(svg)svg.style.display='none';
+}
+// 08-12：使用者反映相關係數大多偏弱，雷達圖上的點天生集中在圖形中心，Chart.js原生tooltip
+// 疊在擠成一團的點正上方很難讀。改用Chart.js的external tooltip模式自己接管渲染：算出hover點
+// 在卡片座標系裡的位置，把說明框放到旁邊空白處，再拉一條虛線連回原本的點，不擋住其他點
+function frRadarExternalTooltip(context,axes,tab){
+  var box=$('fr-tt-box'),svg=$('fr-tt-line'),lineEl=$('fr-tt-line-el');
+  if(!box||!svg||!lineEl)return;
+  var tm=context.tooltip;
+  if(!tm||tm.opacity===0){hideFrTooltip();return;}
+  var dp=tm.dataPoints&&tm.dataPoints[0];
+  if(!dp){hideFrTooltip();return;}
+  var a=axes[dp.dataIndex];
+  if(!a){hideFrTooltip();return;}
+  var canvas=context.chart.canvas;
+  var card=canvas.closest('.card');
+  if(!card){hideFrTooltip();return;}
+  var canvasRect=canvas.getBoundingClientRect();
+  var cardRect=card.getBoundingClientRect();
+  var pointX=canvasRect.left-cardRect.left+tm.caretX;
+  var pointY=canvasRect.top-cardRect.top+tm.caretY;
+
+  box.innerHTML=_frImpactParts(a,tab).map(function(p){return'<div>'+_scEsc(p)+'</div>';}).join('');
+  box.style.display='block';
+  var boxW=box.offsetWidth,boxH=box.offsetHeight;
+  var cardW=card.clientWidth,cardH=card.clientHeight;
+  var gap=32; // 08-12：18px時線太短，跟點本身大小(半徑最大6px)比起來幾乎看不出來，拉開到32px
+  var putRight=(pointX+gap+boxW)<=cardW-4;
+  var boxLeft=putRight?(pointX+gap):(pointX-gap-boxW);
+  if(boxLeft<4)boxLeft=4;
+  if(boxLeft+boxW>cardW-4)boxLeft=cardW-4-boxW;
+  var boxTop=pointY-boxH/2;
+  if(boxTop<4)boxTop=4;
+  if(boxTop+boxH>cardH-4)boxTop=cardH-4-boxH;
+  box.style.left=boxLeft+'px';
+  box.style.top=boxTop+'px';
+
+  var lineTargetX=putRight?boxLeft:boxLeft+boxW;
+  var lineTargetY=boxTop+boxH/2;
+  // SVG沒有viewBox時內部座標系預設是300x150，CSS width:100%/height:100%只是把這個300x150
+  // 的畫布整個拉伸填滿容器，座標會被連帶縮放跑掉（實測發現線畫錯位置，幾乎看不到）。
+  // 每次都明確把width/height屬性設成卡片實際px尺寸，讓1個SVG座標單位=1個CSS像素，不縮放
+  svg.setAttribute('width',cardW);svg.setAttribute('height',cardH);
+  lineEl.setAttribute('x1',pointX);lineEl.setAttribute('y1',pointY);
+  lineEl.setAttribute('x2',lineTargetX);lineEl.setAttribute('y2',lineTargetY);
+  svg.style.display='block';
+}
 function renderFactorRadar(tab){
   var axes=buildFactorRadarSeries(tab);
   var maxN=axes.reduce(function(m,a){return Math.max(m,a.n);},0);
@@ -3606,7 +3665,7 @@ function renderFactorRadar(tab){
     pointBackgroundColor:pointBg,pointBorderColor:pointBorder,pointBorderWidth:2
   }]},options:{
     responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return _frImpactParts(axes[ctx.dataIndex],tab);}}}},
+    plugins:{legend:{display:false},tooltip:{enabled:false,external:function(context){frRadarExternalTooltip(context,axes,tab);}}},
     scales:{r:{min:0,max:100,ticks:{display:false},
       grid:{color:TC},
       angleLines:{color:function(ctx){var a=axes[ctx.index];return a&&(a.noData||a.insufficient)?FACTOR_RADAR_FAINT:TC;}},
@@ -3620,6 +3679,7 @@ function renderFactorRadar(tab){
 }
 function setFactorRadarTab(tab){
   _radarTab=tab;
+  hideFrTooltip();
   document.querySelectorAll('.fr-tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.frTab===tab);});
   FR_ALL_TABS.forEach(function(t){
     var w=$('factor-radar-wrap-'+t),e=$('factor-radar-empty-'+t);
