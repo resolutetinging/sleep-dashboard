@@ -73,7 +73,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .clw{grid-column:1/13;grid-row:5}     /* last week recap */
 .cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
 .cfr{grid-column:1/13;grid-row:7}     /* factor radar — Phase C */
-.cdta{grid-column:1/13;grid-row:8}    /* dual-track beta */
+.cdta{grid-column:1/13;grid-row:8}    /* dual-track overview */
 .csca{grid-column:1/13;grid-row:9}    /* sleep causal analysis */
 .clv{grid-column:1/13;grid-row:10}    /* leverage bars */
 .ctx{grid-column:1/13;grid-row:11}    /* taxonomy — full width */
@@ -172,8 +172,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .corr-action-block:last-child{margin-bottom:0}
 .corr-action-lbl{font-size:.65rem;font-weight:800;color:var(--text);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.35rem}
 .corr-action-body{font-size:.78rem;color:var(--sub);line-height:1.7}
-/* BETA CARD */
-.beta-badge{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:rgba(139,120,152,.15);color:var(--rem);margin-left:6px;vertical-align:middle}
 /* SCR range pills */
 .scr-range-btn{font-size:.58rem;padding:2px 8px;border-radius:10px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;transition:.12s;font-family:inherit;}
 .scr-range-btn.active,.scr-range-btn:hover{background:var(--text);color:var(--card);border-color:var(--text);}
@@ -444,9 +442,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
   </div>
 
-  <!-- 情緒雙軌對照 BETA -->
+  <!-- 情緒雙軌對照 -->
   <div class="card cm">
-    <div class="lbl">🌊 內在情緒雙軌對照 <span style="text-transform:none;letter-spacing:0;color:var(--faint);font-weight:400">BETA</span></div>
+    <div class="lbl">🌊 內在情緒雙軌對照</div>
 
     <div style="font-size:.6rem;color:var(--faint);letter-spacing:.05em;margin-bottom:.3rem">① 理論基準線（18天固定週期）</div>
     <div class="ch-sm" style="position:relative;"><canvas id="ov-mc"></canvas></div>
@@ -679,11 +677,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div id="factor-radar-empty-work" class="fr-empty" style="display:none"></div>
   </div>
 
-  <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
-  <div class="card cdta" id="dta-card" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
+  <!-- 雙軌綜觀與行為相關性分析 -->
+  <div class="card cdta" id="dta-card" style="background:var(--card);padding:1.4rem 1.4rem 1.2rem">
     <div class="lbl" style="margin-bottom:1.1rem">
       🧪 雙軌綜觀與行為相關性分析
-      <span class="beta-badge">Beta</span>
     </div>
 
     <!-- 能量矩陣 -->
@@ -750,16 +747,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="corr-val" id="dta-corr-body-val" style="color:var(--info)">—</div>
     </div>
     <div style="margin-top:.85rem;font-size:.62rem;color:var(--faint);line-height:1.65">
-      ⚠ Beta 觀察期：數據視窗尚短，趨勢需累積 2–4 週以上方具統計意義。Deep/REM score = 睡眠各分期比例除以目標比例，滿分 100。
+      Deep/REM score = 睡眠各分期比例除以目標比例，滿分 100。
     </div>
 
   </div>
 
   <!-- 睡眠變異亮燈 / 因果回溯 -->
-  <div class="card csca" style="border:1px dashed rgba(139,120,152,.4);background:var(--card);padding:1.4rem 1.4rem 1.2rem">
+  <div class="card csca" style="background:var(--card);padding:1.4rem 1.4rem 1.2rem">
     <div class="lbl" style="margin-bottom:1rem;display:flex;align-items:center;gap:8px;">
       🔍 睡眠變異亮燈與因果回溯
-      <span class="beta-badge">Beta</span>
       <div style="margin-left:auto;display:flex;align-items:center;gap:4px;">
         <button class="scr-range-btn active" id="scr-r7"  onclick="setScrRange(7)">1週</button>
         <button class="scr-range-btn"        id="scr-r14" onclick="setScrRange(14)">2週</button>
@@ -854,8 +850,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       </div>
     </div>
   </div>
-
-  <!-- 🧪 Beta：雙軌綜觀與行為相關性分析 -->
 
 </div><!-- /bento -->
 </div><!-- /overview -->
@@ -1402,7 +1396,7 @@ function calcLag(moods){
 function mk(id,cfg){if(!CI)return;if(CI[id])CI[id].destroy();var el=$(id);if(!el)return;CI[id]=new Chart(el,cfg);}
 var D30=[],RM=[],PM=[];
 for(var _i=0;_i<35;_i++){var _d=new Date();_d.setDate(_d.getDate()-29+_i);D30.push((_d.getMonth()+1)+'/'+(_d.getDate()));}
-for(var _i=0;_i<30;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI)+.3*(Math.random()-.5))*10)/10);
+for(var _i=0;_i<30;_i++)RM.push(Math.round((5+3.5*Math.sin((_i/18)*2*Math.PI))*10)/10);
 for(var _i=0;_i<5;_i++)PM.push(Math.round((5+3.5*Math.sin(((30+_i)/18)*2*Math.PI))*10)/10);
 
 /* ── MOOD DUAL-TRACK — 5日移動平均 + 實測週期/滯後 ── */
@@ -2587,7 +2581,7 @@ function renderDualTrackCard(){
 })();
 
 // ══════════════════════════════════════════════════════════
-//  BETA: 睡眠變異亮燈 + 行程回溯對照
+//  睡眠變異亮燈 + 行程回溯對照
 // ══════════════════════════════════════════════════════════
 (function(){
   var _deepMed=0,_durMed=0,_activeDate=null;
