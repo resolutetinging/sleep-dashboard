@@ -165,6 +165,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 /* 因子導向雷達圖 Phase C */
 .fr-empty{font-size:.72rem;color:var(--faint);text-align:center;padding:1.6rem 0}
 .fr-detail{font-size:.68rem;color:var(--sub);line-height:1.6;margin-top:.6rem;padding:.5rem .7rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border);display:none}
+.fr-summary{margin-top:.7rem;padding-top:.6rem;border-top:.5px solid var(--border);display:flex;flex-direction:column;gap:.35rem}
+.fr-summary-row{display:flex;align-items:center;gap:6px;font-size:.66rem;color:var(--sub);line-height:1.5}
+.fr-summary-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fr-summary-lbl{font-weight:700;color:var(--text)}
 .fr-swatch{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px}
 .corr-rec{font-size:.7rem;color:var(--sub);line-height:1.7;margin-top:7px;padding:.5rem .65rem;background:var(--bg2);border-radius:var(--rsm);border-left:2px solid var(--mental)}
 .corr-defs{margin-top:1rem;padding:.9rem 1rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)}
@@ -649,26 +653,31 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-coffee"></canvas></div>
       <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
       <div id="factor-radar-detail-coffee" class="fr-detail"></div>
+      <div id="factor-radar-summary-coffee" class="fr-summary"></div>
     </div>
     <div id="factor-radar-wrap-mood" style="display:none">
       <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-mood"></canvas></div>
       <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
       <div id="factor-radar-detail-mood" class="fr-detail"></div>
+      <div id="factor-radar-summary-mood" class="fr-summary"></div>
     </div>
     <div id="factor-radar-wrap-family" style="display:none">
       <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-family"></canvas></div>
       <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
       <div id="factor-radar-detail-family" class="fr-detail"></div>
+      <div id="factor-radar-summary-family" class="fr-summary"></div>
     </div>
     <div id="factor-radar-wrap-social" style="display:none">
       <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-social"></canvas></div>
       <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
       <div id="factor-radar-detail-social" class="fr-detail"></div>
+      <div id="factor-radar-summary-social" class="fr-summary"></div>
     </div>
     <div id="factor-radar-wrap-work" style="display:none">
       <div class="ch-lg" style="position:relative;max-width:340px;margin:0 auto"><canvas id="factor-radar-work"></canvas></div>
       <div class="t-note" style="text-align:center;margin-top:.3rem">點擊圖上圓點可展開/收合完整量化說明（觸控裝置適用）</div>
       <div id="factor-radar-detail-work" class="fr-detail"></div>
+      <div id="factor-radar-summary-work" class="fr-summary"></div>
     </div>
     <div id="factor-radar-empty-coffee" class="fr-empty" style="display:none"></div>
     <div id="factor-radar-empty-mood" class="fr-empty" style="display:none"></div>
@@ -3509,24 +3518,48 @@ function buildFactorRadarSeries(factorType){
 var FR_UNIT={coffee:'每+1杯咖啡',mood:'情緒+1分',family:'有家庭事件(vs無)',social:'有外部人際事件(vs無)',work:'有工作/任務壓力事件(vs無)'};
 var FR_TAB_LABEL={coffee:'咖啡攝取',mood:'情緒分數',family:'家庭',social:'外部人際',work:'工作/任務壓力'};
 var FR_ALL_TABS=['coffee','mood','family','social','work'];
-function fmtRadarImpact(a,tab){
+// 08-12：原本fmtRadarImpact組成一整條長字串，Chart.js tooltip遇到單行過長不會自動換行，
+// 使用者截圖回報hover內容被裁切看不完整。拆成_frImpactParts()回傳陣列，tooltip用陣列
+// （Chart.js對label callback回傳陣列會自動逐行畫出），detail區塊/摘要區則join成一行沿用原樣式
+function _frImpactParts(a,tab){
   if(a.noData){
-    if(a.noVariance)return a.label+'：這段期間內「'+(FR_UNIT[tab]||'此因子')+'」幾乎沒有變化（樣本 '+a.n+' 天，但都差不多），暫無法計算相關性，可切換更長的時間範圍再看看。';
-    return a.label+'：資料不足（配對天數僅 '+a.n+' 天，需 ≥3 天），暫無法計算相關性。';
+    if(a.noVariance)return[a.label+'：這段期間內「'+(FR_UNIT[tab]||'此因子')+'」幾乎沒有變化',
+      '（樣本 '+a.n+' 天，但都差不多），暫無法計算相關性','可切換更長的時間範圍再看看。'];
+    return[a.label+'：資料不足（配對天數僅 '+a.n+' 天，需 ≥3 天）','暫無法計算相關性。'];
   }
   var unit=FR_UNIT[tab]||'因子+1';
   var strength=Math.abs(a.r)>=0.5?'強相關':Math.abs(a.r)>=0.3?'中度相關':'弱相關';
   var dirTxt=a.slope>=0?'正向助益':'負向影響';
   var slopeTxt=a.slope!==null?(unit+' → '+a.label+' '+(a.slope>=0?'+':'')+a.slope.toFixed(2)):'';
   var sampleTxt=a.insufficient?'樣本僅 '+a.n+' 天（<14天門檻，僅供參考）':'樣本 '+a.n+' 天';
-  return a.label+'　r='+(a.r>=0?'+':'')+a.r.toFixed(2)+'　'+strength+'·'+dirTxt+(slopeTxt?'　'+slopeTxt:'')+'　'+sampleTxt;
+  var parts=[a.label+'　r='+(a.r>=0?'+':'')+a.r.toFixed(2)+'　'+strength+'·'+dirTxt];
+  if(slopeTxt)parts.push(slopeTxt);
+  parts.push(sampleTxt);
+  return parts;
 }
+function fmtRadarImpact(a,tab){return _frImpactParts(a,tab).join('　');}
 function toggleFactorRadarDetail(tab,axes,idx){
   var a=axes[idx];if(!a)return;
   var el=$('factor-radar-detail-'+tab);if(!el)return;
   var text=fmtRadarImpact(a,tab);
   if(el.textContent===text&&el.style.display==='block'){el.textContent='';el.style.display='none';}
   else{el.textContent=text;el.style.display='block';}
+}
+// 08-12：使用者要求正向/負向判斷不要只靠hover/點擊單一圓點才看得到，改成卡片下方常駐
+// 顯示所有軸的方向摘要——noData(資料不足/沒有變化)的軸沒有方向判斷可言，摘要裡略過，
+// 已經有專門的empty狀態或淡化樣式處理那些軸，這裡只列真正算得出方向的軸，不重複資訊
+function renderFactorRadarSummary(tab,axes){
+  var el=$('factor-radar-summary-'+tab);if(!el)return;
+  var valid=axes.filter(function(a){return!a.noData;});
+  if(!valid.length){el.innerHTML='';return;}
+  el.innerHTML=valid.map(function(a){
+    var color=a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;
+    var strength=Math.abs(a.r)>=0.5?'強相關':Math.abs(a.r)>=0.3?'中度相關':'弱相關';
+    var dirTxt=a.slope>=0?'正向助益':'負向影響';
+    var faint=a.insufficient?'　（樣本僅'+a.n+'天，僅供參考）':'';
+    return'<div class="fr-summary-row"><span class="fr-summary-dot" style="background:'+color+'"></span>'
+      +'<span class="fr-summary-lbl">'+a.label+'</span>　'+dirTxt+'·'+strength+'　r='+(a.r>=0?'+':'')+a.r.toFixed(2)+faint+'</div>';
+  }).join('');
 }
 function renderFactorRadar(tab){
   var axes=buildFactorRadarSeries(tab);
@@ -3554,6 +3587,7 @@ function renderFactorRadar(tab){
   }
   if(wrapEl)wrapEl.style.display='';
   if(emptyEl)emptyEl.style.display='none';
+  renderFactorRadarSummary(tab,axes);
   var labels=axes.map(function(a){return a.insufficient?[a.label,'樣本不足 n='+a.n]:[a.label,'n='+a.n];});
   var pointBg=axes.map(function(a){
     if(a.noData||a.insufficient)return'transparent';
@@ -3572,7 +3606,7 @@ function renderFactorRadar(tab){
     pointBackgroundColor:pointBg,pointBorderColor:pointBorder,pointBorderWidth:2
   }]},options:{
     responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return fmtRadarImpact(axes[ctx.dataIndex],tab);}}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return _frImpactParts(axes[ctx.dataIndex],tab);}}}},
     scales:{r:{min:0,max:100,ticks:{display:false},
       grid:{color:TC},
       angleLines:{color:function(ctx){var a=axes[ctx.index];return a&&(a.noData||a.insufficient)?FACTOR_RADAR_FAINT:TC;}},
