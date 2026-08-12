@@ -3422,10 +3422,14 @@ function _frDoneRateMap(days){
   return map;
 }
 function _frCoffeeMap(days){
+  // 08-12：原本只在有喝咖啡的日子寫入map（沒喝=undefined=整天跳過配對），導致樣本數
+  // 被壓得很小、使用者實測回報一直資料不足。改成跟家庭/外部人際/工作等二元因子一致的
+  // 處理方式——每天都寫入實際杯數（沒喝=0），這樣「有沒有喝、喝多少」都能進入相關性
+  // 計算，樣本數等於整個時間範圍的天數，而不是只算有喝咖啡的那幾天
   var map={};
   days.forEach(function(k){
     var rf=getRefuelerByDate(k);
-    if(rf.coffeeHas)map[k]=rf.coffeeCount;
+    map[k]=rf.coffeeHas?rf.coffeeCount:0;
   });
   return map;
 }
@@ -3456,7 +3460,9 @@ function _frCategoryMap(catName,days){
   return map;
 }
 // 三個候選陣列（因子/結果）須同一天皆有值才配對進 pearson/calcSlope，缺值日期整天跳過，不得以 0 或插值假造
-// （二元因子例外：依定義每一天恆為 0 或 1，不會缺值，故只有結果端 undefined 時才跳過該日）
+// （二元/計數類因子例外：家庭/外部人際/工作為0或1、咖啡為當日杯數，依定義每一天恆有值，
+// 不會缺值，故只有結果端 undefined 時才跳過該日——這跟情緒分數不同，情緒只有真的手動
+// 記錄過的那天才有值，沒記錄的日子就是缺值，該跳過）
 function buildFactorRadarSeries(factorType){
   var days=[];
   for(var i=frRange-1;i>=0;i--){
@@ -3486,18 +3492,28 @@ function buildFactorRadarSeries(factorType){
     var r=pearson(xs,ys);
     var slope=calcSlope(xs,ys);
     var n=xs.length;
+    // 08-12：r===null有兩種完全不同的成因，但原本的訊息一律說成「配對天數<3」，會誤導人——
+    // 使用者實測回報「家庭」分頁一直資料不足，但他每天都在Mental Dashboard記錄，真正原因通常
+    // 不是天數不夠，而是這段期間「家庭」這個因子本身沒有變化（例如都沒被標記，變異數=0，
+    // pearson()除以0保護會回傳null，見denom<1e-10那行），訊息卻叫人「多記錄幾天」，文不對題
+    var noVariance=r===null&&n>=3;
     return{
       id:o.id,label:o.label,r:r,slope:slope,n:n,
       radius:r===null?0:Math.round(Math.abs(r)*100),
       insufficient:n<14,
-      noData:r===null
+      noData:r===null,
+      noVariance:noVariance
     };
   });
 }
 var FR_UNIT={coffee:'每+1杯咖啡',mood:'情緒+1分',family:'有家庭事件(vs無)',social:'有外部人際事件(vs無)',work:'有工作/任務壓力事件(vs無)'};
+var FR_TAB_LABEL={coffee:'咖啡攝取',mood:'情緒分數',family:'家庭',social:'外部人際',work:'工作/任務壓力'};
 var FR_ALL_TABS=['coffee','mood','family','social','work'];
 function fmtRadarImpact(a,tab){
-  if(a.noData)return a.label+'：資料不足（配對天數<3），暫無法計算相關性。';
+  if(a.noData){
+    if(a.noVariance)return a.label+'：這段期間內「'+(FR_UNIT[tab]||'此因子')+'」幾乎沒有變化（樣本 '+a.n+' 天，但都差不多），暫無法計算相關性，可切換更長的時間範圍再看看。';
+    return a.label+'：資料不足（配對天數僅 '+a.n+' 天，需 ≥3 天），暫無法計算相關性。';
+  }
   var unit=FR_UNIT[tab]||'因子+1';
   var strength=Math.abs(a.r)>=0.5?'強相關':Math.abs(a.r)>=0.3?'中度相關':'弱相關';
   var dirTxt=a.slope>=0?'正向助益':'負向影響';
@@ -3523,7 +3539,17 @@ function renderFactorRadar(tab){
   var emptyEl=$('factor-radar-empty-'+tab);
   if(allInsufficient){
     if(wrapEl)wrapEl.style.display='none';
-    if(emptyEl){emptyEl.style.display='block';emptyEl.textContent='📊 資料累積中（目前 '+maxN+' 天，建議 14 天以上更準確）';}
+    if(emptyEl){
+      emptyEl.style.display='block';
+      // 08-12：原本要求「每一項結果軸都noVariance」才顯示這則訊息，但三個結果軸（睡眠/
+      // 情緒/任務完成率）常常只有部分軸有足夠樣本，其餘軸單純是n<3——只要其中一軸的樣本數
+      // 已經夠多卻還是算不出相關性，代表原因是「沒有變化」而非「天數不夠」，用any不用every，
+      // 否則像本例情緒/睡眠都是14天但noVariance、任務完成率是n=0，all()判斷會整組落回舊訊息
+      var anyNoVariance=axes.some(function(a){return a.noVariance;});
+      emptyEl.textContent=anyNoVariance
+        ? '📊 這段期間「'+(FR_TAB_LABEL[tab]||tab)+'」這個因子幾乎沒有變化（樣本最多 '+maxN+' 天），可切換更長的時間範圍再看看'
+        : '📊 資料累積中（目前 '+maxN+' 天，建議 14 天以上更準確）';
+    }
     return;
   }
   if(wrapEl)wrapEl.style.display='';
