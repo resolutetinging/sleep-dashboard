@@ -2244,7 +2244,7 @@ async function runWeightedAI() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content:
           `你是睡眠分析師。三夜加權戰力（${label}）：均值${avg}，標準差${std}，近7天趨勢${trend > 0 ? '+' : ''}${trend}。序列（最新14筆）：${scores.slice(-14).join('、')}。\n用繁體中文2句話：①趨勢與規律性現況；②最關鍵行動建議。直擊痛點，無廢話。` }],
         max_tokens: 200, temperature: 0.5
