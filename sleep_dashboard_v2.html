@@ -2226,7 +2226,7 @@ function renderWeightedChart() {
 
 async function runWeightedAI() {
   if (_wAIBusy) return;
-  const key = localStorage.getItem('groq_key') || '';
+  const key = localStorage.getItem('groq_key') || localStorage.getItem('tina_groq') || localStorage.getItem('oasis_groq_key') || '';
   const el = document.getElementById('weightedAIOut');
   if (!key) { el.textContent = '設定 Groq Key 後可啟用 AI 趨勢分析'; return; }
   const slice = _wRange === 9999 ? _wHistory : _wHistory.slice(-_wRange);
