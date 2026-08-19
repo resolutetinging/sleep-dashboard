@@ -20,8 +20,9 @@ ICLOUD_FOLDER = os.path.expanduser(
 JSON_CACHE = "/Users/tinayu/sleep-dashboard/json_cache"
 DATA_FOLDER = JSON_CACHE if os.path.isdir(JSON_CACHE) and os.listdir(JSON_CACHE) else ICLOUD_FOLDER
 DASHBOARD_V2_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard_v2.html"
-# 舊版 sleep_dashboard.html（v1）已於 2026-07-17 archive 至 archive/，
-# 沒有任何頁面引用它，不再自動更新，移到 archive/ 保留當歷史快照
+# 舊版 sleep_dashboard.html（v1）2026-07-17 曾archive至archive/，2026-08-19
+# 因該檔內嵌完整RAW睡眠資料且透過GitHub Pages公開可下載，已從repo移除
+# （git歷史仍留有記錄，未改寫歷史；沒有任何頁面引用過這個檔案）
 GITHUB_REPO_DIR   = "/Users/tinayu/sleep-dashboard"
 # 2026-08-09：0值資料被靜默continue沒人發現過（8/8事件），近期0值改用本機通知提醒，
 # 這個狀態檔記錄「已經通知過的日期」避免LaunchAgent一天跑4次重複跳通知
