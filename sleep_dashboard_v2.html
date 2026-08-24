@@ -2135,6 +2135,10 @@ function saveSleepToLocalStorage() {
 
 // ── WEIGHTED COMBAT TREND CHART ──
 let _wChart = null, _wHistory = [], _wRange = 30, _wAIBusy = false;
+const GROQ_PRIMARY_MODEL = 'openai/gpt-oss-120b', GROQ_BACKUP_MODEL = 'openai/gpt-oss-20b';
+function _groqModelLooksDown(e) {
+  return e.status >= 500 || /decommission|not[ _-]?found|does not exist|invalid model|model_not_active/i.test(e.detail || '');
+}
 
 function buildWeightedHistory() {
   const excludeWE = document.getElementById('excludeWeekend').checked;
@@ -2240,24 +2244,45 @@ async function runWeightedAI() {
   _wAIBusy = true;
   el.textContent = '分析中…';
   const promptContent = `你是睡眠分析師。三夜加權戰力（${label}）：均值${avg}，標準差${std}，近7天趨勢${trend > 0 ? '+' : ''}${trend}。序列（最新14筆）：${scores.slice(-14).join('、')}。\n用繁體中文2句話：①趨勢與規律性現況；②最關鍵行動建議。直擊痛點，無廢話。`;
-  const _wAIOnce = async (maxTok) => {
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
-        messages: [{ role: 'user', content: promptContent }],
-        max_tokens: maxTok, temperature: 0.5, reasoning_effort: 'low'
-      })
-    });
-    const json = await resp.json();
-    const choice = json.choices?.[0];
-    return { content: choice?.message?.content?.trim() || '', finishReason: choice?.finish_reason };
+  const _wAIOnce = async (model, maxTok) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: promptContent }],
+          max_tokens: maxTok, temperature: 0.5, reasoning_effort: 'low'
+        })
+      });
+      if (resp.status === 429 && attempt < 2) {
+        const retryAfter = Number(resp.headers.get('retry-after'));
+        await new Promise(r => setTimeout(r, (retryAfter > 0 ? retryAfter : 3) * 1000));
+        continue;
+      }
+      if (!resp.ok) {
+        let detail = '';
+        try { const ej = await resp.json(); detail = ej?.error?.message || ''; } catch (_e) {}
+        const err = new Error('API ' + resp.status + (detail ? '：' + detail : ''));
+        err.status = resp.status; err.detail = detail;
+        throw err;
+      }
+      const json = await resp.json();
+      const choice = json.choices?.[0];
+      return { content: choice?.message?.content?.trim() || '', finishReason: choice?.finish_reason };
+    }
   };
   try {
-    let res = await _wAIOnce(500);
+    let model = GROQ_PRIMARY_MODEL, res;
+    try {
+      res = await _wAIOnce(model, 500);
+    } catch (e) {
+      if (!_groqModelLooksDown(e)) throw e;
+      model = GROQ_BACKUP_MODEL;
+      res = await _wAIOnce(model, 500);
+    }
     if (!res.content && res.finishReason === 'length') {
-      res = await _wAIOnce(900);
+      res = await _wAIOnce(model, 900);
     }
     const txt = res.content || '分析失敗';
     const parts = txt.split(/(?=②)/);

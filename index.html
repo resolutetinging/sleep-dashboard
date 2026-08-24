@@ -2061,21 +2061,42 @@ function fmtAI(raw){
   return '<div>'+html+'</div>';
 }
 
-async function _aiCallOnce(prompt,maxTokens,key,sysMsg){
-  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'openai/gpt-oss-20b',messages:[{role:'system',content:sysMsg},{role:'user',content:prompt}],max_tokens:maxTokens,temperature:.7,reasoning_effort:'low'})});
-  var txt=await r.text();
-  var d;try{d=JSON.parse(txt);}catch(e){throw new Error('Groq 非 JSON 回應（'+r.status+'）: '+txt.slice(0,120));}
-  if(d.choices&&d.choices[0])return {content:d.choices[0].message.content||'',finishReason:d.choices[0].finish_reason,status:r.status};
-  throw new Error('Groq '+r.status+': '+(d.error?.message||txt.slice(0,120)));
+var GROQ_PRIMARY_MODEL='openai/gpt-oss-20b',GROQ_BACKUP_MODEL='openai/gpt-oss-120b';
+function _groqModelLooksDown(e){
+  return e.status>=500||/decommission|not[ _-]?found|does not exist|invalid model|model_not_active/i.test(e.detail||'');
+}
+
+async function _aiCallOnce(prompt,maxTokens,key,sysMsg,model){
+  for(var attempt=0;attempt<3;attempt++){
+    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:model,messages:[{role:'system',content:sysMsg},{role:'user',content:prompt}],max_tokens:maxTokens,temperature:.7,reasoning_effort:'low'})});
+    if(r.status===429&&attempt<2){
+      var retryAfter=Number(r.headers.get('retry-after'));
+      await new Promise(function(res){setTimeout(res,(retryAfter>0?retryAfter:3)*1000);});
+      continue;
+    }
+    var txt=await r.text();
+    var d;try{d=JSON.parse(txt);}catch(e){var perr=new Error('Groq 非 JSON 回應（'+r.status+'）: '+txt.slice(0,120));perr.status=r.status;throw perr;}
+    if(d.choices&&d.choices[0])return {content:d.choices[0].message.content||'',finishReason:d.choices[0].finish_reason,status:r.status};
+    var err=new Error('Groq '+r.status+': '+(d.error?.message||txt.slice(0,120)));
+    err.status=r.status;err.detail=d.error?.message||'';
+    throw err;
+  }
 }
 
 async function aiCall(prompt,maxTokens){
   var key=localStorage.getItem('groq_key')||localStorage.getItem('tina_groq')||localStorage.getItem('oasis_groq_key')||'';
   if(!key)throw new Error('找不到 Groq API Key，請在設定頁輸入（localStorage: tina_groq）');
   var sysMsg='你只能輸出繁體中文（台灣標準）與必要的英文專有名詞（如Human Design、閘道編號等既有詞彙）。絕對禁止出現簡體字、日文假名、或任何非中文語言拼湊出的亂碼字詞（如「咖啑」這種不存在的錯字）；若不確定某個字怎麼寫，換一個確定寫法正確的詞彙表達，不要冒險輸出不存在的字。所有具體數字建議（時間、劑量、攝取量等）必須落在真實世界合理安全範圍內，不可為了湊出「有具體數字」而誇大或捏造超出常識的數值。';
-  var res=await _aiCallOnce(prompt,maxTokens,key,sysMsg);
+  var model=GROQ_PRIMARY_MODEL,res;
+  try{
+    res=await _aiCallOnce(prompt,maxTokens,key,sysMsg,model);
+  }catch(e){
+    if(!_groqModelLooksDown(e))throw e;
+    model=GROQ_BACKUP_MODEL;
+    res=await _aiCallOnce(prompt,maxTokens,key,sysMsg,model);
+  }
   if(!res.content.trim()&&res.finishReason==='length'){
-    res=await _aiCallOnce(prompt,Math.round(maxTokens*1.8),key,sysMsg);
+    res=await _aiCallOnce(prompt,Math.round(maxTokens*1.8),key,sysMsg,model);
   }
   return res.content;
 }
