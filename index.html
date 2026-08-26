@@ -2095,7 +2095,7 @@ async function aiCall(prompt,maxTokens){
     model=GROQ_BACKUP_MODEL;
     res=await _aiCallOnce(prompt,maxTokens,key,sysMsg,model);
   }
-  if(!res.content.trim()&&res.finishReason==='length'){
+  if(res.finishReason==='length'){
     res=await _aiCallOnce(prompt,Math.round(maxTokens*1.8),key,sysMsg,model);
   }
   return res.content;

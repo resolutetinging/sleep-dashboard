@@ -2281,7 +2281,7 @@ async function runWeightedAI() {
       model = GROQ_BACKUP_MODEL;
       res = await _wAIOnce(model, 500);
     }
-    if (!res.content && res.finishReason === 'length') {
+    if (res.finishReason === 'length') {
       res = await _wAIOnce(model, 900);
     }
     const txt = res.content || '分析失敗';
