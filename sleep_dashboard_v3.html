@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sleep v3（驗證用）</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #f5f2ec;
+    color: #4a4540;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  header {
+    max-width: 960px;
+    margin: 0 auto 20px;
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: #7a7268;
+  }
+  .chart-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    background: #fffdf9;
+    border: 1px solid #e2dccf;
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .empty-note {
+    max-width: 960px;
+    margin: 12px auto 0;
+    font-size: 13px;
+    color: #a08f60;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sleep v3（驗證用）</h1>
+  <p class="subtitle">新Duration算法驗證頁，資料來源Sleep Export 2</p>
+</header>
+<div class="chart-wrap">
+  <canvas id="trendChart" height="120"></canvas>
+</div>
+<p class="empty-note" id="emptyNote" hidden>目前沒有可顯示的睡眠資料，請先執行 update_dashboard_v3.py。</p>
+
+<script>
+const RAW_V3 = [{"date": "2026-08-26", "bedtime": "2026-08-26T00:42:41+08:00", "wake": "2026-08-26T08:36:41+08:00", "total_min": 476.0, "deep_min": 29.5, "rem_min": 79.0, "core_min": 348.5, "awake_min": 19.0, "efficiency": 0}, {"date": "2026-08-27", "bedtime": "2026-08-27T00:35:25+08:00", "wake": "2026-08-27T07:31:55+08:00", "total_min": 429.5, "deep_min": 21.5, "rem_min": 98.5, "core_min": 295.5, "awake_min": 14.0, "efficiency": 0}, {"date": "2026-08-28", "bedtime": "2026-08-28T01:05:09+08:00", "wake": "2026-08-28T07:30:39+08:00", "total_min": 423.5, "deep_min": 34.0, "rem_min": 88.0, "core_min": 288.0, "awake_min": 13.5, "efficiency": 0}, {"date": "2026-08-29", "bedtime": "2026-08-29T00:55:27+08:00", "wake": "2026-08-29T12:48:25+08:00", "total_min": 654.0, "deep_min": 59.5, "rem_min": 117.5, "core_min": 421.0, "awake_min": 56.0, "efficiency": 0}, {"date": "2026-08-30", "bedtime": "2026-08-30T00:44:46+08:00", "wake": "2026-08-30T07:17:46+08:00", "total_min": 406.5, "deep_min": 25.5, "rem_min": 60.5, "core_min": 295.0, "awake_min": 25.5, "efficiency": 0}, {"date": "2026-08-31", "bedtime": "2026-08-30T23:04:03+08:00", "wake": "2026-08-31T07:33:33+08:00", "total_min": 508.0, "deep_min": 29.5, "rem_min": 105.0, "core_min": 317.5, "awake_min": 56.0, "efficiency": 0}, {"date": "2026-09-01", "bedtime": "2026-09-01T00:58:29+08:00", "wake": "2026-09-01T07:47:29+08:00", "total_min": 431.0, "deep_min": 37.0, "rem_min": 78.5, "core_min": 267.5, "awake_min": 48.0, "efficiency": 0}, {"date": "2026-09-02", "bedtime": "2026-09-01T23:19:39+08:00", "wake": "2026-09-02T07:44:39+08:00", "total_min": 522.5, "deep_min": 28.0, "rem_min": 106.0, "core_min": 309.0, "awake_min": 79.5, "efficiency": 0}];
+
+let trendChart;
+function _isMobileChart() { return window.innerWidth <= 600; }
+function minToHm(m) {
+  const h = Math.floor(m/60), mm = m%60;
+  return h > 0 ? `${h}h ${mm}m` : `${mm}m`;
+}
+const COLORS = { deep:'#5c7a96', rem:'#8b7898', core:'#5e8f7e', awake:'#b08d62' };
+
+function updateTrend(data) {
+  const DOW = ['日','一','二','三','四','五','六'];
+  const labels = data.map(d => {
+    const dow = DOW[new Date(d.date + 'T12:00:00').getDay()];
+    return d.date.slice(5) + '（' + dow + '）';
+  });
+  const deep  = data.map(d => d.deep_min);
+  const rem   = data.map(d => d.rem_min);
+  const core  = data.map(d => d.core_min);
+  const awake = data.map(d => d.awake_min);
+  const totals = data.map(d => d.deep_min + d.rem_min + d.core_min + d.awake_min);
+  const tickColor = '#4a4540';
+  const gridColor = '#cdc8c033';
+  const trendData = totals.map((_, i) => {
+    const w = totals.slice(Math.max(0, i-3), i+4);
+    return Math.round(w.reduce((a,b)=>a+b,0) / w.length);
+  });
+  const cfg = {
+    type: 'bar',
+    data: { labels, datasets: [
+      { label:'深度', data:deep,  backgroundColor:COLORS.deep+'cc', stack:'s' },
+      { label:'REM',  data:rem,   backgroundColor:COLORS.rem+'cc',  stack:'s' },
+      { label:'核心', data:core,  backgroundColor:COLORS.core+'cc', stack:'s' },
+      { label:'清醒', data:awake, backgroundColor:COLORS.awake+'88',stack:'s' },
+      { label:'趨勢線', data:trendData, type:'line', borderColor:'#8a7060', borderWidth:2, borderDash:[5,3], pointRadius:0, tension:0.4, fill:false, stack:undefined },
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:!_isMobileChart(), animation:{duration:300},
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{
+          title: i => { const d = data[i[0].dataIndex]; const dow = DOW[new Date(d.date + 'T12:00:00').getDay()]; return d.date + '（週' + dow + '）'; },
+          label: i => { if (i.dataset.label === '趨勢線') return ` 7日平均: ${minToHm(i.raw)}`; const total = totals[i.dataIndex]; const pctVal = total > 0 ? (i.raw / total * 100).toFixed(1) : '0'; return ` ${i.dataset.label}: ${i.raw} 分鐘（${pctVal}%）`; },
+          afterBody: i => [`總計: ${minToHm(totals[i[0].dataIndex])}`]
+        }}
+      },
+      scales:{
+        x:{ stacked:true, ticks:{ color:tickColor, maxTicksLimit:14, font:{size:10, weight:'bold'} }, grid:{color:gridColor} },
+        y:{ stacked:true, ticks:{ color:tickColor, callback:v=>v+'m', font:{size:10, weight:'bold'} }, grid:{color:gridColor} }
+      }
+    }
+  };
+  const totalLabelPlugin = { id: 'totalLabels', afterDraw(chart) {
+    if (data.length > 60) return;
+    const ctx = chart.ctx; const meta = chart.getDatasetMeta(3);
+    ctx.save(); ctx.font = 'bold 9px "DM Mono",monospace'; ctx.fillStyle = '#4a4540'; ctx.textAlign = 'center';
+    meta.data.forEach((bar, i) => { const t = totals[i]; const h = Math.floor(t/60), m = t%60; const lbl = h > 0 ? `${h}h${m>0?m+'m':''}` : `${m}m`; ctx.fillText(lbl, bar.x, bar.y - 4); });
+    ctx.restore();
+  }};
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  trendChart = new Chart(document.getElementById('trendChart'), { ...cfg, plugins:[totalLabelPlugin] });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (!RAW_V3 || RAW_V3.length === 0) {
+    document.getElementById('emptyNote').hidden = false;
+    return;
+  }
+  updateTrend(RAW_V3);
+});
+</script>
+</body>
+</html>
