@@ -42,12 +42,29 @@
     font-size: 13px;
     color: #a08f60;
   }
+  .update-cmd {
+    max-width: 960px;
+    margin: 10px auto 0;
+    font-size: 12px;
+    color: #7a7268;
+  }
+  .update-cmd code {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 6px 10px;
+    background: #ece7db;
+    border-radius: 6px;
+    font-family: "DM Mono", Menlo, monospace;
+    color: #4a4540;
+    user-select: all;
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>Sleep v3（驗證用）</h1>
   <p class="subtitle">新Duration算法驗證頁，資料來源Sleep Export 2</p>
+  <p class="update-cmd">此頁資料需手動更新，先在iPhone跑一次「Sleep Export 2」捷徑，再於Mac終端機執行下列指令重新產生資料並整份重新上傳（點文字可全選複製）：<br><code>cd ~/sleep-dashboard && python3 update_dashboard_v3.py && git add sleep_dashboard_v3.html && git commit -m "update sleep v3 data" && git push</code></p>
 </header>
 <div class="chart-wrap">
   <canvas id="trendChart" height="120"></canvas>
