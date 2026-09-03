@@ -19,6 +19,15 @@ update_dashboard.py / sleep_dashboard_v2.html / index.html / run_update.sh 這�
 CHANGE_TOLERANCE_MIN容忍值，排除duration本身30秒捨入造成的正常誤差）才更新
 並記錄異動細節，沒變動的維持原樣不動。
 
+09-04再補：history.json原本只存「算出來的結果」（分鐘數），不存原始樣本，等於
+還是依賴iCloud端的sleep_raw_*.txt保留原始證據——但那份檔案每天都是「過去1週」
+滾動視窗，跟前一天的內容有6/7重疊，若iCloud端被清掉或視窗滾過去，之前算過的
+夜晚就永遠沒有原始樣本可重算，一旦日後發現算法本身有bug（這正是這次Duration
+遷移debug的實際經歷），沒有原始樣本就只能將錯就錯。改成每晚第一次出現時，把
+該晚的原始樣本（value/start/duration）一併存進history.json的raw_samples欄位，
+不依賴iCloud端保留舊檔，也不像iCloud每日滾動視窗那樣有6/7重疊的浪費（每晚只
+存一次）。
+
 執行方式：
     python3 update_dashboard_v3.py
 """
@@ -140,6 +149,15 @@ def build_record(session):
     }
 
 
+def serialize_session(session):
+    """把session內的原始樣本（datetime物件）轉成可存進JSON的格式，
+    供history.json的raw_samples欄位使用，日後重算不必依賴iCloud端的原始檔。"""
+    return [
+        {'value': s['value'], 'start': s['start'].isoformat(), 'dur_sec': s['dur_sec']}
+        for s in session
+    ]
+
+
 def load_history():
     if not HISTORY_PATH.exists():
         return {'nights': {}, 'changelog': []}
@@ -159,9 +177,10 @@ def save_history(history):
     )
 
 
-def merge_records(history, new_records):
-    """拿新算出的每晚記錄跟歷史比對：新日期直接收錄；已存在的日期若四項分期
-    數字都在容許誤差內視為無異動、保留舊記錄；超出誤差才覆蓋並記一筆異動。
+def merge_records(history, new_records, raw_samples_by_date):
+    """拿新算出的每晚記錄跟歷史比對：新日期直接收錄（含當晚原始樣本，供日後
+    重算用）；已存在的日期若四項分期數字都在容許誤差內視為無異動、保留舊
+    記錄；超出誤差才覆蓋（含更新原始樣本）並記一筆異動。
     回傳 (new_dates, changed_dates, unchanged_dates) 供列印報告用。"""
     nights = history['nights']
     now = datetime.now().isoformat(timespec='seconds')
@@ -169,9 +188,10 @@ def merge_records(history, new_records):
 
     for rec in new_records:
         date = rec['date']
+        raw_samples = raw_samples_by_date.get(date, [])
         old = nights.get(date)
         if old is None:
-            nights[date] = {**rec, 'first_seen': now, 'last_updated': now}
+            nights[date] = {**rec, 'raw_samples': raw_samples, 'first_seen': now, 'last_updated': now}
             new_dates.append(date)
             continue
 
@@ -181,6 +201,12 @@ def merge_records(history, new_records):
             if abs(rec[f] - old[f]) > CHANGE_TOLERANCE_MIN
         }
         if not diffs:
+            # 09-04功能上線前存進history的舊資料沒有raw_samples欄位；數字沒變
+            # 就不當成「異動」，但趁原始檔還在Shortcut視窗內，順手補回原始樣本，
+            # 不然視窗一滾過去就永久補不回來了。
+            if not old.get('raw_samples') and raw_samples:
+                old['raw_samples'] = raw_samples
+                old['last_updated'] = now
             unchanged_dates.append(date)
             continue
 
@@ -188,7 +214,10 @@ def merge_records(history, new_records):
             'date': date, 'detected_at': now,
             'diffs': {f: {'old': old[f], 'new': rec[f], 'delta': d} for f, d in diffs.items()},
         })
-        nights[date] = {**rec, 'first_seen': old.get('first_seen', now), 'last_updated': now}
+        nights[date] = {
+            **rec, 'raw_samples': raw_samples,
+            'first_seen': old.get('first_seen', now), 'last_updated': now,
+        }
         changed_dates.append(date)
 
     return new_dates, changed_dates, unchanged_dates
@@ -222,17 +251,19 @@ def main():
     print(f"切出 {len(sessions)} 個睡眠 session（門檻 {GAP_THRESHOLD_MIN} 分鐘）")
 
     fresh_records = []
+    raw_samples_by_date = {}
     for session in sessions:
         rec = build_record(session)
         if rec['total_min'] < MIN_SESSION_TOTAL_MIN:
             continue
         fresh_records.append(rec)
+        raw_samples_by_date[rec['date']] = serialize_session(session)
     fresh_records.sort(key=lambda r: r['date'])
 
     print(f"\n本次raw檔算出 {len(fresh_records)} 夜（total_min >= {MIN_SESSION_TOTAL_MIN} 分鐘）")
 
     history = load_history()
-    new_dates, changed_dates, unchanged_dates = merge_records(history, fresh_records)
+    new_dates, changed_dates, unchanged_dates = merge_records(history, fresh_records, raw_samples_by_date)
 
     print(f"🆕 新增 {len(new_dates)} 夜：{', '.join(new_dates) or '（無）'}")
     print(f"= 無異動 {len(unchanged_dates)} 夜")
@@ -248,8 +279,10 @@ def main():
         print("⚠ 異動 0 夜")
 
     save_history(history)
-    print(f"歷史已存至 {HISTORY_PATH.name}（累計 {len(history['nights'])} 夜，"
-          f"變更紀錄 {len(history['changelog'])} 筆）")
+    total_raw_samples = sum(len(n.get('raw_samples', [])) for n in history['nights'].values())
+    print(f"歷史已存至 {HISTORY_PATH.name}（累計 {len(history['nights'])} 夜、"
+          f"{total_raw_samples} 筆原始樣本，變更紀錄 {len(history['changelog'])} 筆，"
+          f"檔案大小 {HISTORY_PATH.stat().st_size/1024:.1f}KB）")
 
     all_records = sorted(history['nights'].values(), key=lambda r: r['date'])
     # HTML畫圖不需要changelog等額外欄位，只留圖表用得到的欄位
