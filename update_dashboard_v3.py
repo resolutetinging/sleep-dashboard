@@ -10,6 +10,15 @@ v2舊軌資料）並排比較新算法準不準。
 只做本機資料處理：不 git commit/push、不動 LaunchAgent 排程，也不修改
 update_dashboard.py / sleep_dashboard_v2.html / index.html / run_update.sh 這幾個既有檔案。
 
+09-04補：Sleep Export 2捷徑每次只抓「過去1週」樣本（滾動視窗），單次執行本身
+不會累積歷史——原設計每次都整批重算、整份覆蓋RAW_V3，超出視窗的舊資料會直接
+消失（例如09-03跑完，08-26就從畫面上掉了），也沒有任何機制比對「這次算出來的
+某一晚數字，跟上次算出來的是否一致」。這支script現在改成維護一份本機持久化
+的 sleep_v3_history.json，每晚資料一旦進來就永久保留（不受Shortcut滾動視窗
+影響），且每次執行都會拿新算出的數字跟歷史紀錄比對，只有真的變動（超過
+CHANGE_TOLERANCE_MIN容忍值，排除duration本身30秒捨入造成的正常誤差）才更新
+並記錄異動細節，沒變動的維持原樣不動。
+
 執行方式：
     python3 update_dashboard_v3.py
 """
@@ -23,7 +32,13 @@ RAW_DIR = Path(
     "Documents/Daily Sleep Update"
 )
 HTML_PATH = Path(__file__).resolve().parent / "sleep_dashboard_v3.html"
+HISTORY_PATH = Path(__file__).resolve().parent / "sleep_v3_history.json"
 RAW_V3_LINE = re.compile(r"const RAW_V3 = \[.*?\];", re.DOTALL)
+
+# 判定「這一晚的數字真的變了」而非duration捨入誤差的門檻（分鐘）。
+# 已驗證duration本身以30秒為單位捨入，正常誤差約1-2分鐘，門檻設3分鐘留餘裕。
+CHANGE_TOLERANCE_MIN = 3
+STAGE_FIELDS = ('deep_min', 'rem_min', 'core_min', 'awake_min')
 
 
 def latest_raw_path():
@@ -125,6 +140,60 @@ def build_record(session):
     }
 
 
+def load_history():
+    if not HISTORY_PATH.exists():
+        return {'nights': {}, 'changelog': []}
+    try:
+        data = json.loads(HISTORY_PATH.read_text(encoding='utf-8'))
+    except (json.JSONDecodeError, OSError):
+        print(f"⚠ {HISTORY_PATH.name} 讀取失敗或損毀，視為空歷史重新開始")
+        return {'nights': {}, 'changelog': []}
+    data.setdefault('nights', {})
+    data.setdefault('changelog', [])
+    return data
+
+
+def save_history(history):
+    HISTORY_PATH.write_text(
+        json.dumps(history, ensure_ascii=False, indent=2), encoding='utf-8'
+    )
+
+
+def merge_records(history, new_records):
+    """拿新算出的每晚記錄跟歷史比對：新日期直接收錄；已存在的日期若四項分期
+    數字都在容許誤差內視為無異動、保留舊記錄；超出誤差才覆蓋並記一筆異動。
+    回傳 (new_dates, changed_dates, unchanged_dates) 供列印報告用。"""
+    nights = history['nights']
+    now = datetime.now().isoformat(timespec='seconds')
+    new_dates, changed_dates, unchanged_dates = [], [], []
+
+    for rec in new_records:
+        date = rec['date']
+        old = nights.get(date)
+        if old is None:
+            nights[date] = {**rec, 'first_seen': now, 'last_updated': now}
+            new_dates.append(date)
+            continue
+
+        diffs = {
+            f: round(rec[f] - old[f], 1)
+            for f in STAGE_FIELDS
+            if abs(rec[f] - old[f]) > CHANGE_TOLERANCE_MIN
+        }
+        if not diffs:
+            unchanged_dates.append(date)
+            continue
+
+        history['changelog'].append({
+            'date': date, 'detected_at': now,
+            'diffs': {f: {'old': old[f], 'new': rec[f], 'delta': d} for f, d in diffs.items()},
+        })
+        nights[date] = {**rec, 'first_seen': old.get('first_seen', now), 'last_updated': now}
+        changed_dates.append(date)
+
+    return new_dates, changed_dates, unchanged_dates
+
+
 def inject_html(records):
     if not HTML_PATH.exists():
         print(f"找不到 HTML 模板：{HTML_PATH}")
@@ -152,24 +221,47 @@ def main():
     sessions = split_sessions(samples)
     print(f"切出 {len(sessions)} 個睡眠 session（門檻 {GAP_THRESHOLD_MIN} 分鐘）")
 
-    records = []
+    fresh_records = []
     for session in sessions:
         rec = build_record(session)
         if rec['total_min'] < MIN_SESSION_TOTAL_MIN:
             continue
-        records.append(rec)
-    records.sort(key=lambda r: r['date'])
+        fresh_records.append(rec)
+    fresh_records.sort(key=lambda r: r['date'])
 
-    print(f"\n保留 {len(records)} 夜（total_min >= {MIN_SESSION_TOTAL_MIN} 分鐘）：")
-    for r in records:
-        print(
-            f"  {r['date']}  total={r['total_min']}min  "
-            f"deep={r['deep_min']}  rem={r['rem_min']}  "
-            f"core={r['core_min']}  awake={r['awake_min']}"
-        )
+    print(f"\n本次raw檔算出 {len(fresh_records)} 夜（total_min >= {MIN_SESSION_TOTAL_MIN} 分鐘）")
 
-    if inject_html(records):
-        print(f"\n已寫入 {HTML_PATH}")
+    history = load_history()
+    new_dates, changed_dates, unchanged_dates = merge_records(history, fresh_records)
+
+    print(f"🆕 新增 {len(new_dates)} 夜：{', '.join(new_dates) or '（無）'}")
+    print(f"= 無異動 {len(unchanged_dates)} 夜")
+    if changed_dates:
+        print(f"⚠ 異動 {len(changed_dates)} 夜（超過{CHANGE_TOLERANCE_MIN}分鐘容許誤差，已覆蓋並記錄）：")
+        for entry in history['changelog'][-len(changed_dates):]:
+            diff_txt = '、'.join(
+                f"{f}: {d['old']}→{d['new']}（{d['delta']:+.1f}）"
+                for f, d in entry['diffs'].items()
+            )
+            print(f"  {entry['date']}  {diff_txt}")
+    else:
+        print("⚠ 異動 0 夜")
+
+    save_history(history)
+    print(f"歷史已存至 {HISTORY_PATH.name}（累計 {len(history['nights'])} 夜，"
+          f"變更紀錄 {len(history['changelog'])} 筆）")
+
+    all_records = sorted(history['nights'].values(), key=lambda r: r['date'])
+    # HTML畫圖不需要changelog等額外欄位，只留圖表用得到的欄位
+    chart_records = [
+        {k: r[k] for k in ('date', 'bedtime', 'wake', 'total_min',
+                            'deep_min', 'rem_min', 'core_min', 'awake_min', 'efficiency')}
+        for r in all_records
+    ]
+
+    if inject_html(chart_records):
+        print(f"\n已寫入 {HTML_PATH}（圖表顯示累計全部 {len(chart_records)} 夜，"
+              f"不再受Shortcut過去1週視窗限制）")
 
 
 if __name__ == '__main__':
