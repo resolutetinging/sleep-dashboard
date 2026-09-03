@@ -64,7 +64,7 @@
 <header>
   <h1>Sleep v3（驗證用）</h1>
   <p class="subtitle">新Duration算法驗證頁，資料來源Sleep Export 2</p>
-  <p class="update-cmd">此頁資料需手動更新，先在iPhone跑一次「Sleep Export 2」捷徑，再於Mac終端機執行下列指令重新產生資料並整份重新上傳（點文字可全選複製）：<br><code>cd ~/sleep-dashboard && python3 update_dashboard_v3.py && git add sleep_dashboard_v3.html && git commit -m "update sleep v3 data" && git push</code></p>
+  <p class="update-cmd">此頁資料需手動更新，先在iPhone跑一次「Sleep Export 2」捷徑，再於Mac終端機執行下列指令重新產生資料並整份重新上傳（點文字可全選複製）：<br><code>cd ~/sleep-dashboard && python3 update_dashboard_v3.py && git add sleep_dashboard_v3.html sleep_v3_history.json && git commit -m "update sleep v3 data" && git push</code></p>
 </header>
 <div class="chart-wrap">
   <canvas id="trendChart" height="120"></canvas>
