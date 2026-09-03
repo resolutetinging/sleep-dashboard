@@ -10,7 +10,7 @@ v2舊軌資料）並排比較新算法準不準。
 只做本機資料處理：不 git commit/push、不動 LaunchAgent 排程，也不修改
 update_dashboard.py / sleep_dashboard_v2.html / index.html / run_update.sh 這幾個既有檔案。
 
-09-04補：Sleep Export 2捷徑每次只抓「過去1週」樣本（滾動視窗），單次執行本身
+09-03補：Sleep Export 2捷徑每次只抓「過去1週」樣本（滾動視窗），單次執行本身
 不會累積歷史——原設計每次都整批重算、整份覆蓋RAW_V3，超出視窗的舊資料會直接
 消失（例如09-03跑完，08-26就從畫面上掉了），也沒有任何機制比對「這次算出來的
 某一晚數字，跟上次算出來的是否一致」。這支script現在改成維護一份本機持久化
@@ -19,7 +19,7 @@ update_dashboard.py / sleep_dashboard_v2.html / index.html / run_update.sh 這�
 CHANGE_TOLERANCE_MIN容忍值，排除duration本身30秒捨入造成的正常誤差）才更新
 並記錄異動細節，沒變動的維持原樣不動。
 
-09-04再補：history.json原本只存「算出來的結果」（分鐘數），不存原始樣本，等於
+09-03再補：history.json原本只存「算出來的結果」（分鐘數），不存原始樣本，等於
 還是依賴iCloud端的sleep_raw_*.txt保留原始證據——但那份檔案每天都是「過去1週」
 滾動視窗，跟前一天的內容有6/7重疊，若iCloud端被清掉或視窗滾過去，之前算過的
 夜晚就永遠沒有原始樣本可重算，一旦日後發現算法本身有bug（這正是這次Duration
@@ -201,7 +201,7 @@ def merge_records(history, new_records, raw_samples_by_date):
             if abs(rec[f] - old[f]) > CHANGE_TOLERANCE_MIN
         }
         if not diffs:
-            # 09-04功能上線前存進history的舊資料沒有raw_samples欄位；數字沒變
+            # 09-03功能上線前存進history的舊資料沒有raw_samples欄位；數字沒變
             # 就不當成「異動」，但趁原始檔還在Shortcut視窗內，順手補回原始樣本，
             # 不然視窗一滾過去就永久補不回來了。
             if not old.get('raw_samples') and raw_samples:
