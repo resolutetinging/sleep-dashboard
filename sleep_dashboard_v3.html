@@ -58,6 +58,18 @@
     color: #4a4540;
     user-select: all;
   }
+  .watch-note {
+    max-width: 960px;
+    margin: 10px auto 0;
+    padding: 10px 14px;
+    background: #f3ece0;
+    border: 1px solid #e2d5bc;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #6b5f4a;
+    line-height: 1.6;
+  }
+  .watch-note b { color: #4a4540; }
 </style>
 </head>
 <body>
@@ -65,6 +77,11 @@
   <h1>Sleep v3（驗證用）</h1>
   <p class="subtitle">新Duration算法驗證頁，資料來源Sleep Export 2</p>
   <p class="update-cmd">此頁資料需手動更新，先在iPhone跑一次「Sleep Export 2」捷徑，再於Mac終端機執行下列指令重新產生資料並整份重新上傳（點文字可全選複製）：<br><code>cd ~/sleep-dashboard && python3 update_dashboard_v3.py && git add sleep_dashboard_v3.html sleep_v3_history.json && git commit -m "update sleep v3 data" && git push</code></p>
+  <p class="watch-note">
+    <b>⚠ 待觀察項目（09-03記錄，尚未實際發生，觀察期留意）：</b><br>
+    ① 同一「醒來日期」若出現兩段各自超過60分鐘、間隔超過90分鐘的獨立睡眠（例如很不規律的作息），目前程式碼會讓後處理的那段直接覆蓋前段、且不會出現在changelog裡提醒，因為兩者被誤判成「同一晚數字變了」而非「兩段獨立睡眠」。<br>
+    ② 跨時區樣本目前完全沒驗證過——startDate/duration在時區切換時的解析邏輯是否穩定，等出差或旅行時若剛好在跨時區期間執行過Sleep Export 2，屆時應找那幾晚資料重點核對。
+  </p>
 </header>
 <div class="chart-wrap">
   <canvas id="trendChart" height="120"></canvas>
