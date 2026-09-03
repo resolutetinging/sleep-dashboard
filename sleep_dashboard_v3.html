@@ -95,7 +95,7 @@
     ① 同一「醒來日期」若出現兩段各自超過60分鐘、間隔超過90分鐘的獨立睡眠（例如很不規律的作息），目前程式碼會讓後處理的那段直接覆蓋前段、且不會出現在changelog裡提醒，因為兩者被誤判成「同一晚數字變了」而非「兩段獨立睡眠」。<br>
     ② 跨時區樣本目前完全沒驗證過——startDate/duration在時區切換時的解析邏輯是否穩定，等出差或旅行時若剛好在跨時區期間執行過Sleep Export 2，屆時應找那幾晚資料重點核對。
   </p>
-  <p class="plan-note">
+  <div class="plan-note">
     <b>📋 v2→v3 遷移計畫（09-03記錄，先觀察，驗證期夠長再整體評估是否啟動）：</b>
     <ol>
       <li>延長並行期，讓v2/v3互相交叉比對（不只跟官方App比）——<b>已建置</b>，見下方圖表資料來源的比對邏輯（`compare_v2_v3()`，差距超過4分鐘記進`sleep_v3_history.json`的`v2_v3_divergence`）</li>
@@ -103,7 +103,7 @@
       <li>換引擎不換介面：讓`sleep_dashboard_v2.html`內部改用v3邏輯，但對外`localStorage` key名稱與資料格式完全不變，下游13頁共用檔案的風險放在最後才動</li>
       <li>切換後保留舊管線（原始Sleep Export捷徑＋`update_dashboard.py`）備援1-2週，確認新引擎穩定後才依repo慣例封存進`archive/`，不直接刪除</li>
     </ol>
-  </p>
+  </div>
 </header>
 <div class="chart-wrap">
   <canvas id="trendChart" height="120"></canvas>
