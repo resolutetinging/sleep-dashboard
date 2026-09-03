@@ -28,6 +28,12 @@ CHANGE_TOLERANCE_MIN容忍值，排除duration本身30秒捨入造成的正常�
 不依賴iCloud端保留舊檔，也不像iCloud每日滾動視窗那樣有6/7重疊的浪費（每晚只
 存一次）。
 
+09-03三補：每次執行同時唯讀v2的sleep_dashboard_v2.html，把重疊日期的四項分期
+數字跟v3自己算出的互相比對（理論上該收斂到接近的數字，因為v2/v3都是拿Duration
+算的），差距超過V2_V3_DIVERGENCE_TOLERANCE_MIN才記錄進history.json的
+v2_v3_divergence，用來及早發現任一邊出問題，不用等正式切換後才踩雷。**只讀
+v2的檔案，絕對不寫入。**
+
 執行方式：
     python3 update_dashboard_v3.py
 """
@@ -44,10 +50,20 @@ HTML_PATH = Path(__file__).resolve().parent / "sleep_dashboard_v3.html"
 HISTORY_PATH = Path(__file__).resolve().parent / "sleep_v3_history.json"
 RAW_V3_LINE = re.compile(r"const RAW_V3 = \[.*?\];", re.DOTALL)
 
+# v2的資料頁，這支script只會「讀」這個檔案做交叉比對，絕對不寫入／不修改。
+V2_HTML_PATH = Path(__file__).resolve().parent / "sleep_dashboard_v2.html"
+V2_RAW_LINE = re.compile(r"const RAW = (\{.*?\});\s*\n\s*const COLORS", re.DOTALL)
+
 # 判定「這一晚的數字真的變了」而非duration捨入誤差的門檻（分鐘）。
 # 已驗證duration本身以30秒為單位捨入，正常誤差約1-2分鐘，門檻設3分鐘留餘裕。
 CHANGE_TOLERANCE_MIN = 3
 STAGE_FIELDS = ('deep_min', 'rem_min', 'core_min', 'awake_min')
+
+# v2/v3理論上都是拿Duration算出來的，長期該收斂到幾乎一樣的數字。這個門檻是
+# 「v2跟v3同一晚差距多少分鐘，才算兩邊系統性分歧、值得留意」，比CHANGE_TOLERANCE_MIN
+# 稍寬鬆一點，因為v2走的是Shortcut端自己彙總（自己的捨入方式），跟v3的Python端
+# 彙總本來就可能有些微差異。
+V2_V3_DIVERGENCE_TOLERANCE_MIN = 4
 
 
 def latest_raw_path():
@@ -223,6 +239,57 @@ def merge_records(history, new_records, raw_samples_by_date):
     return new_dates, changed_dates, unchanged_dates
 
 
+def load_v2_records():
+    """唯讀解析sleep_dashboard_v2.html裡的const RAW={...}區塊，回傳{date: record}。
+    這個函式絕對不寫入v2的檔案，只讀取供交叉比對用。抓不到就回傳空dict，
+    不中斷v3自己的流程（v2/v3交叉比對是加分功能，不是v3能不能跑的前提）。"""
+    if not V2_HTML_PATH.exists():
+        print(f"⚠ 找不到 {V2_HTML_PATH.name}，略過v2/v3交叉比對")
+        return {}
+    try:
+        html = V2_HTML_PATH.read_text(encoding='utf-8')
+        m = V2_RAW_LINE.search(html)
+        if not m:
+            print("⚠ 在v2頁裡找不到 const RAW = {...}，略過v2/v3交叉比對")
+            return {}
+        raw = json.loads(m.group(1))
+        return {r['date']: r for r in raw.get('summary', [])}
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"⚠ 讀取v2資料失敗（{e}），略過v2/v3交叉比對")
+        return {}
+
+
+def compare_v2_v3(history, v2_by_date):
+    """拿v2跟v3同一晚的四項分期數字互相比對（理論上該收斂到接近的數字，
+    因為兩邊都是拿Duration算的），只在差距超過V2_V3_DIVERGENCE_TOLERANCE_MIN時
+    才記錄，避免把正常的捨入方式差異也當成警訊。
+    回傳本次比對到、且超出容許誤差的日期清單，供列印報告用。"""
+    now = datetime.now().isoformat(timespec='seconds')
+    divergence = history.setdefault('v2_v3_divergence', {})
+    flagged_dates = []
+
+    for date, v3_rec in history['nights'].items():
+        v2_rec = v2_by_date.get(date)
+        if v2_rec is None:
+            continue
+        diffs = {
+            f: round(v3_rec[f] - v2_rec[f], 1)
+            for f in STAGE_FIELDS
+            if abs(v3_rec[f] - v2_rec[f]) > V2_V3_DIVERGENCE_TOLERANCE_MIN
+        }
+        if not diffs:
+            continue
+        divergence[date] = {
+            'v2': {f: v2_rec[f] for f in STAGE_FIELDS},
+            'v3': {f: v3_rec[f] for f in STAGE_FIELDS},
+            'diffs': diffs,
+            'detected_at': now,
+        }
+        flagged_dates.append(date)
+
+    return flagged_dates
+
+
 def inject_html(records):
     if not HTML_PATH.exists():
         print(f"找不到 HTML 模板：{HTML_PATH}")
@@ -278,9 +345,23 @@ def main():
     else:
         print("⚠ 異動 0 夜")
 
+    v2_by_date = load_v2_records()
+    if v2_by_date:
+        overlap = sorted(set(history['nights']) & set(v2_by_date))
+        flagged = compare_v2_v3(history, v2_by_date)
+        print(f"\nv2/v3交叉比對：{len(overlap)} 晚重疊日期")
+        if flagged:
+            print(f"⚠ {len(flagged)} 晚差距超過{V2_V3_DIVERGENCE_TOLERANCE_MIN}分鐘，值得留意：")
+            for date in flagged:
+                d = history['v2_v3_divergence'][date]
+                diff_txt = '、'.join(f"{f}: v2={d['v2'][f]} v3={d['v3'][f]}（{v:+.1f}）" for f, v in d['diffs'].items())
+                print(f"  {date}  {diff_txt}")
+        else:
+            print(f"= 重疊日期皆在容許誤差內，無系統性分歧")
+
     save_history(history)
     total_raw_samples = sum(len(n.get('raw_samples', [])) for n in history['nights'].values())
-    print(f"歷史已存至 {HISTORY_PATH.name}（累計 {len(history['nights'])} 夜、"
+    print(f"\n歷史已存至 {HISTORY_PATH.name}（累計 {len(history['nights'])} 夜、"
           f"{total_raw_samples} 筆原始樣本，變更紀錄 {len(history['changelog'])} 筆，"
           f"檔案大小 {HISTORY_PATH.stat().st_size/1024:.1f}KB）")
 

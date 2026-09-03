@@ -1776,5 +1776,28 @@
       ]
     }
   },
-  "changelog": []
+  "changelog": [],
+  "v2_v3_divergence": {
+    "2026-08-29": {
+      "v2": {
+        "deep_min": 50,
+        "rem_min": 93,
+        "core_min": 260,
+        "awake_min": 14
+      },
+      "v3": {
+        "deep_min": 59.5,
+        "rem_min": 117.5,
+        "core_min": 421.0,
+        "awake_min": 56.0
+      },
+      "diffs": {
+        "deep_min": 9.5,
+        "rem_min": 24.5,
+        "core_min": 161.0,
+        "awake_min": 42.0
+      },
+      "detected_at": "2026-09-03T09:41:30"
+    }
+  }
 }
