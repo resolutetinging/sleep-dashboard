@@ -193,10 +193,27 @@ def save_history(history):
     )
 
 
+def _raw_span(raw_samples):
+    """算一組原始樣本實際涵蓋的最早開始時間到最晚結束時間，用來判斷這批樣本
+    涵蓋範圍是否比另一批窄——09-07發現iCloud滾動視窗會把session較早的樣本
+    淘汰掉，導致同一晚重算出「比較短」的睡眠，不是真的睡眠內容變了。"""
+    if not raw_samples:
+        return None, None
+    starts, ends = [], []
+    for s in raw_samples:
+        st = datetime.fromisoformat(s['start'])
+        starts.append(st)
+        ends.append(st + timedelta(seconds=s['dur_sec']))
+    return min(starts), max(ends)
+
+
 def merge_records(history, new_records, raw_samples_by_date):
     """拿新算出的每晚記錄跟歷史比對：新日期直接收錄（含當晚原始樣本，供日後
     重算用）；已存在的日期若四項分期數字都在容許誤差內視為無異動、保留舊
     記錄；超出誤差才覆蓋（含更新原始樣本）並記一筆異動。
+    09-07新增防護：若新樣本涵蓋範圍比舊樣本窄（開始更晚或結束更早），判斷為
+    iCloud滾動視窗把較早/較晚樣本淘汰掉導致的假性差異，保留舊資料不覆蓋，
+    避免用資料量更少的重算結果蓋掉本來比較完整的紀錄。
     回傳 (new_dates, changed_dates, unchanged_dates) 供列印報告用。"""
     nights = history['nights']
     now = datetime.now().isoformat(timespec='seconds')
@@ -209,6 +226,16 @@ def merge_records(history, new_records, raw_samples_by_date):
         if old is None:
             nights[date] = {**rec, 'raw_samples': raw_samples, 'first_seen': now, 'last_updated': now}
             new_dates.append(date)
+            continue
+
+        old_start, old_end = _raw_span(old.get('raw_samples'))
+        new_start, new_end = _raw_span(raw_samples)
+        if old_start and new_start and (new_start > old_start or new_end < old_end):
+            print(f"⚠ {date}: 新原始樣本涵蓋範圍比舊資料窄"
+                  f"（{old_start.isoformat()}~{old_end.isoformat()} → "
+                  f"{new_start.isoformat()}~{new_end.isoformat()}），"
+                  f"判斷為iCloud滾動視窗截斷造成的假性差異，保留舊資料不覆蓋")
+            unchanged_dates.append(date)
             continue
 
         diffs = {
