@@ -103,6 +103,7 @@
       <li>換引擎不換介面：讓`sleep_dashboard_v2.html`內部改用v3邏輯，但對外`localStorage` key名稱與資料格式完全不變，下游13頁共用檔案的風險放在最後才動</li>
       <li>切換後保留舊管線（原始Sleep Export捷徑＋`update_dashboard.py`）備援1-2週，確認新引擎穩定後才依repo慣例封存進`archive/`，不直接刪除</li>
     </ol>
+    <p style="margin:8px 0 0;">🗓 <b>下次檢核點（09-07記錄）</b>：累積到20晚以上v2/v3交叉比對數據（目前12晚）再重新評估，最好等到剛好遇上一次能驗證上方待觀察項目①同日碰撞或②跨時區的機會。目前v2 core分期偏低是機率性bug（約2/14晚出現），樣本數還太小，抓不到穩定的觸發條件。</p>
   </div>
 </header>
 <div class="chart-wrap">
