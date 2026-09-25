@@ -122,13 +122,18 @@ def load_samples(path):
 
 
 def split_sessions(samples):
-    """依startDate排序後，跟下一筆間隔 > GAP_THRESHOLD_MIN 分鐘就切成新session。"""
+    """依startDate排序後，跟下一筆間隔 > GAP_THRESHOLD_MIN 分鐘就切成新session。
+    間隔＝下一筆start減前一筆的「結束時間」（start+duration），而非前一筆的start——
+    09-25發現原本漏加前一筆duration，導致前一筆時長較長時把真實gap高估，
+    在真實gap略低於90分鐘時被誤判超過門檻而錯誤切成兩個session。"""
     sessions = []
     current = []
     for s in samples:
-        if current and (s['start'] - current[-1]['start']).total_seconds() > GAP_THRESHOLD_MIN * 60:
-            sessions.append(current)
-            current = []
+        if current:
+            prev_end = current[-1]['start'] + timedelta(seconds=current[-1]['dur_sec'])
+            if (s['start'] - prev_end).total_seconds() > GAP_THRESHOLD_MIN * 60:
+                sessions.append(current)
+                current = []
         current.append(s)
     if current:
         sessions.append(current)
