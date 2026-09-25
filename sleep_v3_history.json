@@ -6000,7 +6000,7 @@
         "core_min": 161.0,
         "awake_min": 42.0
       },
-      "detected_at": "2026-09-25T13:23:45"
+      "detected_at": "2026-09-25T13:31:53"
     },
     "2026-09-04": {
       "v2": {
@@ -6018,47 +6018,7 @@
       "diffs": {
         "core_min": 15.5
       },
-      "detected_at": "2026-09-25T13:23:45"
-    },
-    "2026-08-31": {
-      "v2": {
-        "deep_min": 28,
-        "rem_min": 106,
-        "core_min": 321,
-        "awake_min": 54
-      },
-      "v3": {
-        "deep_min": 8.0,
-        "rem_min": 86.0,
-        "core_min": 280.0,
-        "awake_min": 55.5
-      },
-      "diffs": {
-        "deep_min": -20.0,
-        "rem_min": -20.0,
-        "core_min": -41.0
-      },
-      "detected_at": "2026-09-07T13:16:56"
-    },
-    "2026-09-25": {
-      "v2": {
-        "deep_min": 21,
-        "rem_min": 91,
-        "core_min": 332,
-        "awake_min": 22
-      },
-      "v3": {
-        "deep_min": 0.0,
-        "rem_min": 91.0,
-        "core_min": 262.5,
-        "awake_min": 12.5
-      },
-      "diffs": {
-        "deep_min": -21.0,
-        "core_min": -69.5,
-        "awake_min": -9.5
-      },
-      "detected_at": "2026-09-25T13:21:08"
+      "detected_at": "2026-09-25T13:31:53"
     }
   }
 }

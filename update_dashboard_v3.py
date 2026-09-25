@@ -310,6 +310,10 @@ def compare_v2_v3(history, v2_by_date):
             if abs(v3_rec[f] - v2_rec[f]) > V2_V3_DIVERGENCE_TOLERANCE_MIN
         }
         if not diffs:
+            # 09-25發現：先前若曾記錄過這夜的分歧、但這次重算已收斂在容許誤差內
+            # （例如v3自己的bug修正後數字改對了），要把舊entry清掉，否則會留下
+            # 跟目前nights紀錄互相矛盾的過期分歧資料，誤導日後查證。
+            divergence.pop(date, None)
             continue
         divergence[date] = {
             'v2': {f: v2_rec[f] for f in STAGE_FIELDS},
