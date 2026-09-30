@@ -7057,7 +7057,7 @@
         "core_min": 161.0,
         "awake_min": 42.0
       },
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 29
     },
     "2026-09-04": {
@@ -7078,7 +7078,7 @@
       "diffs": {
         "core_min": 15.5
       },
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 19
     },
     "2026-09-27": {
@@ -7099,7 +7099,7 @@
       "diffs": {
         "core_min": 4.5
       },
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 69
     },
     "2026-08-28": {
@@ -7118,7 +7118,7 @@
         "bedtime": "01:05"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 46
     },
     "2026-08-30": {
@@ -7137,7 +7137,7 @@
         "bedtime": "00:44"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 22
     },
     "2026-08-31": {
@@ -7156,7 +7156,7 @@
         "bedtime": "23:04"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 78
     },
     "2026-09-01": {
@@ -7175,7 +7175,7 @@
         "bedtime": "00:58"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 48
     },
     "2026-09-03": {
@@ -7194,7 +7194,7 @@
         "bedtime": "00:30"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 20
     },
     "2026-09-05": {
@@ -7213,7 +7213,7 @@
         "bedtime": "00:38"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 34
     },
     "2026-09-06": {
@@ -7232,7 +7232,7 @@
         "bedtime": "01:39"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 65
     },
     "2026-09-07": {
@@ -7251,7 +7251,7 @@
         "bedtime": "00:40"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 24
     },
     "2026-09-08": {
@@ -7270,7 +7270,7 @@
         "bedtime": "00:00"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 27
     },
     "2026-09-10": {
@@ -7289,7 +7289,7 @@
         "bedtime": "01:09"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 67
     },
     "2026-09-11": {
@@ -7308,7 +7308,7 @@
         "bedtime": "00:00"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 64
     },
     "2026-09-14": {
@@ -7327,7 +7327,7 @@
         "bedtime": "00:24"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 27
     },
     "2026-09-15": {
@@ -7346,7 +7346,7 @@
         "bedtime": "00:39"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 27
     },
     "2026-09-16": {
@@ -7365,7 +7365,7 @@
         "bedtime": "01:07"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 39
     },
     "2026-09-17": {
@@ -7384,7 +7384,7 @@
         "bedtime": "01:20"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 17
     },
     "2026-09-20": {
@@ -7403,7 +7403,7 @@
         "bedtime": "03:00"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 77
     },
     "2026-09-21": {
@@ -7422,7 +7422,7 @@
         "bedtime": "01:47"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 56
     },
     "2026-09-22": {
@@ -7441,7 +7441,7 @@
         "bedtime": "01:34"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 76
     },
     "2026-09-25": {
@@ -7460,7 +7460,7 @@
         "bedtime": "01:49"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 71
     },
     "2026-09-28": {
@@ -7479,7 +7479,7 @@
         "bedtime": "02:00"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 120
     },
     "2026-09-29": {
@@ -7498,7 +7498,7 @@
         "bedtime": "00:48"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 63
     },
     "2026-09-30": {
@@ -7517,7 +7517,7 @@
         "bedtime": "00:52"
       },
       "diffs": {},
-      "detected_at": "2026-09-30T18:00:15",
+      "detected_at": "2026-09-30T22:42:51",
       "bedtime_diff_min": 42
     }
   }
