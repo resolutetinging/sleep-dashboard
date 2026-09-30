@@ -44,3 +44,11 @@ for f in "$SRC"/*.json "$SRC"/*.txt; do
 done
 
 python3 /Users/tinayu/sleep-dashboard/update_dashboard.py
+
+# 09-30新增：v3 migration monitor period排程，跟v2共用同一份run_update.sh
+# 已經抓好的json_cache/sleep_raw_*.txt，不重複打iCloud。update_dashboard_v3.py
+# 算完history.json後，update_dashboard_v3_live.py接手轉格式注入v3-live頁，
+# 兩者各自獨立git commit+push（v2/v3互不注入鐵律：這裡只是共用排程時機，
+# 不是共用計算邏輯）。v2本身的排程與計算完全不受這兩行影響。
+python3 /Users/tinayu/sleep-dashboard/update_dashboard_v3.py
+python3 /Users/tinayu/sleep-dashboard/update_dashboard_v3_live.py
