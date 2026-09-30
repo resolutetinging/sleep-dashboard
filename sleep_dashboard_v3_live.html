@@ -292,6 +292,12 @@
 </style>
 </head>
 <body>
+<!-- 09-30：v3-live monitor period標記，避免跟正式v2頁面混淆；資料寫入
+     SAS_KEY_SUFFIX='_v3preview'的獨立key，不影響SAS Hub/Daily Optimizer
+     現在讀的正式資料。10/1後視migration決策移除此banner。 -->
+<div style="position:sticky;top:0;z-index:9999;background:#c0392b;color:#fff;text-align:center;padding:6px 10px;font-size:12px;font-weight:600;">
+  🧪 v3-live monitor period 預覽頁（09-30起）——資料寫入獨立測試key，不影響正式SAS Hub/Daily Optimizer
+</div>
 <div class="app">
 
 <!-- SIDEBAR: Definitions -->
@@ -1858,6 +1864,15 @@ function updateSleepDebt(allData) {
   return realTotalDebt; // for combat power debt adjustment
 }
 
+// 09-30 v3-live專屬安全機制：monitor period期間所有sas_*共用key都加這個後綴，
+// 避免這份複製頁一被打開就覆蓋掉v2寫入、Daily Optimizer/SAS Hub正在讀的真實
+// 資料（09-30當天測試時已實際踩過一次，開頁瞬間就把sas_sleep_latest的bedtime
+// 從v2的00:10覆蓋成v3的00:52，靠重新打開v2頁面才救回來）。10/1 Daily Optimizer
+// 切過來、10/15 v3通過監控後SAS Hub切過來時，把這個常數改成空字串''
+// 就是正式生效的唯一改動點，不用再逐一找散落各處的localStorage呼叫。
+const SAS_KEY_SUFFIX = '_v3preview';
+function sasKey(k){ return k + SAS_KEY_SUFFIX; }
+
 function updateCombatPower(totalDebt) {
   // 規格（2026-07-03 重新定義）：
   // - 單夜：只看最新單日資料，一律不受「排除週末」開關影響
@@ -1917,9 +1932,9 @@ function updateCombatPower(totalDebt) {
   document.getElementById('combatNum').style.color = color;
   try{
     var todayStr=new Date().toISOString().slice(0,10);
-    localStorage.setItem('sas_combat',String(score));
-    localStorage.setItem('sas_combat_weighted',String(score));
-    localStorage.setItem('sas_combat_date',todayStr);
+    localStorage.setItem(sasKey('sas_combat'),String(score));
+    localStorage.setItem(sasKey('sas_combat_weighted'),String(score));
+    localStorage.setItem(sasKey('sas_combat_date'),todayStr);
   }catch(e){}
 
   // 恆排除週末的 3 夜加權（2026-07-07 新規）：不受「排除週末」開關影響，
@@ -1933,14 +1948,14 @@ function updateCombatPower(totalDebt) {
     const wdRaw = wdScores.reduce((sum, s, i) => sum + s * wdWts[i], 0);
     const wdDebt = wdPool.slice(-7).reduce((sum, d) => sum + (480 - d.total_min), 0);
     const wdPenalty = Math.max(0, wdDebt / 60 - 3) * 2;
-    localStorage.setItem('sas_combat_weekday', String(Math.round(Math.max(0, wdRaw - wdPenalty))));
+    localStorage.setItem(sasKey('sas_combat_weekday'), String(Math.round(Math.max(0, wdRaw - wdPenalty))));
   }catch(e){}
 
   // 單夜顯示
   const singleColor = singleScore>=80?'#5e8f7e':singleScore>=70?'#5c7a96':singleScore>=60?'#e67e22':'#c0392b';
   document.getElementById('combatSingle').textContent = singleScore;
   document.getElementById('combatSingle').style.color = singleColor;
-  try{localStorage.setItem('sas_combat_single',String(singleScore));}catch(e){}
+  try{localStorage.setItem(sasKey('sas_combat_single'),String(singleScore));}catch(e){}
 
   // 差距解讀
   const diff = singleScore - score;
@@ -1974,7 +1989,7 @@ function updateCombatPower(totalDebt) {
   const endM = Math.round((endHour - endH) * 60);
   const endTimeStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
   const endColor = score >= 70 ? '#5e8f7e' : score >= 40 ? '#e67e22' : '#c0392b';
-  try{localStorage.setItem('sas_endurance', endTimeStr);}catch(e){}
+  try{localStorage.setItem(sasKey('sas_endurance'), endTimeStr);}catch(e){}
   document.getElementById('combatEndurance').textContent = `體能續航至 ${endTimeStr}`;
   document.getElementById('combatEndurance').style.color = endColor;
   // 右欄續航
@@ -2111,11 +2126,11 @@ function saveSleepToLocalStorage() {
     const last180 = allN.slice(-180).map(_mapN);
 
     // 讀取 updateCombatPower 已寫入的分數（refreshAll 在前，此函式在後）
-    const combatSingle   = parseInt(localStorage.getItem('sas_combat_single')  ||'0')||null;
-    const combatWeighted = parseInt(localStorage.getItem('sas_combat')         ||'0')||null;
+    const combatSingle   = parseInt(localStorage.getItem(sasKey('sas_combat_single'))  ||'0')||null;
+    const combatWeighted = parseInt(localStorage.getItem(sasKey('sas_combat'))         ||'0')||null;
     const nightsWeighted = Math.min(nn, 3);
 
-    localStorage.setItem('sas_sleep_latest', JSON.stringify({
+    localStorage.setItem(sasKey('sas_sleep_latest'), JSON.stringify({
       date:     last.date,
       bedtime:  last.bedtime  || null,
       wake:     last.wake     || null,
