@@ -157,6 +157,13 @@ def build_record(session):
     awake_min = totals['Awake'] / 60
     total_min = deep_min + rem_min + core_min + awake_min
 
+    # 09-30修復：efficiency原本硬編成0，從未真正計算過。v2的公式是
+    # 睡眠時間(deep+rem+core，不含awake) / 在床時間(睡眠時間+awake) * 100；
+    # 這裡的total_min跟v2定義不同——v3的total_min已經包含awake_min（等於
+    # v2講的「在床時間」），所以分母直接用total_min，不能再重複加一次awake_min。
+    sleep_min = deep_min + rem_min + core_min
+    efficiency = round(sleep_min / total_min * 100, 1) if total_min > 0 else 100.0
+
     return {
         'date': wake.strftime('%Y-%m-%d'),  # 以「醒來日期」為準，對齊iPhone Health App邏輯
         'bedtime': bedtime.isoformat(),
@@ -166,7 +173,7 @@ def build_record(session):
         'rem_min': round(rem_min, 1),
         'core_min': round(core_min, 1),
         'awake_min': round(awake_min, 1),
-        'efficiency': 0,
+        'efficiency': efficiency,
     }
 
 
