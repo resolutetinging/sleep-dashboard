@@ -7041,13 +7041,15 @@
         "deep_min": 50,
         "rem_min": 93,
         "core_min": 260,
-        "awake_min": 14
+        "awake_min": 14,
+        "bedtime": "00:26"
       },
       "v3": {
         "deep_min": 59.5,
         "rem_min": 117.5,
         "core_min": 421.0,
-        "awake_min": 56.0
+        "awake_min": 56.0,
+        "bedtime": "00:55"
       },
       "diffs": {
         "deep_min": 9.5,
@@ -7055,43 +7057,468 @@
         "core_min": 161.0,
         "awake_min": 42.0
       },
-      "detected_at": "2026-09-30T11:09:31"
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 29
     },
     "2026-09-04": {
       "v2": {
         "deep_min": 57,
         "rem_min": 114,
         "core_min": 306,
-        "awake_min": 38
+        "awake_min": 38,
+        "bedtime": "00:17"
       },
       "v3": {
         "deep_min": 57.0,
         "rem_min": 113.5,
         "core_min": 321.5,
-        "awake_min": 37.5
+        "awake_min": 37.5,
+        "bedtime": "23:58"
       },
       "diffs": {
         "core_min": 15.5
       },
-      "detected_at": "2026-09-30T11:09:31"
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 19
     },
     "2026-09-27": {
       "v2": {
         "deep_min": 34,
         "rem_min": 135,
         "core_min": 405,
-        "awake_min": 32
+        "awake_min": 32,
+        "bedtime": "01:04"
       },
       "v3": {
         "deep_min": 34.0,
         "rem_min": 134.5,
         "core_min": 409.5,
-        "awake_min": 31.5
+        "awake_min": 31.5,
+        "bedtime": "23:55"
       },
       "diffs": {
         "core_min": 4.5
       },
-      "detected_at": "2026-09-30T11:09:31"
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 69
+    },
+    "2026-08-28": {
+      "v2": {
+        "deep_min": 34,
+        "rem_min": 88,
+        "core_min": 288,
+        "awake_min": 14,
+        "bedtime": "00:19"
+      },
+      "v3": {
+        "deep_min": 34.0,
+        "rem_min": 88.0,
+        "core_min": 288.0,
+        "awake_min": 13.5,
+        "bedtime": "01:05"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 46
+    },
+    "2026-08-30": {
+      "v2": {
+        "deep_min": 25,
+        "rem_min": 61,
+        "core_min": 298,
+        "awake_min": 23,
+        "bedtime": "00:22"
+      },
+      "v3": {
+        "deep_min": 25.5,
+        "rem_min": 60.5,
+        "core_min": 295.0,
+        "awake_min": 25.5,
+        "bedtime": "00:44"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 22
+    },
+    "2026-08-31": {
+      "v2": {
+        "deep_min": 28,
+        "rem_min": 106,
+        "core_min": 321,
+        "awake_min": 54,
+        "bedtime": "00:22"
+      },
+      "v3": {
+        "deep_min": 29.5,
+        "rem_min": 105.0,
+        "core_min": 317.5,
+        "awake_min": 56.0,
+        "bedtime": "23:04"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 78
+    },
+    "2026-09-01": {
+      "v2": {
+        "deep_min": 37,
+        "rem_min": 78,
+        "core_min": 267,
+        "awake_min": 48,
+        "bedtime": "00:10"
+      },
+      "v3": {
+        "deep_min": 37.0,
+        "rem_min": 78.5,
+        "core_min": 267.5,
+        "awake_min": 48.0,
+        "bedtime": "00:58"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 48
+    },
+    "2026-09-03": {
+      "v2": {
+        "deep_min": 40,
+        "rem_min": 67,
+        "core_min": 323,
+        "awake_min": 35,
+        "bedtime": "00:10"
+      },
+      "v3": {
+        "deep_min": 40.0,
+        "rem_min": 67.0,
+        "core_min": 323.0,
+        "awake_min": 35.0,
+        "bedtime": "00:30"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 20
+    },
+    "2026-09-05": {
+      "v2": {
+        "deep_min": 48,
+        "rem_min": 90,
+        "core_min": 274,
+        "awake_min": 6,
+        "bedtime": "00:04"
+      },
+      "v3": {
+        "deep_min": 47.5,
+        "rem_min": 89.5,
+        "core_min": 274.0,
+        "awake_min": 6.5,
+        "bedtime": "00:38"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 34
+    },
+    "2026-09-06": {
+      "v2": {
+        "deep_min": 27,
+        "rem_min": 113,
+        "core_min": 300,
+        "awake_min": 63,
+        "bedtime": "00:34"
+      },
+      "v3": {
+        "deep_min": 27.0,
+        "rem_min": 113.0,
+        "core_min": 299.5,
+        "awake_min": 63.0,
+        "bedtime": "01:39"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 65
+    },
+    "2026-09-07": {
+      "v2": {
+        "deep_min": 48,
+        "rem_min": 96,
+        "core_min": 249,
+        "awake_min": 14,
+        "bedtime": "01:04"
+      },
+      "v3": {
+        "deep_min": 48.5,
+        "rem_min": 96.5,
+        "core_min": 249.5,
+        "awake_min": 13.5,
+        "bedtime": "00:40"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 24
+    },
+    "2026-09-08": {
+      "v2": {
+        "deep_min": 48,
+        "rem_min": 105,
+        "core_min": 310,
+        "awake_min": 37,
+        "bedtime": "00:27"
+      },
+      "v3": {
+        "deep_min": 48.0,
+        "rem_min": 105.5,
+        "core_min": 310.5,
+        "awake_min": 37.0,
+        "bedtime": "00:00"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 27
+    },
+    "2026-09-10": {
+      "v2": {
+        "deep_min": 21,
+        "rem_min": 84,
+        "core_min": 266,
+        "awake_min": 27,
+        "bedtime": "00:02"
+      },
+      "v3": {
+        "deep_min": 21.0,
+        "rem_min": 83.5,
+        "core_min": 265.5,
+        "awake_min": 26.5,
+        "bedtime": "01:09"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 67
+    },
+    "2026-09-11": {
+      "v2": {
+        "deep_min": 18,
+        "rem_min": 110,
+        "core_min": 273,
+        "awake_min": 56,
+        "bedtime": "01:04"
+      },
+      "v3": {
+        "deep_min": 18.0,
+        "rem_min": 110.0,
+        "core_min": 273.0,
+        "awake_min": 55.5,
+        "bedtime": "00:00"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 64
+    },
+    "2026-09-14": {
+      "v2": {
+        "deep_min": 47,
+        "rem_min": 88,
+        "core_min": 290,
+        "awake_min": 21,
+        "bedtime": "00:51"
+      },
+      "v3": {
+        "deep_min": 47.0,
+        "rem_min": 88.5,
+        "core_min": 289.5,
+        "awake_min": 21.5,
+        "bedtime": "00:24"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 27
+    },
+    "2026-09-15": {
+      "v2": {
+        "deep_min": 38,
+        "rem_min": 78,
+        "core_min": 314,
+        "awake_min": 7,
+        "bedtime": "00:12"
+      },
+      "v3": {
+        "deep_min": 37.5,
+        "rem_min": 78.0,
+        "core_min": 313.5,
+        "awake_min": 7.0,
+        "bedtime": "00:39"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 27
+    },
+    "2026-09-16": {
+      "v2": {
+        "deep_min": 22,
+        "rem_min": 66,
+        "core_min": 271,
+        "awake_min": 34,
+        "bedtime": "00:28"
+      },
+      "v3": {
+        "deep_min": 22.0,
+        "rem_min": 66.5,
+        "core_min": 271.0,
+        "awake_min": 34.5,
+        "bedtime": "01:07"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 39
+    },
+    "2026-09-17": {
+      "v2": {
+        "deep_min": 14,
+        "rem_min": 88,
+        "core_min": 282,
+        "awake_min": 56,
+        "bedtime": "01:03"
+      },
+      "v3": {
+        "deep_min": 14.0,
+        "rem_min": 88.5,
+        "core_min": 282.5,
+        "awake_min": 56.0,
+        "bedtime": "01:20"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 17
+    },
+    "2026-09-20": {
+      "v2": {
+        "deep_min": 50,
+        "rem_min": 102,
+        "core_min": 252,
+        "awake_min": 66,
+        "bedtime": "01:43"
+      },
+      "v3": {
+        "deep_min": 50.0,
+        "rem_min": 102.0,
+        "core_min": 252.0,
+        "awake_min": 66.0,
+        "bedtime": "03:00"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 77
+    },
+    "2026-09-21": {
+      "v2": {
+        "deep_min": 42,
+        "rem_min": 98,
+        "core_min": 204,
+        "awake_min": 6,
+        "bedtime": "02:43"
+      },
+      "v3": {
+        "deep_min": 42.5,
+        "rem_min": 97.5,
+        "core_min": 204.0,
+        "awake_min": 6.0,
+        "bedtime": "01:47"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 56
+    },
+    "2026-09-22": {
+      "v2": {
+        "deep_min": 42,
+        "rem_min": 67,
+        "core_min": 285,
+        "awake_min": 4,
+        "bedtime": "00:18"
+      },
+      "v3": {
+        "deep_min": 41.5,
+        "rem_min": 67.0,
+        "core_min": 284.5,
+        "awake_min": 4.0,
+        "bedtime": "01:34"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 76
+    },
+    "2026-09-25": {
+      "v2": {
+        "deep_min": 21,
+        "rem_min": 91,
+        "core_min": 332,
+        "awake_min": 22,
+        "bedtime": "00:38"
+      },
+      "v3": {
+        "deep_min": 21.0,
+        "rem_min": 91.0,
+        "core_min": 332.0,
+        "awake_min": 22.0,
+        "bedtime": "01:49"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 71
+    },
+    "2026-09-28": {
+      "v2": {
+        "deep_min": 44,
+        "rem_min": 110,
+        "core_min": 361,
+        "awake_min": 32,
+        "bedtime": "00:00"
+      },
+      "v3": {
+        "deep_min": 43.5,
+        "rem_min": 110.0,
+        "core_min": 361.0,
+        "awake_min": 31.5,
+        "bedtime": "02:00"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 120
+    },
+    "2026-09-29": {
+      "v2": {
+        "deep_min": 36,
+        "rem_min": 99,
+        "core_min": 284,
+        "awake_min": 23,
+        "bedtime": "01:51"
+      },
+      "v3": {
+        "deep_min": 35.5,
+        "rem_min": 99.0,
+        "core_min": 284.0,
+        "awake_min": 23.0,
+        "bedtime": "00:48"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 63
+    },
+    "2026-09-30": {
+      "v2": {
+        "deep_min": 9,
+        "rem_min": 82,
+        "core_min": 334,
+        "awake_min": 18,
+        "bedtime": "00:10"
+      },
+      "v3": {
+        "deep_min": 9.0,
+        "rem_min": 82.5,
+        "core_min": 334.0,
+        "awake_min": 18.5,
+        "bedtime": "00:52"
+      },
+      "diffs": {},
+      "detected_at": "2026-09-30T11:12:21",
+      "bedtime_diff_min": 42
     }
   }
 }

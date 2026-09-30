@@ -298,14 +298,38 @@ def load_v2_records():
         return {}
 
 
+
+# 09-30補：09-29 checkpoint發現compare_v2_v3()從未比對過bedtime，35夜完整
+# 核對後80%落差>5分鐘、平均36.4分鐘、最大120分鐘，長期存在的監控盲點。
+# 15分鐘門檻篩掉正常捨入雜訊，只留下真正值得留意的落差；跟STAGE_FIELDS
+# 分開處理不混用同一個容許誤差，因為bedtime這條已知常態性落差較大，不能
+# 套用分期分鐘數的4分鐘門檻（會讓幾乎每夜都跳警告，反而稀釋真正的訊號）。
+BEDTIME_DIVERGENCE_TOLERANCE_MIN = 15
+
+
+def _hhmm_to_min(hhmm):
+    h, m = map(int, hhmm.split(':'))
+    return h * 60 + m
+
+
+def _bedtime_diff_min(v3_bedtime_iso, v2_bedtime_hhmm):
+    """v3存完整ISO時間戳、v2只存HH:MM字串，兩邊都只比較「幾點幾分」本身，
+    用跨日環繞取最短距離（例如23:55跟00:10只差15分鐘，不是23小時45分鐘）。"""
+    v3_min = datetime.fromisoformat(v3_bedtime_iso).hour * 60 + datetime.fromisoformat(v3_bedtime_iso).minute
+    v2_min = _hhmm_to_min(v2_bedtime_hhmm)
+    diff = abs(v3_min - v2_min)
+    return min(diff, 1440 - diff)
+
+
 def compare_v2_v3(history, v2_by_date):
     """拿v2跟v3同一晚的四項分期數字互相比對（理論上該收斂到接近的數字，
     因為兩邊都是拿Duration算的），只在差距超過V2_V3_DIVERGENCE_TOLERANCE_MIN時
-    才記錄，避免把正常的捨入方式差異也當成警訊。
-    回傳本次比對到、且超出容許誤差的日期清單，供列印報告用。"""
+    才記錄，避免把正常的捨入方式差異也當成警訊。09-30起同時比對bedtime。
+    回傳(分期分鐘數超標的日期清單, bedtime超標的日期清單)供列印報告用。"""
     now = datetime.now().isoformat(timespec='seconds')
     divergence = history.setdefault('v2_v3_divergence', {})
     flagged_dates = []
+    bedtime_flagged_dates = []
 
     for date, v3_rec in history['nights'].items():
         v2_rec = v2_by_date.get(date)
@@ -316,21 +340,32 @@ def compare_v2_v3(history, v2_by_date):
             for f in STAGE_FIELDS
             if abs(v3_rec[f] - v2_rec[f]) > V2_V3_DIVERGENCE_TOLERANCE_MIN
         }
-        if not diffs:
+        bedtime_diff = _bedtime_diff_min(v3_rec['bedtime'], v2_rec['bedtime']) if v2_rec.get('bedtime') else None
+        has_bedtime_issue = bedtime_diff is not None and bedtime_diff > BEDTIME_DIVERGENCE_TOLERANCE_MIN
+
+        if not diffs and not has_bedtime_issue:
             # 09-25發現：先前若曾記錄過這夜的分歧、但這次重算已收斂在容許誤差內
             # （例如v3自己的bug修正後數字改對了），要把舊entry清掉，否則會留下
             # 跟目前nights紀錄互相矛盾的過期分歧資料，誤導日後查證。
             divergence.pop(date, None)
             continue
-        divergence[date] = {
+
+        entry = {
             'v2': {f: v2_rec[f] for f in STAGE_FIELDS},
             'v3': {f: v3_rec[f] for f in STAGE_FIELDS},
             'diffs': diffs,
             'detected_at': now,
         }
-        flagged_dates.append(date)
+        if has_bedtime_issue:
+            entry['bedtime_diff_min'] = bedtime_diff
+            entry['v2']['bedtime'] = v2_rec['bedtime']
+            entry['v3']['bedtime'] = datetime.fromisoformat(v3_rec['bedtime']).strftime('%H:%M')
+            bedtime_flagged_dates.append(date)
+        divergence[date] = entry
+        if diffs:
+            flagged_dates.append(date)
 
-    return flagged_dates
+    return flagged_dates, bedtime_flagged_dates
 
 
 def inject_html(records):
@@ -391,16 +426,21 @@ def main():
     v2_by_date = load_v2_records()
     if v2_by_date:
         overlap = sorted(set(history['nights']) & set(v2_by_date))
-        flagged = compare_v2_v3(history, v2_by_date)
+        flagged, bedtime_flagged = compare_v2_v3(history, v2_by_date)
         print(f"\nv2/v3交叉比對：{len(overlap)} 晚重疊日期")
         if flagged:
-            print(f"⚠ {len(flagged)} 晚差距超過{V2_V3_DIVERGENCE_TOLERANCE_MIN}分鐘，值得留意：")
+            print(f"⚠ {len(flagged)} 晚分期分鐘數差距超過{V2_V3_DIVERGENCE_TOLERANCE_MIN}分鐘，值得留意：")
             for date in flagged:
                 d = history['v2_v3_divergence'][date]
                 diff_txt = '、'.join(f"{f}: v2={d['v2'][f]} v3={d['v3'][f]}（{v:+.1f}）" for f, v in d['diffs'].items())
                 print(f"  {date}  {diff_txt}")
         else:
-            print(f"= 重疊日期皆在容許誤差內，無系統性分歧")
+            print(f"= 重疊日期分期分鐘數皆在容許誤差內，無系統性分歧")
+        # 09-30新增：bedtime只印總數不逐夜列出（已知v2的Shortcut sleepStart欄位
+        # 常態性不準確，不是v3的問題，逐夜列出會太吵，細節查v2_v3_divergence即可）
+        if bedtime_flagged:
+            print(f"⚠ {len(bedtime_flagged)} 晚bedtime落差超過{BEDTIME_DIVERGENCE_TOLERANCE_MIN}分鐘"
+                  f"（已知v2端Shortcut匯出欄位常態性不準，非v3問題，明細見v2_v3_divergence的bedtime_diff_min）")
 
     save_history(history)
     total_raw_samples = sum(len(n.get('raw_samples', [])) for n in history['nights'].values())
