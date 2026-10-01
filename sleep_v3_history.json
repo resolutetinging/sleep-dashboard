@@ -7193,15 +7193,13 @@
         "deep_min": 50,
         "rem_min": 93,
         "core_min": 260,
-        "awake_min": 14,
-        "bedtime": "00:26"
+        "awake_min": 14
       },
       "v3": {
         "deep_min": 59.5,
         "rem_min": 117.5,
         "core_min": 421.0,
-        "awake_min": 56.0,
-        "bedtime": "00:55"
+        "awake_min": 56.0
       },
       "diffs": {
         "deep_min": 9.5,
@@ -7209,8 +7207,7 @@
         "core_min": 161.0,
         "awake_min": 42.0
       },
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 29
+      "detected_at": "2026-10-01T13:00:14"
     },
     "2026-09-04": {
       "v2": {
@@ -7225,13 +7222,13 @@
         "rem_min": 113.5,
         "core_min": 321.5,
         "awake_min": 37.5,
-        "bedtime": "23:58"
+        "bedtime": "23:42"
       },
       "diffs": {
         "core_min": 15.5
       },
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 19
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 35
     },
     "2026-09-27": {
       "v2": {
@@ -7246,51 +7243,13 @@
         "rem_min": 134.5,
         "core_min": 409.5,
         "awake_min": 31.5,
-        "bedtime": "23:55"
+        "bedtime": "23:51"
       },
       "diffs": {
         "core_min": 4.5
       },
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 69
-    },
-    "2026-08-28": {
-      "v2": {
-        "deep_min": 34,
-        "rem_min": 88,
-        "core_min": 288,
-        "awake_min": 14,
-        "bedtime": "00:19"
-      },
-      "v3": {
-        "deep_min": 34.0,
-        "rem_min": 88.0,
-        "core_min": 288.0,
-        "awake_min": 13.5,
-        "bedtime": "01:05"
-      },
-      "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 46
-    },
-    "2026-08-30": {
-      "v2": {
-        "deep_min": 25,
-        "rem_min": 61,
-        "core_min": 298,
-        "awake_min": 23,
-        "bedtime": "00:22"
-      },
-      "v3": {
-        "deep_min": 25.5,
-        "rem_min": 60.5,
-        "core_min": 295.0,
-        "awake_min": 25.5,
-        "bedtime": "00:44"
-      },
-      "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 22
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 73
     },
     "2026-08-31": {
       "v2": {
@@ -7305,11 +7264,11 @@
         "rem_min": 105.0,
         "core_min": 317.5,
         "awake_min": 56.0,
-        "bedtime": "23:04"
+        "bedtime": "22:51"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 78
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 91
     },
     "2026-09-01": {
       "v2": {
@@ -7324,30 +7283,11 @@
         "rem_min": 78.5,
         "core_min": 267.5,
         "awake_min": 48.0,
-        "bedtime": "00:58"
+        "bedtime": "00:35"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 48
-    },
-    "2026-09-03": {
-      "v2": {
-        "deep_min": 40,
-        "rem_min": 67,
-        "core_min": 323,
-        "awake_min": 35,
-        "bedtime": "00:10"
-      },
-      "v3": {
-        "deep_min": 40.0,
-        "rem_min": 67.0,
-        "core_min": 323.0,
-        "awake_min": 35.0,
-        "bedtime": "00:30"
-      },
-      "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 20
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 25
     },
     "2026-09-05": {
       "v2": {
@@ -7362,11 +7302,11 @@
         "rem_min": 89.5,
         "core_min": 274.0,
         "awake_min": 6.5,
-        "bedtime": "00:38"
+        "bedtime": "00:34"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 34
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 30
     },
     "2026-09-06": {
       "v2": {
@@ -7381,11 +7321,11 @@
         "rem_min": 113.0,
         "core_min": 299.5,
         "awake_min": 63.0,
-        "bedtime": "01:39"
+        "bedtime": "01:04"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 65
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 30
     },
     "2026-09-07": {
       "v2": {
@@ -7400,11 +7340,11 @@
         "rem_min": 96.5,
         "core_min": 249.5,
         "awake_min": 13.5,
-        "bedtime": "00:40"
+        "bedtime": "00:27"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 24
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 37
     },
     "2026-09-08": {
       "v2": {
@@ -7419,11 +7359,11 @@
         "rem_min": 105.5,
         "core_min": 310.5,
         "awake_min": 37.0,
-        "bedtime": "00:00"
+        "bedtime": "23:48"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 27
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 39
     },
     "2026-09-10": {
       "v2": {
@@ -7438,11 +7378,11 @@
         "rem_min": 83.5,
         "core_min": 265.5,
         "awake_min": 26.5,
-        "bedtime": "01:09"
+        "bedtime": "01:04"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 67
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 62
     },
     "2026-09-11": {
       "v2": {
@@ -7457,11 +7397,11 @@
         "rem_min": 110.0,
         "core_min": 273.0,
         "awake_min": 55.5,
-        "bedtime": "00:00"
+        "bedtime": "23:57"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 64
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 67
     },
     "2026-09-14": {
       "v2": {
@@ -7476,11 +7416,11 @@
         "rem_min": 88.5,
         "core_min": 289.5,
         "awake_min": 21.5,
-        "bedtime": "00:24"
+        "bedtime": "00:12"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 27
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 39
     },
     "2026-09-15": {
       "v2": {
@@ -7495,11 +7435,11 @@
         "rem_min": 78.0,
         "core_min": 313.5,
         "awake_min": 7.0,
-        "bedtime": "00:39"
+        "bedtime": "00:28"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 27
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 16
     },
     "2026-09-16": {
       "v2": {
@@ -7514,30 +7454,11 @@
         "rem_min": 66.5,
         "core_min": 271.0,
         "awake_min": 34.5,
-        "bedtime": "01:07"
-      },
-      "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 39
-    },
-    "2026-09-17": {
-      "v2": {
-        "deep_min": 14,
-        "rem_min": 88,
-        "core_min": 282,
-        "awake_min": 56,
         "bedtime": "01:03"
       },
-      "v3": {
-        "deep_min": 14.0,
-        "rem_min": 88.5,
-        "core_min": 282.5,
-        "awake_min": 56.0,
-        "bedtime": "01:20"
-      },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 17
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 35
     },
     "2026-09-20": {
       "v2": {
@@ -7552,11 +7473,11 @@
         "rem_min": 102.0,
         "core_min": 252.0,
         "awake_min": 66.0,
-        "bedtime": "03:00"
+        "bedtime": "02:43"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 77
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 60
     },
     "2026-09-21": {
       "v2": {
@@ -7571,11 +7492,11 @@
         "rem_min": 97.5,
         "core_min": 204.0,
         "awake_min": 6.0,
-        "bedtime": "01:47"
+        "bedtime": "01:18"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 56
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 85
     },
     "2026-09-22": {
       "v2": {
@@ -7590,11 +7511,11 @@
         "rem_min": 67.0,
         "core_min": 284.5,
         "awake_min": 4.0,
-        "bedtime": "01:34"
+        "bedtime": "01:11"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 76
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 53
     },
     "2026-09-25": {
       "v2": {
@@ -7609,11 +7530,11 @@
         "rem_min": 91.0,
         "core_min": 332.0,
         "awake_min": 22.0,
-        "bedtime": "01:49"
+        "bedtime": "01:48"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 71
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 70
     },
     "2026-09-28": {
       "v2": {
@@ -7628,11 +7549,11 @@
         "rem_min": 110.0,
         "core_min": 361.0,
         "awake_min": 31.5,
-        "bedtime": "02:00"
+        "bedtime": "01:51"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 120
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 111
     },
     "2026-09-29": {
       "v2": {
@@ -7647,11 +7568,11 @@
         "rem_min": 99.0,
         "core_min": 284.0,
         "awake_min": 23.0,
-        "bedtime": "00:48"
+        "bedtime": "00:10"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 63
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 101
     },
     "2026-09-30": {
       "v2": {
@@ -7666,11 +7587,11 @@
         "rem_min": 82.5,
         "core_min": 334.0,
         "awake_min": 18.5,
-        "bedtime": "00:52"
+        "bedtime": "00:49"
       },
       "diffs": {},
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 42
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 39
     },
     "2026-10-01": {
       "v2": {
@@ -7685,13 +7606,108 @@
         "rem_min": 128.0,
         "core_min": 326.0,
         "awake_min": 5.5,
-        "bedtime": "23:44"
+        "bedtime": "23:21"
       },
       "diffs": {
         "core_min": 23.0
       },
-      "detected_at": "2026-10-01T09:30:15",
-      "bedtime_diff_min": 65
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 88
+    },
+    "2026-09-02": {
+      "v2": {
+        "deep_min": 28,
+        "rem_min": 105,
+        "core_min": 311,
+        "awake_min": 79,
+        "bedtime": "23:19"
+      },
+      "v3": {
+        "deep_min": 28.0,
+        "rem_min": 106.0,
+        "core_min": 309.0,
+        "awake_min": 79.5,
+        "bedtime": "23:00"
+      },
+      "diffs": {},
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 19
+    },
+    "2026-09-12": {
+      "v2": {
+        "deep_min": 12,
+        "rem_min": 82,
+        "core_min": 252,
+        "awake_min": 78,
+        "bedtime": "01:28"
+      },
+      "v3": {
+        "deep_min": 12.0,
+        "rem_min": 82.0,
+        "core_min": 252.0,
+        "awake_min": 77.5,
+        "bedtime": "01:03"
+      },
+      "diffs": {},
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 25
+    },
+    "2026-09-13": {
+      "v2": {
+        "deep_min": 40,
+        "rem_min": 119,
+        "core_min": 455,
+        "awake_min": 40,
+        "bedtime": "01:03"
+      },
+      "v3": {
+        "deep_min": 40.0,
+        "rem_min": 119.0,
+        "core_min": 455.0,
+        "awake_min": 40.5,
+        "bedtime": "22:59"
+      },
+      "diffs": {},
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 124
+    },
+    "2026-09-19": {
+      "v2": {
+        "deep_min": 18,
+        "rem_min": 93,
+        "core_min": 272,
+        "awake_min": 29,
+        "bedtime": "02:18"
+      },
+      "v3": {
+        "deep_min": 17.5,
+        "rem_min": 93.0,
+        "core_min": 271.5,
+        "awake_min": 29.0,
+        "bedtime": "01:53"
+      },
+      "diffs": {},
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 25
+    },
+    "2026-09-24": {
+      "v2": {
+        "deep_min": 16,
+        "rem_min": 79,
+        "core_min": 308,
+        "awake_min": 12,
+        "bedtime": "01:09"
+      },
+      "v3": {
+        "deep_min": 16.0,
+        "rem_min": 79.0,
+        "core_min": 308.0,
+        "awake_min": 12.5,
+        "bedtime": "00:38"
+      },
+      "diffs": {},
+      "detected_at": "2026-10-01T13:00:14",
+      "bedtime_diff_min": 31
     }
   },
   "sample_start_semantics": "true_start_since_2026-10-01"
