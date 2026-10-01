@@ -1858,6 +1858,11 @@ function updateSleepDebt(allData) {
   return realTotalDebt; // for combat power debt adjustment
 }
 
+// 10-01：Sleep v3已正式接手共用戰力key（sas_combat_weekday等，供Optimizer/SAS Hub/CC Guard讀取）。
+// v2頁降為對照用備援，改寫入加'_v2'後綴的獨立key，打開v2頁不會覆蓋v3的正式戰力。
+const SAS_KEY_SUFFIX = '_v2';
+function sasKey(k){ return k + SAS_KEY_SUFFIX; }
+
 function updateCombatPower(totalDebt) {
   // 規格（2026-07-03 重新定義）：
   // - 單夜：只看最新單日資料，一律不受「排除週末」開關影響
@@ -1917,9 +1922,9 @@ function updateCombatPower(totalDebt) {
   document.getElementById('combatNum').style.color = color;
   try{
     var todayStr=new Date().toISOString().slice(0,10);
-    localStorage.setItem('sas_combat',String(score));
-    localStorage.setItem('sas_combat_weighted',String(score));
-    localStorage.setItem('sas_combat_date',todayStr);
+    localStorage.setItem(sasKey('sas_combat'),String(score));
+    localStorage.setItem(sasKey('sas_combat_weighted'),String(score));
+    localStorage.setItem(sasKey('sas_combat_date'),todayStr);
   }catch(e){}
 
   // 恆排除週末的 3 夜加權（2026-07-07 新規）：不受「排除週末」開關影響，
@@ -1933,14 +1938,14 @@ function updateCombatPower(totalDebt) {
     const wdRaw = wdScores.reduce((sum, s, i) => sum + s * wdWts[i], 0);
     const wdDebt = wdPool.slice(-7).reduce((sum, d) => sum + (480 - d.total_min), 0);
     const wdPenalty = Math.max(0, wdDebt / 60 - 3) * 2;
-    localStorage.setItem('sas_combat_weekday', String(Math.round(Math.max(0, wdRaw - wdPenalty))));
+    localStorage.setItem(sasKey('sas_combat_weekday'), String(Math.round(Math.max(0, wdRaw - wdPenalty))));
   }catch(e){}
 
   // 單夜顯示
   const singleColor = singleScore>=80?'#5e8f7e':singleScore>=70?'#5c7a96':singleScore>=60?'#e67e22':'#c0392b';
   document.getElementById('combatSingle').textContent = singleScore;
   document.getElementById('combatSingle').style.color = singleColor;
-  try{localStorage.setItem('sas_combat_single',String(singleScore));}catch(e){}
+  try{localStorage.setItem(sasKey('sas_combat_single'),String(singleScore));}catch(e){}
 
   // 差距解讀
   const diff = singleScore - score;
@@ -1974,7 +1979,7 @@ function updateCombatPower(totalDebt) {
   const endM = Math.round((endHour - endH) * 60);
   const endTimeStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
   const endColor = score >= 70 ? '#5e8f7e' : score >= 40 ? '#e67e22' : '#c0392b';
-  try{localStorage.setItem('sas_endurance', endTimeStr);}catch(e){}
+  try{localStorage.setItem(sasKey('sas_endurance'), endTimeStr);}catch(e){}
   document.getElementById('combatEndurance').textContent = `體能續航至 ${endTimeStr}`;
   document.getElementById('combatEndurance').style.color = endColor;
   // 右欄續航
@@ -2111,11 +2116,11 @@ function saveSleepToLocalStorage() {
     const last180 = allN.slice(-180).map(_mapN);
 
     // 讀取 updateCombatPower 已寫入的分數（refreshAll 在前，此函式在後）
-    const combatSingle   = parseInt(localStorage.getItem('sas_combat_single')  ||'0')||null;
-    const combatWeighted = parseInt(localStorage.getItem('sas_combat')         ||'0')||null;
+    const combatSingle   = parseInt(localStorage.getItem(sasKey('sas_combat_single'))  ||'0')||null;
+    const combatWeighted = parseInt(localStorage.getItem(sasKey('sas_combat'))         ||'0')||null;
     const nightsWeighted = Math.min(nn, 3);
 
-    localStorage.setItem('sas_sleep_latest', JSON.stringify({
+    localStorage.setItem(sasKey('sas_sleep_latest'), JSON.stringify({
       date:     last.date,
       bedtime:  last.bedtime  || null,
       wake:     last.wake     || null,
