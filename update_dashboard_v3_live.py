@@ -23,7 +23,7 @@ sleep_v2_frozen_pre1001.json（由sleep_dashboard_v2.html的RAW.summary原樣
 import json
 import os
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 
 HISTORY_PATH = "/Users/tinayu/sleep-dashboard/sleep_v3_history.json"
 DASHBOARD_V3_LIVE_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard_v3_live.html"
@@ -76,10 +76,41 @@ def load_summary():
     return summary
 
 
+def load_segments():
+    """10-01新增：從history.json的raw_samples產出逐段分期資料，供v3_live頁
+    「睡眠週期」卡片使用。只處理 date >= V3_CUTOFF 的夜晚（此前沿用凍結v2，
+    無逐段資料）。raw_samples.start自10-01遷移後即為「真正開始時間」
+    （見update_dashboard_v3.py的load_samples與history頂層sample_start_semantics旗標），
+    end = start + dur_sec。回傳 {date: [{start, end, stage}]}，依start排序。"""
+    with open(HISTORY_PATH, encoding='utf-8') as f:
+        history = json.load(f)
+    if history.get('sample_start_semantics') != 'true_start_since_2026-10-01':
+        print("⚠ history.json缺少sample_start_semantics旗標（樣本時間語意未遷移），不產出segments")
+        return {}
+    out = {}
+    for date, n in history.get('nights', {}).items():
+        if date < V3_CUTOFF:
+            continue
+        segs = []
+        for s in n.get('raw_samples') or []:
+            st = datetime.fromisoformat(s['start'])
+            segs.append({
+                'start': st.isoformat(),
+                'end': (st + timedelta(seconds=s['dur_sec'])).isoformat(),
+                'stage': s['value'].lower(),
+            })
+        segs.sort(key=lambda x: x['start'])
+        out[date] = segs
+    return out
+
+
 def update_html(summary):
     """比照update_dashboard.py的update_html()，同一套RAW格式跟注入方式，
-    只是目標檔案換成sleep_dashboard_v3_live.html。"""
-    detail = [dict(d, segments=[]) for d in summary[-90:]]
+    只是目標檔案換成sleep_dashboard_v3_live.html。
+    10-01起detail的segments改由load_segments()填入（date>=V3_CUTOFF才有），
+    summary結構不變。"""
+    seg_map = load_segments()
+    detail = [dict(d, segments=seg_map.get(d['date'], [])) for d in summary[-90:]]
     new_raw = json.dumps({"summary": summary, "detail": detail}, ensure_ascii=False, separators=(',', ':'))
     marker_start = 'const RAW = '
     marker_end = ';\n\nconst COLORS'

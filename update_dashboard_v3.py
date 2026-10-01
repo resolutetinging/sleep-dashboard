@@ -86,6 +86,10 @@ GAP_THRESHOLD_MIN = 90
 
 MIN_SESSION_TOTAL_MIN = 60  # 濾掉白天小睡等雜訊
 
+# 10-01起history.json的raw_samples.start一律為「真正開始時間」（見load_samples說明），
+# 頂層旗標標記此語意；一次性遷移腳本見到旗標就跳過。
+SAMPLE_START_SEMANTICS = "true_start_since_2026-10-01"
+
 
 def parse_dur(s):
     """duration字串轉秒數。支援三種格式：純秒數／M:SS／H:MM:SS。"""
@@ -102,6 +106,15 @@ def parse_dur(s):
 
 
 def load_samples(path):
+    """解析raw檔成 {value, start, dur_sec} 清單，start 為該段「真正開始時間」。
+    10-01發現：raw檔的startDate欄位其實是該段的「結束時間」——1283對相鄰樣本中
+    1276對滿足「ts[i]-dur[i]==ts[i-1]」，當開始時間解讀只有43對吻合。原本直接
+    把它當開始時間，導致bedtime晚記第一段長度（10-01記23:44，實際23:21:05）、
+    wake多記最後一段長度（記07:35:05，實際07:34:05），split_sessions的gap也跟著偏。
+    分期分鐘數（時長加總）不受影響。這裡統一換算成 start = ts - dur，
+    之後split_sessions/build_record的「start+dur＝結束時間」邏輯即正確。
+    history.json既有夜晚的raw_samples已於10-01一次性遷移成同一語意
+    （頂層旗標 sample_start_semantics）。"""
     text = path.read_text(encoding='utf-8')
     samples = []
     for m in SAMPLE_PATTERN.finditer(text):
@@ -110,12 +123,13 @@ def load_samples(path):
         if value not in VALID_STAGES:
             continue
         try:
-            start = datetime.fromisoformat(start_raw)
+            end_ts = datetime.fromisoformat(start_raw)  # raw的startDate實為該段結束時間
         except ValueError:
             continue
         dur_sec = parse_dur(dur_raw)
         if dur_sec is None:
             continue
+        start = end_ts - timedelta(seconds=dur_sec)
         samples.append({'value': value, 'start': start, 'dur_sec': dur_sec})
     samples.sort(key=lambda s: s['start'])
     return samples
@@ -188,12 +202,12 @@ def serialize_session(session):
 
 def load_history():
     if not HISTORY_PATH.exists():
-        return {'nights': {}, 'changelog': []}
+        return {'nights': {}, 'changelog': [], 'sample_start_semantics': SAMPLE_START_SEMANTICS}
     try:
         data = json.loads(HISTORY_PATH.read_text(encoding='utf-8'))
     except (json.JSONDecodeError, OSError):
         print(f"⚠ {HISTORY_PATH.name} 讀取失敗或損毀，視為空歷史重新開始")
-        return {'nights': {}, 'changelog': []}
+        return {'nights': {}, 'changelog': [], 'sample_start_semantics': SAMPLE_START_SEMANTICS}
     data.setdefault('nights', {})
     data.setdefault('changelog', [])
     return data

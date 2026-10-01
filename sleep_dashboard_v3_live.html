@@ -734,6 +734,28 @@
     <div id="fragmentationCorrelation" style="margin-top:12px;padding:12px 14px;background:var(--surface2);border-radius:10px"></div>
   </div>
 
+  <!-- SLEEP CYCLE CARD（10-01新增：依逐段分期資料計算真實睡眠週期） -->
+  <div class="panel" id="cyclePanel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">睡眠週期</div>
+        <div class="panel-sub">依逐段分期切出每個週期（以 REM 期結束為一個週期的終點）</div>
+      </div>
+      <div class="range-btns" id="cycleNav" style="align-items:center">
+        <button class="range-btn" id="cyclePrev" onclick="changeCycleNight(-1)">◀</button>
+        <span id="cycleDate" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-dim);min-width:110px;text-align:center"></span>
+        <button class="range-btn" id="cycleNext" onclick="changeCycleNight(1)">▶</button>
+      </div>
+    </div>
+    <div id="cycleBody">
+      <div class="chart-wrap"><canvas id="cycleHypnoChart" height="90"></canvas></div>
+      <div id="cycleSummary" style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:10px;font-size:12px;line-height:1.8"></div>
+      <div id="cycleTable" style="margin-top:12px;overflow-x:auto"></div>
+    </div>
+    <div id="cycleEmpty" style="display:none;margin-top:4px;padding:12px 14px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-dim)">尚無逐段資料</div>
+    <div style="margin-top:12px;font-size:10px;color:var(--text-dim);line-height:1.6">睡眠週期依 Apple Watch 逐段分期資料計算，自 2026-10-01 起啟用；此前夜晚僅有每晚加總、無逐段資料，故不顯示。</div>
+  </div>
+
   <!-- REGULARITY CARD -->
   <div class="panel">
     <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -1159,10 +1181,8 @@ const HYPNO_COLORS = {
   awake: '#996030'
 };
 
-function drawHypnogram(nightData) {
-  const segs = nightData.segments;
-  if (!segs || segs.length === 0) return;
-
+// 10-01抽出：階段圖Chart.js設定，供舊單夜面板與「睡眠週期」卡片共用
+function _buildHypnoCfg(segs) {
   const datasets = segs.map(s => {
     const t1 = new Date(s.start).getTime();
     const t2 = new Date(s.end).getTime();
@@ -1229,7 +1249,14 @@ function drawHypnogram(nightData) {
       }
     }
   };
+  return cfg;
+}
 
+function drawHypnogram(nightData) {
+  const segs = nightData.segments;
+  if (!segs || segs.length === 0) return;
+
+  const cfg = _buildHypnoCfg(segs);
   if (hypnoChart) { hypnoChart.destroy(); }
   hypnoChart = new Chart(document.getElementById('hypnoChart'), cfg);
 
@@ -1247,6 +1274,8 @@ function drawHypnogram(nightData) {
 }
 
 function updateNight() {
+  // 單夜面板HTML已於05-26移除（commit 630ad35），元素不存在就直接返回，避免拋錯
+  if (!document.getElementById('nightDate') || !document.getElementById('hypnoChart')) return;
   const nights = RAW.detail;
   const n = nights[nightIdx];
   const DOW = ['日','一','二','三','四','五','六'];
@@ -1290,6 +1319,141 @@ function changeNight(dir) {
   nightIdx = Math.max(0, Math.min(max, nightIdx + dir));
   updateNight();
 }
+
+// ── 睡眠週期卡片（10-01新增）────────────────────────────────────────
+// 只處理 RAW.detail 中 segments 非空的夜晚（2026-10-01 起才有逐段資料）。
+// 週期判定：合併相鄰同階段 → REM 段之間只隔 <15 分鐘非 REM 視為同一 REM 期 →
+// 每個 REM 期結束＝一個週期結束；第一週期從入睡（第一個非清醒段）起算；
+// 最後一個 REM 期之後若仍有深度/核心睡眠，標為「未完成週期」。
+const CYCLE_REM_GAP_MIN = 15;
+let cycleHypnoChart = null;
+let cycleNightPos = -1;   // 在「有segments的夜晚清單」中的位置，-1 代表預設最新一晚
+
+function _cycleNights() {
+  return (RAW.detail || []).filter(n => Array.isArray(n.segments) && n.segments.length > 0);
+}
+
+function computeSleepCycles(rawSegs) {
+  const segs = rawSegs
+    .map(x => ({ s: new Date(x.start).getTime(), e: new Date(x.end).getTime(), st: x.stage }))
+    .filter(x => isFinite(x.s) && isFinite(x.e))
+    .sort((a, b) => a.s - b.s);
+  if (!segs.length) return null;
+  const blocks = [];
+  segs.forEach(x => {
+    const last = blocks[blocks.length - 1];
+    if (last && last.st === x.st) last.e = Math.max(last.e, x.e);
+    else blocks.push({ ...x });
+  });
+  const remPeriods = [];
+  blocks.forEach(b => {
+    if (b.st !== 'rem') return;
+    const last = remPeriods[remPeriods.length - 1];
+    if (last && (b.s - last.e) < CYCLE_REM_GAP_MIN * 60000) last.e = b.e;
+    else remPeriods.push({ s: b.s, e: b.e });
+  });
+  const onsetBlock = blocks.find(b => b.st !== 'awake');
+  if (!onsetBlock) return null;
+  const end = Math.max(...blocks.map(b => b.e));
+  const overlapMin = (stage, a, b) => segs.reduce((sum, x) =>
+    x.st === stage ? sum + Math.max(0, Math.min(x.e, b) - Math.max(x.s, a)) : sum, 0) / 60000;
+  const cycles = [];
+  let cur = onsetBlock.s;
+  remPeriods.forEach(r => {
+    if (r.e <= cur) return;
+    cycles.push({ s: cur, e: r.e, complete: true });
+    cur = r.e;
+  });
+  if (end > cur && (overlapMin('deep', cur, end) + overlapMin('core', cur, end)) > 0) {
+    cycles.push({ s: cur, e: end, complete: false });
+  }
+  cycles.forEach(c => {
+    c.len = (c.e - c.s) / 60000;
+    c.deep = overlapMin('deep', c.s, c.e);
+    c.rem = overlapMin('rem', c.s, c.e);
+  });
+  const totalDeep = overlapMin('deep', segs[0].s, end);
+  const first2Deep = cycles.slice(0, 2).reduce((a, c) => a + c.deep, 0);
+  return { cycles, totalDeep, first2Deep };
+}
+
+function _hm(ms) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function changeCycleNight(dir) {
+  const list = _cycleNights();
+  if (!list.length) return;
+  const pos = cycleNightPos < 0 ? list.length - 1 : cycleNightPos;
+  cycleNightPos = Math.max(0, Math.min(list.length - 1, pos + dir));
+  renderCycleCard();
+}
+
+function renderCycleCard() {
+  const body = document.getElementById('cycleBody');
+  const empty = document.getElementById('cycleEmpty');
+  const nav = document.getElementById('cycleNav');
+  if (!body || !empty || !nav) return;
+  const list = _cycleNights();
+  if (!list.length) {
+    body.style.display = 'none'; nav.style.display = 'none'; empty.style.display = 'block';
+    return;
+  }
+  body.style.display = 'block'; nav.style.display = 'flex'; empty.style.display = 'none';
+  if (cycleNightPos < 0 || cycleNightPos > list.length - 1) cycleNightPos = list.length - 1;
+  const n = list[cycleNightPos];
+  const DOW = ['日','一','二','三','四','五','六'];
+  document.getElementById('cycleDate').textContent =
+    n.date + '（' + DOW[new Date(n.date + 'T12:00:00').getDay()] + '）';
+  document.getElementById('cyclePrev').disabled = cycleNightPos === 0;
+  document.getElementById('cycleNext').disabled = cycleNightPos === list.length - 1;
+
+  const cfg = _buildHypnoCfg(n.segments);
+  cfg.options.maintainAspectRatio = !_isMobileChart();
+  if (cycleHypnoChart) cycleHypnoChart.destroy();
+  cycleHypnoChart = new Chart(document.getElementById('cycleHypnoChart'), cfg);
+
+  const r = computeSleepCycles(n.segments);
+  const summaryEl = document.getElementById('cycleSummary');
+  const tableEl = document.getElementById('cycleTable');
+  if (!r || !r.cycles.length) {
+    summaryEl.innerHTML = '這一晚的逐段資料不足以切出週期。';
+    tableEl.innerHTML = '';
+    return;
+  }
+  const complete = r.cycles.filter(c => c.complete);
+  const avgLen = complete.length ? complete.reduce((a, c) => a + c.len, 0) / complete.length : 0;
+  const first2Pct = r.totalDeep > 0 ? Math.round(r.first2Deep / r.totalDeep * 100) : null;
+  const incomplete = r.cycles.length - complete.length;
+  let html = `完整週期 <strong>${complete.length} 個</strong>`;
+  if (incomplete) html += `（另有 1 個未完成週期）`;
+  html += `，平均每個週期 <strong>${Math.round(avgLen)} 分鐘</strong>。`;
+  if (first2Pct !== null) {
+    html += `<br>整晚 deep 共 ${r.totalDeep.toFixed(1)} 分鐘，其中 <strong style="color:${HYPNO_COLORS.deep}">${first2Pct}%</strong> 集中在前兩個週期。`;
+  } else {
+    html += '<br>這一晚沒有記錄到 deep。';
+  }
+  summaryEl.innerHTML = html;
+
+  const th = 'padding:6px 8px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap';
+  const td = 'padding:6px 8px;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap';
+  const mono = "font-family:'DM Mono',monospace";
+  const rows = r.cycles.map((c, i) => `
+    <tr>
+      <td style="${td}">${c.complete ? `第 ${i + 1} 週期` : '未完成週期'}</td>
+      <td style="${td};${mono}">${_hm(c.s)}–${_hm(c.e)}</td>
+      <td style="${td};${mono}">${Math.round(c.len)} 分</td>
+      <td style="${td};${mono};color:${HYPNO_COLORS.deep}">${c.deep.toFixed(1)}</td>
+      <td style="${td};${mono};color:${HYPNO_COLORS.rem}">${c.rem.toFixed(1)}</td>
+    </tr>`).join('');
+  tableEl.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="${th}">週期</th><th style="${th}">起訖時間</th><th style="${th}">長度</th>
+      <th style="${th}">deep 分鐘</th><th style="${th}">REM 分鐘</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+}
+// ─────────────────────────────────────────────────────────────────────
 
 function setRange(range) {
   currentRange = range;
@@ -2348,10 +2512,13 @@ async function loadFromICloud() {
     const existing = new Map(RAW.summary.map(r => [r.date, r]));
     for (const rec of newRecords) existing.set(rec.date, rec);
     const merged = [...existing.values()].sort((a, b) => a.date.localeCompare(b.date));
+    // sleep_*.txt解析出的紀錄沒有逐段資料，沿用原本detail裡已有的segments（同日期）
+    const oldSegs = new Map((RAW.detail || []).map(r => [r.date, r.segments || []]));
     RAW.summary = merged;
-    RAW.detail  = merged.slice(-90).map(r => ({ ...r, segments: r.segments || [] }));
+    RAW.detail  = merged.slice(-90).map(r => ({ ...r, segments: (r.segments && r.segments.length) ? r.segments : (oldSegs.get(r.date) || []) }));
     nightIdx = RAW.detail.length - 1;
-    updateNight();
+    cycleNightPos = -1;
+    renderCycleCard();
     refreshAll();
     saveSleepToLocalStorage();
     showICloudToast(`已更新：${merged[merged.length-1]?.date}（共 ${merged.length} 夜）`);
@@ -2385,6 +2552,7 @@ function showICloudToast(msg, isErr) {
 
 // Init
 refreshAll();
+renderCycleCard();
 saveSleepToLocalStorage();
 buildWeightedHistory();
 renderWeightedChart();
