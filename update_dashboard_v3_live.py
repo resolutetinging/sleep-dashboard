@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sleep Dashboard v3-live 更新腳本（09-30建置，migration monitor period用）
+Sleep Dashboard v3-live 更新腳本（09-30建置；10-01提前切換為正式資料來源）
 
 設計原則：不重新解析原始樣本——那是update_dashboard_v3.py的工作，這裡只單純
 讀取它已經算好、驗證過的sleep_v3_history.json，轉成跟sleep_dashboard_v2.html
@@ -8,11 +8,13 @@ Sleep Dashboard v3-live 更新腳本（09-30建置，migration monitor period用
 （v2頁面的逐位元組複製，下游所有圖表/戰力公式/localStorage寫入邏輯完全不變，
 只換餵進去的資料來源）。避免同一套解析邏輯維護兩份。
 
-10/1-15為migration monitor period：v2（sleep_dashboard_v2.html）照舊跑它
-自己獨立的排程與計算，完全不受這支腳本影響；update_dashboard_v3.py裡的
-compare_v2_v3()持續拿v2/v3各自獨立算出的數字互相比對，是監控期的比對基準。
-10/15若v3狀況良好，才會決定讓下游（SAS Hub等）改讀這份v3-live資料、
-v2進入封存。
+10-01已提前（原訂10-15）正式切換：2026-10-01（含）起的夜晚一律用v3數字；
+10-01之前的歷史夜晚維持使用者已看過的v2數字不變，凍結存在
+sleep_v2_frozen_pre1001.json（由sleep_dashboard_v2.html的RAW.summary原樣
+擷取，欄位不增減、值不改）。load_summary()把這份凍結檔（date<V3_CUTOFF）
+與sleep_v3_history.json（date>=V3_CUTOFF）依日期合併排序，注入的RAW即為
+正式資料，不再只是monitor period預覽。v2頁面（sleep_dashboard_v2.html）
+與update_dashboard.py維持獨立運作、不受影響（v2/v3獨立鐵律）。
 
 必須排在update_dashboard_v3.py之後執行（依賴它先把history.json更新好），
 建議接在run_update.sh現有排程尾端呼叫。
@@ -26,21 +28,38 @@ from datetime import datetime
 HISTORY_PATH = "/Users/tinayu/sleep-dashboard/sleep_v3_history.json"
 DASHBOARD_V3_LIVE_PATH = "/Users/tinayu/sleep-dashboard/sleep_dashboard_v3_live.html"
 GITHUB_REPO_DIR = "/Users/tinayu/sleep-dashboard"
+V3_CUTOFF = "2026-10-01"
+V2_FROZEN_PATH = "/Users/tinayu/sleep-dashboard/sleep_v2_frozen_pre1001.json"
 
 
 def load_summary():
-    """把sleep_v3_history.json的nights轉成v2格式的summary陣列。
-    bedtime/wake從v3的完整ISO時間戳轉成v2慣用的HH:MM字串（v2下游JS
-    只認HH:MM，不是完整timestamp），deep/rem/core/awake/efficiency直接沿用。"""
+    """合併兩段資料來源，產出v2格式的summary陣列：
+    (1) sleep_v2_frozen_pre1001.json 中 date < V3_CUTOFF 的凍結歷史（10-01前，
+        使用者已看過的v2數字，原樣保留不重算）；
+    (2) sleep_v3_history.json 中 date >= V3_CUTOFF 的夜晚，bedtime/wake從v3的
+        完整ISO時間戳轉成v2慣用的HH:MM字串（v2下游JS只認HH:MM，不是完整
+        timestamp），deep/rem/core/awake/efficiency直接沿用。
+    兩段依date排序合併。凍結檔讀不到時視為錯誤，回傳空陣列讓呼叫端略過
+    注入，避免寫入只有v3（缺少10-01前歷史）的殘缺資料。"""
+    try:
+        with open(V2_FROZEN_PATH, encoding='utf-8') as f:
+            frozen = json.load(f)
+        frozen_summary = [r for r in frozen.get('summary', []) if r['date'] < V3_CUTOFF]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        print(f"❌ 讀取凍結檔失敗，略過注入以避免殘缺資料：{V2_FROZEN_PATH}（{e}）")
+        return []
+
     with open(HISTORY_PATH, encoding='utf-8') as f:
         history = json.load(f)
     nights = history.get('nights', {})
-    summary = []
+    v3_summary = []
     for date in sorted(nights.keys()):
+        if date < V3_CUTOFF:
+            continue
         n = nights[date]
         bedtime_dt = datetime.fromisoformat(n['bedtime'])
         wake_dt = datetime.fromisoformat(n['wake'])
-        summary.append({
+        v3_summary.append({
             'date': date,
             'bedtime': bedtime_dt.strftime('%H:%M'),
             'wake': wake_dt.strftime('%H:%M'),
@@ -51,6 +70,9 @@ def load_summary():
             'awake_min': n['awake_min'],
             'efficiency': n['efficiency'],
         })
+
+    summary = frozen_summary + v3_summary
+    summary.sort(key=lambda r: r['date'])
     return summary
 
 
@@ -88,7 +110,8 @@ def git_push():
         os.chdir(GITHUB_REPO_DIR)
         today = datetime.now().strftime("%Y-%m-%d")
         subprocess.run(
-            ["git", "add", "sleep_v3_history.json", "sleep_dashboard_v3.html", "sleep_dashboard_v3_live.html"],
+            ["git", "add", "sleep_v3_history.json", "sleep_dashboard_v3.html", "sleep_dashboard_v3_live.html",
+             "sleep_v2_frozen_pre1001.json"],
             check=True
         )
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)

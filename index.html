@@ -873,7 +873,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 
 <!-- SLEEP -->
 <div class="view-frame" id="v-sl">
-  <div class="frame-bar"><div><div class="frame-title">Sleep Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">生理油錶 · 睡眠品質分析 · 自動更新 09:30/13:00/18:00/22:00</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="open-btn" onclick="triggerICloudUpdate()" title="從本機 iCloud 讀取最新睡眠資料（電腦端 LaunchAgent 每日自動於 09:30/13:00/18:00/22:00 執行，此按鈕僅供臨時手動補跑）">📥 更新</button><button class="open-btn" onclick="reloadSleepFrame()" id="sl-reload-btn" title="重新載入最新資料">↻ 重整</button><a href="./sleep_dashboard_v2.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div></div>
+  <div class="frame-bar"><div><div class="frame-title">Sleep Dashboard</div><div style="font-size:.62rem;color:var(--faint);margin-top:1px">生理油錶 · 睡眠品質分析 · 自動更新 09:30/13:00/18:00/22:00</div></div><div style="display:flex;gap:6px;align-items:center;"><button class="open-btn" onclick="triggerICloudUpdate()" title="從本機 iCloud 讀取最新睡眠資料（電腦端 LaunchAgent 每日自動於 09:30/13:00/18:00/22:00 執行，此按鈕僅供臨時手動補跑）">📥 更新</button><button class="open-btn" onclick="reloadSleepFrame()" id="sl-reload-btn" title="重新載入最新資料">↻ 重整</button><a href="./sleep_dashboard_v3_live.html" class="open-btn" target="_blank">獨立視窗 ↗</a></div></div>
   <div class="frame-wrap"><div class="frame-loading" id="sl-loading"><div class="spinner"></div><span>載入中…</span></div><iframe id="sl-frame" src="about:blank" title="Sleep Dashboard"></iframe></div>
 </div>
 
@@ -910,7 +910,7 @@ var $=id=>document.getElementById(id);
 
 /* FRAMES */
 var _slDate=Date.now();
-var frameSrcs={sl:'./sleep_dashboard_v2.html?d='+_slDate,mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html?d='+_slDate,op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer_v3.html?d='+_slDate,rf:'https://resolutetinging.github.io/control-center/refueler.html?d='+_slDate};
+var frameSrcs={sl:'./sleep_dashboard_v3_live.html?d='+_slDate,mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html?d='+_slDate,op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer_v3.html?d='+_slDate,rf:'https://resolutetinging.github.io/control-center/refueler.html?d='+_slDate};
 function frameLoaded(k){var el=$(k+'-loading');if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',320);}}
 ['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
 function go(id){
@@ -953,7 +953,7 @@ function reloadSleepFrame(){
   var f=$('sl-frame'),sl=$('sl-loading'),btn=$('sl-reload-btn');
   if(sl){sl.style.display='flex';sl.classList.remove('hidden');}
   if(btn){btn.textContent='載入中…';btn.disabled=true;}
-  if(f){f.src='./sleep_dashboard_v2.html?t='+Date.now();}
+  if(f){f.src='./sleep_dashboard_v3_live.html?t='+Date.now();}
   setTimeout(()=>{if(btn){btn.textContent='↻ 重整';btn.disabled=false;}},3000);
 }
 
@@ -999,7 +999,7 @@ function updateCombat(score,skipAnim){
 }
 
 function readCombat(){
-  // Primary: read 3-night weighted from localStorage (written by sleep_dashboard_v2)
+  // Primary: read 3-night weighted from localStorage (written by sleep_dashboard_v3_live, 10-01起正式資料來源)
   var stored=parseInt(localStorage.getItem('sas_combat_weighted')||'0');
   if(stored>0&&stored!==_combat)updateCombat(stored,true);
   // Secondary: sync real-time from iframe

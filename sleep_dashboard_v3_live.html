@@ -292,12 +292,7 @@
 </style>
 </head>
 <body>
-<!-- 09-30：v3-live monitor period標記，避免跟正式v2頁面混淆；資料寫入
-     SAS_KEY_SUFFIX='_v3preview'的獨立key，不影響SAS Hub/Daily Optimizer
-     現在讀的正式資料。10/1後視migration決策移除此banner。 -->
-<div style="position:sticky;top:0;z-index:9999;background:#c0392b;color:#fff;text-align:center;padding:6px 10px;font-size:12px;font-weight:600;">
-  🧪 v3-live monitor period 預覽頁（09-30起）——資料寫入獨立測試key，不影響正式SAS Hub/Daily Optimizer
-</div>
+<!-- 10-01起：此頁為正式Sleep Dashboard（v3資料來源），提前取代原v2頁面。 -->
 <div class="app">
 
 <!-- SIDEBAR: Definitions -->
@@ -1870,7 +1865,7 @@ function updateSleepDebt(allData) {
 // 從v2的00:10覆蓋成v3的00:52，靠重新打開v2頁面才救回來）。10/1 Daily Optimizer
 // 切過來、10/15 v3通過監控後SAS Hub切過來時，把這個常數改成空字串''
 // 就是正式生效的唯一改動點，不用再逐一找散落各處的localStorage呼叫。
-const SAS_KEY_SUFFIX = '_v3preview';
+const SAS_KEY_SUFFIX = ''; // 10-01起正式寫入（原'_v3preview'監控期專用key，已停用）
 function sasKey(k){ return k + SAS_KEY_SUFFIX; }
 
 function updateCombatPower(totalDebt) {
