@@ -1397,7 +1397,10 @@ function changeCycleNight(dir) {
 function _singleNightBodyFeel(n, r) {
   const nonAwakeBlocks = r.blocks.filter(b => b.st !== 'awake');
   const lastStage = nonAwakeBlocks.length ? nonAwakeBlocks[nonAwakeBlocks.length - 1].st : null;
-  const awakeCount = r.blocks.filter(b => b.st === 'awake').length;
+  // 10-01修正：頁面定義<2分鐘清醒屬正常週期轉換，不計入；片段＝≥2分鐘清醒達4次以上，或清醒總計≥20分鐘
+  const awakeBlocks = r.blocks.filter(b => b.st === 'awake');
+  const awakeCount = awakeBlocks.filter(b => (b.e - b.s) >= 120000).length;
+  const awakeTotalMin = awakeBlocks.reduce((a, b) => a + (b.e - b.s) / 60000, 0);
   const totalRem = r.cycles.reduce((a, c) => a + c.rem, 0);
   const completeCount = r.cycles.filter(c => c.complete).length;
   const lastIncomplete = r.cycles.length > 0 && !r.cycles[r.cycles.length - 1].complete;
@@ -1422,7 +1425,7 @@ function _singleNightBodyFeel(n, r) {
     lines.push('後半夜 REM 較少，白天情緒調節、專注或記憶可能較吃力。');
     negative = true;
   }
-  if (awakeCount >= 3) {
+  if (awakeCount >= 4 || awakeTotalMin >= 20) {
     lines.push('夜間清醒次數較多，睡眠較片段，醒來可能仍覺得沒睡飽。');
     negative = true;
   }
