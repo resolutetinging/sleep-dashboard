@@ -391,10 +391,7 @@
       <div class="page-sub" id="dateRangeLabel">載入中...</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;padding-bottom:4px;flex-wrap:wrap">
-      <button id="icloud-btn" onclick="loadFromICloud()" title="電腦端 LaunchAgent 每日自動於 09:30/13:00/18:00/22:00 執行 run_update.sh，此按鈕僅供臨時手動補跑"
-        style="padding:5px 13px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
-        📥 iCloud 更新
-      </button>
+      <!-- 10-01停用「📥 iCloud 更新」按鈕：它讀v2格式sleep_*.txt並寫入共用戰力key，會把v3戰力蓋回v2；資料由LaunchAgent每日4次自動更新 -->
       <span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;background:rgba(92,122,150,.12);color:var(--accent);white-space:nowrap" title="衍生分析(戰力/風險燈號等)需開啟頁面才會即時重算，不隨此排程更新">🕐 睡眠原始資料每日自動更新（09:30/13:00/18:00/22:00）</span>
       <div class="toggle-wrap">
         <span class="toggle-label">排除週末</span>
@@ -2491,6 +2488,8 @@ function parseSleepTxtRecord(text) {
 }
 
 async function loadFromICloud() {
+  // 10-01停用：讀的是v2格式sleep_*.txt，合併後會寫入共用戰力key，把v3戰力蓋回v2
+  showICloudToast('手動更新已停用，資料每日 09:30/13:00/18:00/22:00 自動更新', true); return;
   if (!window.showDirectoryPicker) {
     showICloudToast('此功能需要 Chrome 或 Edge 瀏覽器', true); return;
   }
