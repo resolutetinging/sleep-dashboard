@@ -1330,18 +1330,24 @@ function _cycleNights() {
   return (RAW.detail || []).filter(n => Array.isArray(n.segments) && n.segments.length > 0);
 }
 
-function computeSleepCycles(rawSegs) {
+// 合併相鄰同階段的原始分段，供週期切法與「可能體感」判讀共用，避免兩套邏輯各自merge出不一致結果
+function _mergeStageBlocks(rawSegs) {
   const segs = rawSegs
     .map(x => ({ s: new Date(x.start).getTime(), e: new Date(x.end).getTime(), st: x.stage }))
     .filter(x => isFinite(x.s) && isFinite(x.e))
     .sort((a, b) => a.s - b.s);
-  if (!segs.length) return null;
   const blocks = [];
   segs.forEach(x => {
     const last = blocks[blocks.length - 1];
     if (last && last.st === x.st) last.e = Math.max(last.e, x.e);
     else blocks.push({ ...x });
   });
+  return { segs, blocks };
+}
+
+function computeSleepCycles(rawSegs) {
+  const { segs, blocks } = _mergeStageBlocks(rawSegs);
+  if (!segs.length) return null;
   const remPeriods = [];
   blocks.forEach(b => {
     if (b.st !== 'rem') return;
@@ -1371,7 +1377,7 @@ function computeSleepCycles(rawSegs) {
   });
   const totalDeep = overlapMin('deep', segs[0].s, end);
   const first2Deep = cycles.slice(0, 2).reduce((a, c) => a + c.deep, 0);
-  return { cycles, totalDeep, first2Deep };
+  return { cycles, totalDeep, first2Deep, blocks };
 }
 
 function _hm(ms) {
@@ -1385,6 +1391,151 @@ function changeCycleNight(dir) {
   const pos = cycleNightPos < 0 ? list.length - 1 : cycleNightPos;
   cycleNightPos = Math.max(0, Math.min(list.length - 1, pos + dir));
   renderCycleCard();
+}
+
+// ── 可能體感（單晚，10-01新增）：由週期結構推測起床體感，用「可能／較易」等推測語氣，非醫療判斷 ──
+function _singleNightBodyFeel(n, r) {
+  const nonAwakeBlocks = r.blocks.filter(b => b.st !== 'awake');
+  const lastStage = nonAwakeBlocks.length ? nonAwakeBlocks[nonAwakeBlocks.length - 1].st : null;
+  const awakeCount = r.blocks.filter(b => b.st === 'awake').length;
+  const totalRem = r.cycles.reduce((a, c) => a + c.rem, 0);
+  const completeCount = r.cycles.filter(c => c.complete).length;
+  const lastIncomplete = r.cycles.length > 0 && !r.cycles[r.cycles.length - 1].complete;
+
+  const lines = [];
+  let negative = false;
+  if (lastStage === 'deep') {
+    lines.push('起床前最後落在 deep，起床可能較昏沉、頭重，需要較久才清醒（睡眠慣性）。');
+    negative = true;
+  } else if (lastStage === 'core' || lastStage === 'rem') {
+    lines.push('起床前最後落在較淺的睡眠階段，起床時通常比較容易清醒。');
+  }
+  if (lastIncomplete) {
+    lines.push('最後一個週期未完整結束，可能是被鬧鐘或外力在週期中途叫醒，起床較不清爽。');
+    negative = true;
+  }
+  if (r.first2Deep < 15) {
+    lines.push('前段深睡偏少，身體修復感可能較差，白天較易覺得身體沉重。');
+    negative = true;
+  }
+  if (completeCount <= 3 || totalRem < 60) {
+    lines.push('後半夜 REM 較少，白天情緒調節、專注或記憶可能較吃力。');
+    negative = true;
+  }
+  if (awakeCount >= 3) {
+    lines.push('夜間清醒次數較多，睡眠較片段，醒來可能仍覺得沒睡飽。');
+    negative = true;
+  }
+  if (!negative) {
+    lines.push('這晚的週期結構完整，起床體感應該不錯。');
+  }
+  return `
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">可能體感</div>
+      <div style="margin-top:6px">${lines.join('<br>')}</div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-dim)">體感對應依一般睡眠研究的常見關聯，僅供參考，非醫療判斷</div>
+    </div>`;
+}
+
+// ── 跨夜分析（10-01新增）：資料量門檻比照 updateStageCompensation（<7不顯示／7–13僅供參考／≥14正常顯示）──
+function _crossNightCycleStats() {
+  const list = _cycleNights();
+  const nights = [];
+  const allLens = [];
+  list.forEach(n => {
+    const r = computeSleepCycles(n.segments);
+    if (!r || !r.cycles.length) return;
+    const complete = r.cycles.filter(c => c.complete);
+    if (!complete.length) return;
+    complete.forEach(c => allLens.push(c.len));
+    const nonAwakeBlocks = r.blocks.filter(b => b.st !== 'awake');
+    nights.push({
+      completeCount: complete.length,
+      totalDeep: r.totalDeep,
+      first2Deep: r.first2Deep,
+      firstDeep: r.cycles[0].deep,
+      lastStage: nonAwakeBlocks.length ? nonAwakeBlocks[nonAwakeBlocks.length - 1].st : null
+    });
+  });
+  return { nights, allLens };
+}
+
+function _crossNightCycleHtml() {
+  const segCount = _cycleNights().length;
+  if (segCount < 7) {
+    return `<div style="margin-top:10px;font-size:11px;color:var(--text-dim)">跨夜分析：已累積 ${segCount} 晚逐段資料，滿 7 晚後顯示</div>`;
+  }
+  const { nights, allLens } = _crossNightCycleStats();
+  if (!nights.length || !allLens.length) {
+    return `<div style="margin-top:10px;font-size:11px;color:var(--text-dim)">跨夜分析：已累積 ${segCount} 晚逐段資料，但尚無足夠可切出週期的夜晚</div>`;
+  }
+  const suffix = segCount >= 14 ? `（樣本 ${segCount} 晚）` : `（樣本 ${segCount} 晚，僅供參考）`;
+  const avgCycleCount = nights.reduce((a, x) => a + x.completeCount, 0) / nights.length;
+  const avgLenOverall = allLens.reduce((a, v) => a + v, 0) / allLens.length;
+  const minLen = Math.min(...allLens), maxLen = Math.max(...allLens);
+  const feelA = avgCycleCount >= 4
+    ? '完整週期數穩定，身體修復節奏可能較規律。'
+    : '完整週期數偏少，身體修復可能較不完整。';
+
+  const bNights = nights.filter(x => x.totalDeep > 0);
+  let lineB;
+  if (bNights.length) {
+    const avgPct = bNights.reduce((a, x) => a + (x.first2Deep / x.totalDeep * 100), 0) / bNights.length;
+    const feelB = avgPct >= 70
+      ? '深睡集中在前段，代表入睡後身體修復效率可能較穩定。'
+      : '深睡分布較沒有集中在前段，身體修復節奏可能較不固定。';
+    const deepWakeNights = nights.filter(x => x.lastStage === 'deep');
+    const deepWakeRatio = deepWakeNights.length / nights.length;
+    const feelWake = deepWakeRatio >= 0.3
+      ? `約 ${Math.round(deepWakeRatio * 10)} 成的早晨可能帶著昏沉感起床，可考慮讓起床時間落在週期尾端。`
+      : '';
+    lineB = `Deep 多半集中在前段：平均 <strong style="color:${HYPNO_COLORS.deep}">${Math.round(avgPct)}%</strong> 的整晚 deep 落在前兩個週期（排除整晚 deep 為 0 的夜晚）。${feelB}${feelWake ? '<br>' + feelWake : ''}`;
+  } else {
+    lineB = '這段期間整晚 deep 多為 0，無法計算集中度。';
+  }
+
+  const groups = [
+    { label: '≤3 個', test: x => x.completeCount <= 3 },
+    { label: '4 個', test: x => x.completeCount === 4 },
+    { label: '≥5 個', test: x => x.completeCount >= 5 }
+  ].map(g => {
+    const members = nights.filter(g.test);
+    return { label: g.label, count: members.length, avgDeep: members.length ? members.reduce((a, x) => a + x.totalDeep, 0) / members.length : 0 };
+  }).filter(g => g.count >= 2);
+  let lineC;
+  if (groups.length) {
+    const sorted = [...groups].sort((a, b) => a.avgDeep - b.avgDeep);
+    const trendUp = sorted.length >= 2 && sorted[sorted.length - 1].avgDeep > sorted[0].avgDeep;
+    const feelC = trendUp
+      ? '完整週期數較多的晚上，deep 總量通常也較高，代表完整走完更多週期可能有助深睡累積。'
+      : '這段樣本中週期數與深睡總量的關係不明顯。';
+    lineC = `完整週期數分組：` + groups.map(g => `${g.label}（${g.count} 晚）平均 deep ${g.avgDeep.toFixed(1)} 分鐘`).join('；') + `。${feelC}`;
+  } else {
+    lineC = '完整週期數分組樣本太少，暫不比較。';
+  }
+
+  const r = pearsonCorr(nights.map(x => x.firstDeep), nights.map(x => x.totalDeep));
+  let lineD;
+  if (r === null) {
+    lineD = '第一週期 deep 與整晚 deep 的關聯：資料不足，無法判斷。';
+  } else {
+    const abs = Math.abs(r);
+    const strength = abs < 0.3 ? '弱' : abs <= 0.6 ? '中等' : '強';
+    const feelD = (strength !== '弱' && r > 0)
+      ? '前段深睡多的晚上，整晚 deep 總量通常也多，前段深睡品質可能是整晚修復量的重要指標。'
+      : '前段深睡量與整晚深睡總量的關聯不明顯，較難由前段推測整晚修復量。';
+    lineD = `第一週期 deep 與整晚 deep 呈<strong>${strength}相關</strong>（r=${r}）。${feelD}`;
+  }
+
+  return `
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">跨夜分析${suffix}</div>
+      <div style="margin-top:6px">平均每晚 <strong>${avgCycleCount.toFixed(1)}</strong> 個完整週期，平均長度 <strong>${Math.round(avgLenOverall)} 分鐘</strong>（最短 ${Math.round(minLen)}–最長 ${Math.round(maxLen)} 分）。${feelA}</div>
+      <div style="margin-top:4px">${lineB}</div>
+      <div style="margin-top:4px">${lineC}</div>
+      <div style="margin-top:4px">${lineD}</div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-dim)">體感對應依一般睡眠研究的常見關聯，僅供參考，非醫療判斷</div>
+    </div>`;
 }
 
 function renderCycleCard() {
@@ -1415,7 +1566,7 @@ function renderCycleCard() {
   const summaryEl = document.getElementById('cycleSummary');
   const tableEl = document.getElementById('cycleTable');
   if (!r || !r.cycles.length) {
-    summaryEl.innerHTML = '這一晚的逐段資料不足以切出週期。';
+    summaryEl.innerHTML = '這一晚的逐段資料不足以切出週期。' + _crossNightCycleHtml();
     tableEl.innerHTML = '';
     return;
   }
@@ -1431,7 +1582,7 @@ function renderCycleCard() {
   } else {
     html += '<br>這一晚沒有記錄到 deep。';
   }
-  summaryEl.innerHTML = html;
+  summaryEl.innerHTML = html + _singleNightBodyFeel(n, r) + _crossNightCycleHtml();
 
   const th = 'padding:6px 8px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap';
   const td = 'padding:6px 8px;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap';
