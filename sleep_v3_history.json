@@ -7387,7 +7387,7 @@
         "core_min": 161.0,
         "awake_min": 42.0
       },
-      "detected_at": "2026-10-02T18:00:15"
+      "detected_at": "2026-10-02T22:34:00"
     },
     "2026-09-04": {
       "v2": {
@@ -7407,7 +7407,7 @@
       "diffs": {
         "core_min": 15.5
       },
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 35
     },
     "2026-09-27": {
@@ -7428,7 +7428,7 @@
       "diffs": {
         "core_min": 4.5
       },
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 73
     },
     "2026-08-31": {
@@ -7447,7 +7447,7 @@
         "bedtime": "22:51"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 91
     },
     "2026-09-01": {
@@ -7466,7 +7466,7 @@
         "bedtime": "00:35"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 25
     },
     "2026-09-05": {
@@ -7485,7 +7485,7 @@
         "bedtime": "00:34"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 30
     },
     "2026-09-06": {
@@ -7504,7 +7504,7 @@
         "bedtime": "01:04"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 30
     },
     "2026-09-07": {
@@ -7523,7 +7523,7 @@
         "bedtime": "00:27"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 37
     },
     "2026-09-08": {
@@ -7542,7 +7542,7 @@
         "bedtime": "23:48"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 39
     },
     "2026-09-10": {
@@ -7561,7 +7561,7 @@
         "bedtime": "01:04"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 62
     },
     "2026-09-11": {
@@ -7580,7 +7580,7 @@
         "bedtime": "23:57"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 67
     },
     "2026-09-14": {
@@ -7599,7 +7599,7 @@
         "bedtime": "00:12"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 39
     },
     "2026-09-15": {
@@ -7618,7 +7618,7 @@
         "bedtime": "00:28"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 16
     },
     "2026-09-16": {
@@ -7637,7 +7637,7 @@
         "bedtime": "01:03"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 35
     },
     "2026-09-20": {
@@ -7656,7 +7656,7 @@
         "bedtime": "02:43"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 60
     },
     "2026-09-21": {
@@ -7675,7 +7675,7 @@
         "bedtime": "01:18"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 85
     },
     "2026-09-22": {
@@ -7694,7 +7694,7 @@
         "bedtime": "01:11"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 53
     },
     "2026-09-25": {
@@ -7713,7 +7713,7 @@
         "bedtime": "01:48"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 70
     },
     "2026-09-28": {
@@ -7732,7 +7732,7 @@
         "bedtime": "01:51"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 111
     },
     "2026-09-29": {
@@ -7751,7 +7751,7 @@
         "bedtime": "00:10"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 101
     },
     "2026-09-30": {
@@ -7770,7 +7770,7 @@
         "bedtime": "00:49"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 39
     },
     "2026-10-01": {
@@ -7791,7 +7791,7 @@
       "diffs": {
         "core_min": 23.0
       },
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 88
     },
     "2026-09-02": {
@@ -7810,7 +7810,7 @@
         "bedtime": "23:00"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 19
     },
     "2026-09-12": {
@@ -7829,7 +7829,7 @@
         "bedtime": "01:03"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 25
     },
     "2026-09-13": {
@@ -7848,7 +7848,7 @@
         "bedtime": "22:59"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 124
     },
     "2026-09-19": {
@@ -7867,7 +7867,7 @@
         "bedtime": "01:53"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 25
     },
     "2026-09-24": {
@@ -7886,7 +7886,7 @@
         "bedtime": "00:38"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 31
     },
     "2026-10-02": {
@@ -7905,7 +7905,7 @@
         "bedtime": "00:48"
       },
       "diffs": {},
-      "detected_at": "2026-10-02T18:00:15",
+      "detected_at": "2026-10-02T22:34:00",
       "bedtime_diff_min": 47
     }
   },
