@@ -19,14 +19,16 @@ for i in $(seq 1 12); do
     sleep 5
 done
 
-# 複製 iCloud 檔案到 cache（只補缺失或空白的，保留已有的）
+# 複製 iCloud 檔案到 cache：缺失、空白，或 iCloud 版本比 cache 新時才複製
+# 10-05修正：原本「已有非空 cache 就跳過」，Shortcut 同一天重新匯出（如 10-04 早上
+# 先出 28KB、22:18 再出完整 31KB）時新版永遠進不了 cache，導致那晚資料漏掉。
 for f in "$SRC"/*.json "$SRC"/*.txt; do
     [ -f "$f" ] || continue
     fname=$(basename "$f")
     cached="$DEST/$fname"
 
-    # 已有非空 cache 就跳過，不重複讀 iCloud
-    if [ -s "$cached" ]; then
+    # 已有非空 cache 且 iCloud 版本沒有比較新，就跳過
+    if [ -s "$cached" ] && [ ! "$f" -nt "$cached" ]; then
         continue
     fi
 
