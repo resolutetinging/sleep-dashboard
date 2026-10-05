@@ -2036,7 +2036,7 @@ function updateCombatPower(totalDebt) {
   const n1 = nights.length >= 2 ? nights[nights.length-2].date.slice(5) : null;
   const nLatest = nights.length ? nights[nights.length-1].date.slice(5) : last.date.slice(5);
   const weightNote = nights.length >= 3
-    ? `<br><span style="font-size:10px;color:var(--text-dim)">${n0}×10% + ${n1}×30% + ${nLatest}×60%${excludeWE ? '　（已排除週末）' : ''}</span>`
+    ? `<br><span style="font-size:10px;color:var(--text-dim)">${_escH(n0)}×10% + ${_escH(n1)}×30% + ${_escH(nLatest)}×60%${excludeWE ? '　（已排除週末）' : ''}</span>`
     : '';
   document.getElementById('combatSub').innerHTML = `基於 ${_escH(last.date)}（${_escH(dow)}）昨晚數據${penaltyNote}${weightNote}`;
 

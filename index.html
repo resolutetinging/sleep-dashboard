@@ -1797,9 +1797,9 @@ function renderPipeAlign(){
     if(pr){msg='今日無配速警告事件，模型無需校正。';}
     else{
       var last=null;for(var pj=0;pj<log.length;pj++){if(log[pj]&&log[pj].items&&log[pj].items.length)last=log[pj];}
-      msg=last?'資料來自 '+_escH(last.date)+'，請今日覆盤後重新整頁。':'尚無今日資料（請在 Daily Optimizer 點「✦ 生成 AI 反饋」後自動更新）。';
+      msg=last?'資料來自 '+last.date+'，請今日覆盤後重新整頁。':'尚無今日資料（請在 Daily Optimizer 點「✦ 生成 AI 反饋」後自動更新）。';
     }
-    if(ignoreLine)el.innerHTML=msg+'<br><br>'+ignoreLine;else el.textContent=msg;
+    if(ignoreLine)el.innerHTML=_escH(msg)+'<br><br>'+ignoreLine;else el.textContent=msg;
     return;
   }
   var consistent=pr.items.filter(function(i){return i.verdict==='consistent';});
