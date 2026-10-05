@@ -744,6 +744,7 @@
         <button class="range-btn" id="cycleNext" onclick="changeCycleNight(1)">▶</button>
       </div>
     </div>
+    <div id="cycleCoverage" style="margin:-4px 0 10px;font-size:11px;color:var(--text-dim);line-height:1.6"></div>
     <div id="cycleBody">
       <div class="chart-wrap"><canvas id="cycleHypnoChart" height="90"></canvas></div>
       <div id="cycleSummary" style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:10px;font-size:12px;line-height:1.8"></div>
@@ -1549,10 +1550,25 @@ function renderCycleCard() {
   const list = _cycleNights();
   if (!list.length) {
     body.style.display = 'none'; nav.style.display = 'none'; empty.style.display = 'block';
+    { const ce = document.getElementById('cycleCoverage'); if (ce) ce.textContent = ''; }
     return;
   }
   body.style.display = 'block'; nav.style.display = 'flex'; empty.style.display = 'none';
   if (cycleNightPos < 0 || cycleNightPos > list.length - 1) cycleNightPos = list.length - 1;
+  // 10-05：顯示逐段資料涵蓋區間、晚數、可切出完整週期的晚數，以及區間內缺漏的夜晚
+  const covEl = document.getElementById('cycleCoverage');
+  if (covEl) {
+    const dates = list.map(x => x.date);
+    const first = dates[0], last = dates[dates.length - 1];
+    const validN = list.filter(x => { const rr = computeSleepCycles(x.segments); return rr && rr.cycles.some(c => c.complete); }).length;
+    const have = new Set(dates), gaps = [];
+    for (let d = new Date(first + 'T12:00:00'); d <= new Date(last + 'T12:00:00'); d.setDate(d.getDate() + 1)) {
+      const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      if (!have.has(k)) gaps.push(k.slice(5));
+    }
+    covEl.textContent = `逐段資料區間：${first} ～ ${last}，共 ${list.length} 晚（有效週期 ${validN} 晚）`
+      + (gaps.length ? `；區間內缺 ${gaps.length} 晚：${gaps.join('、')}` : '');
+  }
   const n = list[cycleNightPos];
   const DOW = ['日','一','二','三','四','五','六'];
   document.getElementById('cycleDate').textContent =
