@@ -1377,7 +1377,7 @@ function buildPacePills(score){
   var strat=(window._hdData&&window._hdData.strat)||'';
   var base=score>=70?'<span class="pill p-ok">✓ 深度工作</span><span class="pill p-ok">✓ 重要談判</span><span class="pill p-no">✗ 衝動承諾</span>'
     :'<span class="pill p-warn">⚠ 輕量任務</span><span class="pill p-no">✗ 重大決策</span>';
-  el.innerHTML=base+(strat?'<span class="pill p-info">⚠ '+strat+'</span>':'');
+  el.innerHTML=base+(strat?'<span class="pill p-info">⚠ '+_escH(strat)+'</span>':'');
 }
 
 /* LAG EFFECT — 跨維度滯後：情緒下滑 → 行為完成率下滑的平均天數 */
@@ -1805,12 +1805,12 @@ function renderPipeAlign(){
   var consistent=pr.items.filter(function(i){return i.verdict==='consistent';});
   var inconsistent=pr.items.filter(function(i){return i.verdict==='inconsistent';});
   var parts=[];
-  if(pr.depletedAt)parts.push('⚡ 能量低點 <strong>'+pr.depletedAt+'</strong>（有效工作續航結束時刻）。');
+  if(pr.depletedAt)parts.push('⚡ 能量低點 <strong>'+_escH(pr.depletedAt)+'</strong>（有效工作續航結束時刻）。');
   if(consistent.length)parts.push('✓ <strong>防禦配速準確</strong>：'
-    +consistent.map(function(i){return'「'+i.task+'」';}).join('')
+    +consistent.map(function(i){return'「'+_escH(i.task)+'」';}).join('')
     +'在低能/休息時段未完成，印證當日配速策略正確，請繼續順應身體節奏排程。');
   if(inconsistent.length)parts.push('⚡ <strong>模型校正信號</strong>：'
-    +inconsistent.map(function(i){return'「'+i.task+'」';}).join('')
+    +inconsistent.map(function(i){return'「'+_escH(i.task)+'」';}).join('')
     +'在預測低能時段完成，可能為心流驅動或疲勞滯後延遲，建議觀察後續狀態，納入下次戰力推論的修正依據。');
   if(ignoreLine)parts.push(ignoreLine);
   el.innerHTML=parts.join('<br><br>');
@@ -1852,7 +1852,7 @@ function buildTaskTaxonomy(){
     // 分母改用 eff_counts（排除 ⊘不做）；該類全部 ⊘不做時依定案口徑記 100%
     var donePct=eff_counts[d.k]?Math.round(done_counts[d.k]/eff_counts[d.k]*100):(counts[d.k]?100:0);
     var tasks=taskLists[d.k];
-    var taskHtml=tasks.length?tasks.map(t=>'<div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid var(--border);font-size:.65rem"><span style="color:'+(t.done?'var(--ok)':t.status==='part'?'var(--info)':t.status==='skip'?'var(--warn)':'var(--faint)')+';flex-shrink:0;font-size:.75rem">'+(t.done?'✓':t.status==='part'?'◐':t.status==='skip'?'→':t.status==='no'?'⊘':'○')+'</span><span style="color:var(--sub);flex:1">'+t.name+'</span><span style="color:var(--faint);font-size:.6rem;white-space:nowrap">'+t.date+'</span></div>').join(''):
+    var taskHtml=tasks.length?tasks.map(t=>'<div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid var(--border);font-size:.65rem"><span style="color:'+(t.done?'var(--ok)':t.status==='part'?'var(--info)':t.status==='skip'?'var(--warn)':'var(--faint)')+';flex-shrink:0;font-size:.75rem">'+(t.done?'✓':t.status==='part'?'◐':t.status==='skip'?'→':t.status==='no'?'⊘':'○')+'</span><span style="color:var(--sub);flex:1">'+_escH(t.name)+'</span><span style="color:var(--faint);font-size:.6rem;white-space:nowrap">'+_escH(t.date)+'</span></div>').join(''):
       '<div style="font-size:.65rem;color:var(--faint);padding:4px 0">近7日無記錄</div>';
     return '<div style="margin-bottom:5px">'+
       '<div class="tax-bar-row" onclick="toggleExpand(&quot;ex-'+d.k+'&quot;)" style="cursor:pointer">'+
@@ -1870,7 +1870,7 @@ function buildTaskTaxonomy(){
   var maxSkip=Object.entries(skipsLow).sort((a,b)=>b[1]-a[1])[0];
   if(maxSkip&&maxSkip[1]>0){
     var skipDetail=skipsLowDetails[maxSkip[0]]||[];
-    var skipList=skipDetail.map(function(s){return s.name+'（'+s.date+'）';}).join('、');
+    var skipList=skipDetail.map(function(s){return _escH(s.name)+'（'+_escH(s.date)+'）';}).join('、');
     insights.push({icon:'⚠',text:'狀態偏低時最常略過 <strong>'+catNames[maxSkip[0]]+'任務</strong>（'+maxSkip[1]+'次）<br><span style="font-size:.65rem;color:var(--faint)">略過：'+skipList+'</span>'});
   }
   var inputPct=Math.round(counts.input/total*100);
@@ -1889,11 +1889,11 @@ function loadHDProfile(){
     var p=w4.profile||{};
     var hd={type:p.hdType||ss.hdType||'',strat:p.hdStrategy||ss.hdStrat||'',auth:p.hdAuthority||ss.hdAuth||'',defn:p.hdDefinition||'',profile:p.hdProfile||'',notself:p.hdNotSelf||ss.hdTheme||'',cross:p.hdCross||'',ziStar:p.ziWeiStar||ss.ziStar||'',ziTravel:ss.ziTravel||'',ziYear:ss.ziYear||'',parsed:p.hdParseResult||''};
     var lines=[];
-    if(hd.type)lines.push('<strong>類型</strong>：'+hd.type);if(hd.strat)lines.push('<strong>策略</strong>：'+hd.strat);
-    if(hd.auth)lines.push('<strong>權威</strong>：'+hd.auth);if(hd.defn)lines.push('<strong>定義</strong>：'+hd.defn);
-    if(hd.profile)lines.push('<strong>人生角色</strong>：'+hd.profile);if(hd.cross)lines.push('<strong>人生主題</strong>：'+hd.cross);
-    if(hd.notself)lines.push('<strong>非自己主題</strong>：'+hd.notself);if(hd.ziStar)lines.push('<strong>紫微主星</strong>：'+hd.ziStar);
-    if(hd.ziTravel)lines.push('<strong>遷移宮</strong>：'+hd.ziTravel);if(hd.ziYear)lines.push('<strong>流年</strong>：'+hd.ziYear);
+    if(hd.type)lines.push('<strong>類型</strong>：'+_escH(hd.type));if(hd.strat)lines.push('<strong>策略</strong>：'+_escH(hd.strat));
+    if(hd.auth)lines.push('<strong>權威</strong>：'+_escH(hd.auth));if(hd.defn)lines.push('<strong>定義</strong>：'+_escH(hd.defn));
+    if(hd.profile)lines.push('<strong>人生角色</strong>：'+_escH(hd.profile));if(hd.cross)lines.push('<strong>人生主題</strong>：'+_escH(hd.cross));
+    if(hd.notself)lines.push('<strong>非自己主題</strong>：'+_escH(hd.notself));if(hd.ziStar)lines.push('<strong>紫微主星</strong>：'+_escH(hd.ziStar));
+    if(hd.ziTravel)lines.push('<strong>遷移宮</strong>：'+_escH(hd.ziTravel));if(hd.ziYear)lines.push('<strong>流年</strong>：'+_escH(hd.ziYear));
     var box=$('hd-profile-display');if(box)box.innerHTML=lines.length?lines.join('<br>'):'請前往 Mental Dashboard 填寫人類圖資料。';
     window._hdData=hd;
   }catch(e){console.warn('HD',e);}
@@ -2046,7 +2046,9 @@ function loadCatMap(){
 }
 
 /* AI FORMAT */
+function _escH(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function fmtAI(raw){
+  raw=_escH(raw);
   var html='';
   raw.split('\n').forEach(line=>{
     var t=line.trim();if(!t){html+='<div style="height:.3rem"></div>';return;}
@@ -2136,7 +2138,7 @@ ${hd.parsed?'- 原始解析資料：'+hd.parsed:''}
 
 **6. 長期培養建議**（2-3條）`,3000);
     res.innerHTML=fmtAI(r);
-  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+e.message+'</span>';}
+  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+_escH(e.message)+'</span>';}
   btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
 }
 
@@ -2321,9 +2323,9 @@ ${hasRfData?`- 咖啡：${rfCoffeeSummary}
     }
     res.innerHTML=fmtAI(mainText);
     if(summaryText){
-      res.innerHTML+='<div style="margin-top:1rem;padding:.6rem .85rem;background:var(--bg2);border-left:3px solid var(--accent);border-radius:0 var(--rsm) var(--rsm) 0;font-size:.8rem;color:var(--ink);line-height:1.6">'+summaryText+'</div>';
+      res.innerHTML+='<div style="margin-top:1rem;padding:.6rem .85rem;background:var(--bg2);border-left:3px solid var(--accent);border-radius:0 var(--rsm) var(--rsm) 0;font-size:.8rem;color:var(--ink);line-height:1.6">'+_escH(summaryText)+'</div>';
     }
-  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+e.message+'</span>';}
+  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+_escH(e.message)+'</span>';}
   btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
 }
 
@@ -2349,7 +2351,7 @@ ${hd.ziYear?'流年：'+hd.ziYear:''}
 
 **3. 下週行動調整建議**（3-5條具體行動）`,1400);
     res.innerHTML=fmtAI(r);
-  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+e.message+'</span>';}
+  }catch(e){res.innerHTML='<span style="color:var(--danger)">'+_escH(e.message)+'</span>';}
   btn.disabled=false;sp.style.display='none';bt.textContent='重新生成';
 }
 
@@ -3092,7 +3094,7 @@ function renderDualTrackCard(){
       var lbl=document.createElement('div');lbl.className='scr-bar-date';
       var _dow=['日','一','二','三','四','五','六'];
       var _dowStr=n.date?'週'+_dow[new Date(n.date+'T12:00:00').getDay()]:'';
-      lbl.innerHTML='<div>'+(n.date||'').slice(5)+(n._estimated?' ~':'')+'</div><div>'+_dowStr+'</div>';
+      lbl.innerHTML='<div>'+_escH((n.date||'').slice(5))+(n._estimated?' ~':'')+'</div><div>'+_escH(_dowStr)+'</div>';
 
       col.appendChild(bar);col.appendChild(lbl);
       (function(entry,colEl){
@@ -3389,8 +3391,8 @@ function buildLeverageBars(){
       if(tm!==undefined){
         var mr=rIdx['mood'];
         if(mr!==undefined&&Math.abs(mr)>0.2){
-          if(tm>=7&&mr>0)insights.push('🌊 今日情緒良好（'+tm+' 分），依規律（r=+'+mr.toFixed(2)+'）有助鎖入明日高睡眠品質分，維持今晚穩定作息。');
-          else if(tm<5&&mr>0)insights.push('🌊 今日情緒低谷（'+tm+' 分），依規律次日睡眠品質分承壓。今晚以靜息防禦為主，22:30 前上床。');
+          if(tm>=7&&mr>0)insights.push('🌊 今日情緒良好（'+_escH(tm)+' 分），依規律（r=+'+mr.toFixed(2)+'）有助鎖入明日高睡眠品質分，維持今晚穩定作息。');
+          else if(tm<5&&mr>0)insights.push('🌊 今日情緒低谷（'+_escH(tm)+' 分），依規律次日睡眠品質分承壓。今晚以靜息防禦為主，22:30 前上床。');
         }
       }
     }else if(_levTab==='mood'){
@@ -3403,7 +3405,7 @@ function buildLeverageBars(){
       }
       if(tc!==undefined&&tc>0){
         var cr4=rIdx['coffee'];
-        if(cr4!==undefined&&cr4<-0.15)insights.push('☕ 今日 '+tc+' 杯咖啡，依規律（r='+cr4.toFixed(2)+'）可能壓抑明日情緒基線，今晚靜息為宜。');
+        if(cr4!==undefined&&cr4<-0.15)insights.push('☕ 今日 '+_escH(tc)+' 杯咖啡，依規律（r='+cr4.toFixed(2)+'）可能壓抑明日情緒基線，今晚靜息為宜。');
       }
     }else{
       if(rawCombat&&rawCombat>0){
@@ -3415,7 +3417,7 @@ function buildLeverageBars(){
       }
       if(tm!==undefined){
         var mr5=rIdx['mood'];
-        if(mr5!==undefined&&mr5>0.2&&tm<5)insights.push('🌊 今日情緒偏低（'+tm+' 分），依規律（r=+'+mr5.toFixed(2)+'）今日完成率承壓，降低任務密度保住慣性。');
+        if(mr5!==undefined&&mr5>0.2&&tm<5)insights.push('🌊 今日情緒偏低（'+_escH(tm)+' 分），依規律（r=+'+mr5.toFixed(2)+'）今日完成率承壓，降低任務密度保住慣性。');
       }
     }
     if(!insights.length)insights.push('今日無顯著高影響信號。依長期規律維持現有作息，持續積累資料以精準洞察。');

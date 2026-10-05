@@ -2627,7 +2627,7 @@ async function runWeightedAI() {
     }
     const txt = res.content || '分析失敗';
     const parts = txt.split(/(?=②)/);
-    el.innerHTML = parts.map(p => `<div>${p.trim()}</div>`).join('');
+    el.innerHTML = parts.map(p => `<div>${String(p.trim()).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}</div>`).join('');
   } catch (e) { el.textContent = '無法連線 Groq'; }
   _wAIBusy = false;
 }
