@@ -1,4 +1,16 @@
 #!/bin/bash
+# 10-06新增：Mac 休眠時 macOS 會短暫背景喚醒（DarkWake，常只醒 2–20 秒）補跑錯過的排程，
+# 網路還沒起來就又睡回去，造成 git push 失敗（09-05後 140 次中 42 次）。開頭先確認連得到
+# GitHub，連不到就整次略過、不產生半套 commit，交給下一個排程時段處理。
+NET_OK=0
+for i in 1 2 3; do
+    if /usr/bin/curl -s -m 5 -o /dev/null "${NET_CHECK_URL:-https://github.com}"; then NET_OK=1; break; fi
+    sleep 5
+done
+if [ "$NET_OK" != 1 ]; then
+    echo "⏸ $(date '+%Y-%m-%d %H:%M') 網路未就緒（可能是休眠中的背景喚醒），本次略過，交給下一個排程時段"
+    exit 0
+fi
 SRC="/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update"
 DEST="/Users/tinayu/sleep-dashboard/json_cache"
 mkdir -p "$DEST"
