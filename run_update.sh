@@ -1,4 +1,27 @@
 #!/bin/bash
+# 10-07新增：log 輪替。update.log 從 04-11 起從未清理（685KB、13k 行），除錯時真正的錯誤被雜訊淹沒。
+# 只保留最近 30 天，更舊的段落搬到 update_archive.log（gitignore）；update_error.log 只留最後 2000 行。
+# launchd 的 stdout 指向舊檔，輪替後用 exec 重新以 append 開啟新的 update.log，避免寫進已被取代的檔案。
+SD=/Users/tinayu/sleep-dashboard
+LOG="$SD/update.log"; ARCH="$SD/update_archive.log"; ERR="$SD/update_error.log"
+CUTOFF=$(date -v-30d +%Y-%m-%d)
+if [ -f "$LOG" ]; then
+  CUT=$(awk -v c="$CUTOFF" '
+    /run_update 開始 [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ || /更新 — [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ {
+      match($0,/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/); d=substr($0,RSTART,RLENGTH)
+      if (d>=c) { if ($0 ~ /run_update 開始/) print NR; else print (NR>2?NR-2:1); exit }
+    }' "$LOG")
+  if [ -n "$CUT" ] && [ "$CUT" -gt 1 ]; then
+    head -n $((CUT-1)) "$LOG" >> "$ARCH"
+    tail -n +"$CUT" "$LOG" > "$LOG.new" && mv "$LOG.new" "$LOG"
+  fi
+fi
+if [ -f "$ERR" ] && [ "$(wc -l < "$ERR")" -gt 2000 ]; then
+  tail -n 2000 "$ERR" > "$ERR.new" && mv "$ERR.new" "$ERR"
+fi
+exec >>"$LOG" 2>>"$ERR"
+echo ""
+echo "▶ run_update 開始 $(date '+%Y-%m-%d %H:%M')"
 # 10-06新增：Mac 休眠時 macOS 會短暫背景喚醒（DarkWake，常只醒 2–20 秒）補跑錯過的排程，
 # 網路還沒起來就又睡回去，造成 git push 失敗（09-05後 140 次中 42 次）。開頭先確認連得到
 # GitHub，連不到就整次略過、不產生半套 commit，交給下一個排程時段處理。
@@ -66,3 +89,15 @@ python3 /Users/tinayu/sleep-dashboard/update_dashboard.py
 # 不是共用計算邏輯）。v2本身的排程與計算完全不受這兩行影響。
 python3 /Users/tinayu/sleep-dashboard/update_dashboard_v3.py
 python3 /Users/tinayu/sleep-dashboard/update_dashboard_v3_live.py
+
+# 10-07新增：結尾補推。網路前置檢查擋不住「檢查時有網路、跑到一半又睡著」（10-06 22:38 案例），
+# 任何一步推送失敗留下的本機 commit，在這裡最多重試 3 次；仍失敗就留給下一個排程時段。
+cd "$SD" || exit 0
+if git status -sb | head -1 | grep -q 'ahead'; then
+  PUSHED=0
+  for i in 1 2 3; do
+    if git push -q origin main 2>/dev/null; then echo "✅ 結尾補推成功（第 ${i} 次）"; PUSHED=1; break; fi
+    sleep 10
+  done
+  [ "$PUSHED" = 1 ] || echo "⏸ 結尾補推失敗，仍有未推送 commit，交給下一個排程時段"
+fi
