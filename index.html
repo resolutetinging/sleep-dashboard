@@ -73,11 +73,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .clw{grid-column:1/13;grid-row:5}     /* last week recap */
 .cco{grid-column:1/13;grid-row:6}     /* correlation — full width */
 .cfr{grid-column:1/13;grid-row:7}     /* factor radar — Phase C */
-.cdta{grid-column:1/13;grid-row:8}    /* dual-track overview */
-.csca{grid-column:1/13;grid-row:9}    /* sleep causal analysis */
-.clv{grid-column:1/13;grid-row:10}    /* leverage bars */
-.ctx{grid-column:1/13;grid-row:11}    /* taxonomy — full width */
-.cha{grid-column:1/13;grid-row:12}    /* HD AI */
+.cdp{grid-column:1/13;grid-row:8}     /* 深層睡眠影響因素（10-08） */
+.cdta{grid-column:1/13;grid-row:9}    /* dual-track overview */
+.csca{grid-column:1/13;grid-row:10}    /* sleep causal analysis */
+.clv{grid-column:1/13;grid-row:11}    /* leverage bars */
+.ctx{grid-column:1/13;grid-row:12}    /* taxonomy — full width */
+.cha{grid-column:1/13;grid-row:13}    /* HD AI */
 
 .card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.24) 0%,transparent 55%);pointer-events:none;border-radius:inherit}
@@ -169,6 +170,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .fr-summary-row{display:flex;align-items:center;gap:6px;font-size:.66rem;color:var(--sub);line-height:1.5}
 .fr-summary-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .fr-summary-lbl{font-weight:700;color:var(--text)}
+/* 深層睡眠影響因素 */
+.dp-row{display:flex;align-items:center;gap:8px;font-size:.66rem;color:var(--sub);line-height:1.5;margin-top:.3rem}
+.dp-lbl{width:6.5em;flex-shrink:0;font-weight:700;color:var(--text)}
+.dp-bar{flex:1;height:6px;border-radius:3px;background:var(--bg2);overflow:hidden;min-width:40px}
+.dp-bar>span{display:block;height:100%;background:var(--deep);border-radius:3px}
+.dp-val{white-space:nowrap}.dp-n{color:var(--faint)}
+.dp-cmp{margin-top:.45rem;padding:.4rem .6rem;background:var(--bg2);border-radius:var(--rsm);border:.5px solid var(--border)}
+.dp-cmp-t{font-size:.66rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dp-cmp-b{font-size:.65rem;color:var(--sub);line-height:1.6;margin-top:2px}
+.dp-tag{font-size:.58rem;padding:1px 8px;border-radius:20px;font-weight:600}
+.dp-tag-hi{background:rgba(230,126,34,.14);color:var(--warn)}.dp-tag-lo{background:rgba(78,110,138,.14);color:var(--info)}.dp-tag-na{background:rgba(122,117,112,.14);color:var(--faint)}
 .fr-tt-box{position:absolute;z-index:20;max-width:200px;background:#2c2a28;color:#fff;font-size:.66rem;line-height:1.65;padding:.55rem .7rem;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.2);pointer-events:none}
 .fr-tt-line{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:19;overflow:visible}
 .fr-tt-line line{stroke:var(--faint);stroke-width:1.3;stroke-dasharray:3 3}
@@ -280,7 +292,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .view-ov{padding:.8rem .75rem 2rem}
   /* Single-column stacking on mobile */
   .bento{grid-template-columns:1fr;gap:9px}
-  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.cfr,.ctx,.cha,.clw,.cdta,.csca,.clv,.csoc{grid-column:1;grid-row:auto}
+  .cg,.cp,.cb,.cm,.cd,.chw,.cco,.cfr,.cdp,.ctx,.cha,.clw,.cdta,.csca,.clv,.csoc{grid-column:1;grid-row:auto}
   /* Gauge: compact on mobile */
   .gw svg{max-width:140px}
   .ctx-inner,.hd-ai-grid,.week-grid{grid-template-columns:1fr}
@@ -339,7 +351,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   <div><div class="vtitle">今日總覽</div><div class="vsub" id="ov-ds">—</div></div>
 </div>
 <div id="data-stale-alert" style="display:none;margin-bottom:.9rem;padding:.65rem .75rem;border-radius:var(--rsm);background:rgba(168,90,40,.10);border:.5px solid rgba(168,90,40,.35)">
-  <div style="font-size:.7rem;font-weight:700;color:var(--ink);margin-bottom:2px">⚠️ 資料已停止更新</div>
+  <div style="font-size:.7rem;font-weight:700;color:var(--ink);margin-bottom:2px">⚠️ 資料維護提醒</div>
   <div id="data-stale-alert-text" style="font-size:.67rem;color:var(--sub);line-height:1.8"></div>
 </div>
 <div class="risk-light" id="risk-light">
@@ -694,6 +706,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div id="fr-tt-box" class="fr-tt-box" style="display:none"></div>
   </div>
 
+  <!-- 深層睡眠影響因素（10-08，規格A；資料：sas_deep_nights） -->
+  <div class="card cdp" id="deep-card">
+    <div class="lbl" style="margin-bottom:2px">🌙 深層睡眠影響因素</div>
+    <div id="deep-note" class="t-note" style="margin-bottom:.7rem">載入中…</div>
+    <div id="deep-body"></div>
+  </div>
+
   <!-- 雙軌綜觀與行為相關性分析 -->
   <div class="card cdta" id="dta-card" style="background:var(--card);padding:1.4rem 1.4rem 1.2rem">
     <div class="lbl" style="margin-bottom:1.1rem">
@@ -912,7 +931,7 @@ var $=id=>document.getElementById(id);
 var _slDate=Date.now();
 var frameSrcs={sl:'./sleep_dashboard_v3_live.html?d='+_slDate,mn:'https://resolutetinging.github.io/wellness-tracker/mental-dashboard.html?d='+_slDate,op:'https://resolutetinging.github.io/daily-optimizer/daily_optimizer_v3.html?d='+_slDate,rf:'https://resolutetinging.github.io/control-center/refueler.html?d='+_slDate};
 function frameLoaded(k){var el=$(k+'-loading');if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',320);}}
-['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl')setTimeout(readCombat,1200);});});
+['sl','mn','op','rf'].forEach(k=>{var f=$(k+'-frame');if(f)f.addEventListener('load',()=>{frameLoaded(k);if(k==='sl'){setTimeout(readCombat,1200);setTimeout(refreshDataHints,1600);}});});
 function go(id){
   sessionStorage.setItem('sas_tab',id);
   document.querySelectorAll('.view-ov,.view-frame').forEach(v=>v.classList.remove('on'));
@@ -992,6 +1011,7 @@ function updateCombat(score,skipAnim){
   try{buildNoDayAlert();}catch(e){}
   buildAlignToday(score);
   try{checkDataFreshness();}catch(e){}
+  try{renderDeepFactors();}catch(e){}
   try{buildRiskLight(score,_sqShared);}catch(e){}
   try{buildWeekPressure();}catch(e){}
   try{buildOverloadFreq();}catch(e){}
@@ -1226,24 +1246,73 @@ function buildNoDayAlert(){
 
 /* 資料新鮮度檢查（2026-07-19）：sas_sleep_latest 最新一夜的日期若比今天早2天以上，
    代表至少完整漏了一天沒同步（自動化排程卡住/手機端匯出中斷都可能造成），
-   直接在總覽頁最上方示警，不必等使用者自己發現 dashboard 沒更新。 */
+   直接在總覽頁最上方示警，不必等使用者自己發現 dashboard 沒更新。
+   10-08擴充（規格B2）：同一個橫幅一併列出其他頁面的資料缺漏——Refueler 昨天沒有喝水紀錄、
+   Mental 超過3天沒新紀錄、Optimizer 昨天覆盤未填；常駐顯示、不限每天一次，全部沒缺漏才隱藏。
+   規則與 Control Center 首頁彈窗（B1）一致；連結用本頁既有的分頁切換 go()。 */
+function collectDataGaps(){
+  var gaps=[];
+  var yKey=dkey(new Date(Date.now()-86400000));
+  // 1. 睡眠：沿用既有判準（最新一夜距今 >=2 天）
+  try{
+    var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+    var trend=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
+    var lastDateStr=trend.length?trend[trend.length-1].date:null;
+    if(lastDateStr){
+      var gapDays=Math.round((new Date(dkey(new Date())+'T12:00:00')-new Date(lastDateStr+'T12:00:00'))/86400000);
+      if(gapDays>=2){
+        var ld=new Date(lastDateStr+'T12:00:00');
+        gaps.push({tab:'sl',label:'睡眠',text:'睡眠資料停在 '+(ld.getMonth()+1)+'/'+ld.getDate()+'，已 '+gapDays+' 天沒有新資料同步（可檢查 update.log 與 update_error.log）'});
+      }
+    }
+  }catch(e){}
+  // 2. Refueler：昨天沒有任何 type==='water'
+  try{
+    var rf=null;try{rf=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
+    var ents=(rf&&Array.isArray(rf.entries))?rf.entries:[];
+    var hasWater=ents.some(function(e){return e&&e.type==='water'&&e.timestamp&&dkey(new Date(e.timestamp))===yKey;});
+    if(!hasWater)gaps.push({tab:'rf',label:'Refueler',text:'昨天沒有喝水紀錄'});
+  }catch(e){}
+  // 3. Mental：wellness_v5.entries 最新 timestamp 距今 >3 天（沒有任何紀錄時無從計算，不提醒）
+  try{
+    var wv=null;try{wv=JSON.parse(localStorage.getItem('wellness_v5')||'null');}catch(e){}
+    var wes=(wv&&Array.isArray(wv.entries))?wv.entries:[];
+    var latest=0;
+    wes.forEach(function(e){
+      if(!e)return;
+      var raw=e.timestamp||e.date;if(!raw)return;
+      var t=(typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw))?new Date(raw+'T12:00:00').getTime():new Date(raw).getTime();
+      if(!isNaN(t)&&t>latest)latest=t;
+    });
+    if(latest>0){
+      var mDays=Math.round((new Date(dkey(new Date())+'T12:00:00')-new Date(dkey(new Date(latest))+'T12:00:00'))/86400000);
+      if(mDays>3)gaps.push({tab:'mn',label:'Mental',text:'心情紀錄已 '+mDays+' 天沒更新'});
+    }
+  }catch(e){}
+  // 4. Optimizer：review_昨天 存在、有 pipes、但 items 空或全無 status＝未覆盤；不存在或 restMode＝休假，不提醒
+  try{
+    var rv=getReview(yKey);
+    if(rv&&!rv.restMode&&Array.isArray(rv.pipes)&&rv.pipes.length){
+      var its=Array.isArray(rv.items)?rv.items:[];
+      var anyStatus=its.some(function(it){return it&&it.status;});
+      if(!anyStatus)gaps.push({tab:'op',label:'Optimizer',text:'昨天的覆盤還沒填'});
+    }
+  }catch(e){}
+  return gaps;
+}
 function checkDataFreshness(){
   var el=$('data-stale-alert'),txt=$('data-stale-alert-text');
   if(!el||!txt)return;
-  var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
-  var trend=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
-  if(!trend.length){el.style.display='none';return;}
-  var lastDateStr=trend[trend.length-1].date;
-  if(!lastDateStr){el.style.display='none';return;}
-  var last=new Date(lastDateStr+'T12:00:00');
-  var now=new Date(dkey(new Date())+'T12:00:00');
-  var gapDays=Math.round((now-last)/86400000);
-  if(gapDays>=2){
-    el.style.display='block';
-    txt.textContent='最新睡眠資料停留在 '+lastDateStr+'，已經 '+gapDays+' 天沒有新資料同步。可能是 LaunchAgent 排程卡住或手機端匯出中斷，建議檢查 ~/sleep-dashboard/update.log 與 update_error.log。';
-  }else{
-    el.style.display='none';
-  }
+  var gaps=collectDataGaps();
+  if(!gaps.length){el.style.display='none';txt.innerHTML='';return;}
+  el.style.display='block';
+  txt.innerHTML=gaps.map(function(g){
+    return '<div>・'+_escH(g.text)+'　<a onclick="go(\''+_escH(g.tab)+'\')" style="cursor:pointer;color:var(--info);text-decoration:underline;white-space:nowrap">前往'+_escH(g.label)+'</a></div>';
+  }).join('');
+}
+function refreshDataHints(){
+  try{checkDataFreshness();}catch(e){}
+  try{renderDeepFactors();}catch(e){}
 }
 
 /* RISK LIGHT — 常駐綜合風險燈號：戰力偏低(≤55，同配速熔斷門檻) / 已過續航終點 / 睡眠負債危險(sas_dta) / 今日意志力透支(alignClass)，
@@ -3719,6 +3788,166 @@ function setFactorRadarTab(tab){
   try{renderFactorRadar(tab);}catch(err){console.warn('renderFactorRadar',err);}
 }
 
+/* ── 🌙 深層睡眠影響因素（2026-10-08，規格A）──
+   資料來源：localStorage.sas_deep_nights（由 sleep_dashboard_v3_live.html 開頁時寫入，
+   v3 精確逐晚資料，08-27 起；不可用 sas_sleep_latest.trend*，10/1 前是 v2 凍結資料）。
+   四項：①睡多久 ②入睡時間 ③前一天行為對照（refueler_v1 / review_） ④近30晚深層走勢＋偏低期間。
+   只呈現傾向，不是因果或醫療判斷。n<14 整卡灰化。 */
+var DEEP_MIN_NIGHTS=14,DEEP_GROUP_MIN=5,DEEP_DIFF_MIN=5;
+function _dpNights(){
+  var raw=null;try{raw=JSON.parse(localStorage.getItem('sas_deep_nights')||'null');}catch(e){}
+  if(!Array.isArray(raw))return[];
+  var out=[];
+  raw.forEach(function(r){
+    if(!r||typeof r.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(r.date))return;
+    var deep=Number(r.deep),rem=Number(r.rem),core=Number(r.core);
+    if(!isFinite(deep)||!isFinite(rem)||!isFinite(core))return;
+    out.push({date:r.date,bed:(r.bed==null?'':String(r.bed)),deep:deep,total:deep+rem+core});
+  });
+  out.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+  return out;
+}
+function _dpMean(arr){return arr.length?arr.reduce(function(s,v){return s+v;},0)/arr.length:null;}
+function _dpPercentile(sorted,p){          // 線性內插（同 numpy 預設）
+  if(!sorted.length)return null;
+  var idx=(sorted.length-1)*p,lo=Math.floor(idx),hi=Math.ceil(idx);
+  return sorted[lo]+(sorted[hi]-sorted[lo])*(idx-lo);
+}
+function _dpBedBucket(bed){                // 0 午夜前／1 0-1點／2 1點後
+  var m=/(\d{1,2}):(\d{2})/.exec(bed||'');
+  if(!m)return -1;
+  var h=Number(m[1]);
+  if(h>=12)return 0;
+  return h===0?1:2;
+}
+function _dpPrevDay(dateStr){
+  var d=new Date(dateStr+'T12:00:00');d.setDate(d.getDate()-1);return dkey(d);
+}
+function _dpMD(dateStr){var d=new Date(dateStr+'T12:00:00');return (d.getMonth()+1)+'/'+d.getDate();}
+function _dpGroupRows(groups){             // groups: [{label,vals[]}]
+  var means=groups.map(function(g){return _dpMean(g.vals);});
+  var mx=means.reduce(function(m,v){return v!=null&&v>m?v:m;},1);
+  return groups.map(function(g,i){
+    var mv=means[i];
+    var w=mv==null?0:Math.round(Number(mv)/mx*100);
+    return '<div class="dp-row"><span class="dp-lbl">'+_escH(g.label)+'</span>'
+      +'<span class="dp-bar"><span style="width:'+Number(w)+'%"></span></span>'
+      +'<span class="dp-val">'+(mv==null?'—':Number(mv).toFixed(1)+' 分')+'<span class="dp-n">　'+Number(g.vals.length)+' 晚</span></span></div>';
+  }).join('');
+}
+function _dpCompareRow(title,la,lb,A,B){
+  var ma=_dpMean(A),mb=_dpMean(B),verdict,cls;
+  if(A.length<DEEP_GROUP_MIN||B.length<DEEP_GROUP_MIN){verdict='資料不足';cls='dp-tag-na';}
+  else if(Math.abs(ma-mb)>=DEEP_DIFF_MIN){verdict='差異明顯';cls='dp-tag-hi';}
+  else{verdict='看不出差別';cls='dp-tag-lo';}
+  function f(l,m,arr){return _escH(l)+' '+(m==null?'—':Number(m).toFixed(1)+' 分')+'（'+Number(arr.length)+' 晚）';}
+  return '<div class="dp-cmp"><div class="dp-cmp-t">'+_escH(title)+'<span class="dp-tag '+cls+'">'+_escH(verdict)+'</span></div>'
+    +'<div class="dp-cmp-b">'+f(la,ma,A)+'　vs　'+f(lb,mb,B)+'</div></div>';
+}
+/* 前一天行為：每晚以醒來日標日期，行為取前一天 */
+function _dpBehaviors(nights){
+  var rf=null;try{rf=JSON.parse(localStorage.getItem('refueler_v1')||'null');}catch(e){}
+  var ents=(rf&&Array.isArray(rf.entries))?rf.entries:[];
+  var byDay={};
+  ents.forEach(function(e){
+    if(!e||!e.timestamp)return;
+    var t=new Date(e.timestamp);if(isNaN(t.getTime()))return;
+    var k=dkey(t);
+    var o=byDay[k]||(byDay[k]={coffee:0,lastCoffeeMin:-1,water:0,hasWater:false});
+    if(e.type==='coffee'){
+      o.coffee++;
+      var mm=t.getHours()*60+t.getMinutes();
+      if(mm>o.lastCoffeeMin)o.lastCoffeeMin=mm;
+    }else if(e.type==='water'){
+      o.hasWater=true;o.water+=Number(e.amount)||0;
+    }
+  });
+  var g={cHi:[],cLo:[],lateC:[],earlyC:[],wHi:[],wLo:[],work:[],off:[]};
+  nights.forEach(function(n){
+    var p=_dpPrevDay(n.date),d=byDay[p];
+    if(d){                                  // 前一天有任何 Refueler 紀錄才算有記錄
+      (d.coffee>=2?g.cHi:g.cLo).push(n.deep);
+      if(d.coffee>0)(d.lastCoffeeMin>=14*60?g.lateC:g.earlyC).push(n.deep);
+      if(d.hasWater)(d.water>=3000?g.wHi:g.wLo).push(n.deep);
+    }
+    var rv=getReview(p);
+    (rv&&!rv.restMode?g.work:g.off).push(n.deep);
+  });
+  return g;
+}
+function _dpLowPeriods(win,thr){            // 連續（日期相連）≥3 晚低於偏低線
+  var periods=[],cur=[];
+  function flush(){if(cur.length>=3)periods.push(cur.slice());cur=[];}
+  win.forEach(function(n){
+    if(n.deep<thr){
+      if(cur.length&&_dpPrevDay(n.date)!==cur[cur.length-1].date)flush();
+      cur.push(n);
+    }else flush();
+  });
+  flush();
+  return periods;
+}
+function _dpSpark(win,thr,inPeriod){
+  var W=300,H=84,padT=6,padB=14,n=win.length;
+  var mx=Math.max(thr,win.reduce(function(m,x){return Math.max(m,x.deep);},0))*1.1||1;
+  var bw=W/n,ch=H-padT-padB;
+  var bars=win.map(function(x,i){
+    var h=Math.max(1,Number(x.deep)/mx*ch);
+    var low=x.deep<thr;
+    var fill=inPeriod[x.date]?'var(--warn)':low?'var(--awake)':'var(--deep)';
+    return '<rect x="'+(i*bw+1).toFixed(1)+'" y="'+(padT+ch-h).toFixed(1)+'" width="'+Math.max(1,bw-2).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="1.5" fill="'+fill+'" opacity="'+(low?'1':'.75')+'"><title>'+_escH(_dpMD(x.date)+'：深層 '+Number(x.deep).toFixed(1)+' 分')+'</title></rect>';
+  }).join('');
+  var ty=padT+ch-thr/mx*ch;
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:560px;height:auto;display:block" role="img" aria-label="近30晚深層睡眠分鐘數">'
+    +bars
+    +'<line x1="0" x2="'+W+'" y1="'+ty.toFixed(1)+'" y2="'+ty.toFixed(1)+'" stroke="var(--danger)" stroke-width="1" stroke-dasharray="4 3"/>'
+    +'<text x="'+(W-2)+'" y="'+(ty-2).toFixed(1)+'" text-anchor="end" font-size="8" fill="var(--danger)">偏低線 '+Number(thr).toFixed(1)+'</text>'
+    +'<text x="1" y="'+(H-2)+'" font-size="8" fill="var(--faint)">'+_escH(_dpMD(win[0].date))+'</text>'
+    +'<text x="'+(W-1)+'" y="'+(H-2)+'" text-anchor="end" font-size="8" fill="var(--faint)">'+_escH(_dpMD(win[n-1].date))+'</text></svg>';
+}
+function renderDeepFactors(){
+  var card=$('deep-card'),body=$('deep-body'),note=$('deep-note');
+  if(!card||!body||!note)return;
+  var nights=_dpNights(),n=nights.length;
+  if(n<DEEP_MIN_NIGHTS){
+    card.style.opacity='.55';
+    note.textContent='目前只有 '+n+' 晚 v3 逐晚資料（需要至少 '+DEEP_MIN_NIGHTS+' 晚才有參考性），資料不足。請先開啟睡眠頁讓它寫入資料。樣本少只看傾向，不是因果或醫療判斷。';
+    body.innerHTML='';
+    return;
+  }
+  card.style.opacity='';
+  note.textContent='共 '+n+' 晚 v3 精確資料（'+_dpMD(nights[0].date)+' 起）。樣本少只看傾向，不是因果或醫療判斷。';
+  var h='';
+  // ① 睡多久
+  var s1=[[],[],[]];
+  nights.forEach(function(x){var hr=x.total/60;(hr<6.5?s1[0]:hr<=7.5?s1[1]:s1[2]).push(x.deep);});
+  h+='<div class="t-sub">① 睡多久 vs 深層（深層平均分鐘）</div>'
+    +_dpGroupRows([{label:'少於 6.5 小時',vals:s1[0]},{label:'6.5–7.5 小時',vals:s1[1]},{label:'多於 7.5 小時',vals:s1[2]}]);
+  // ② 入睡時間
+  var s2=[[],[],[]];
+  nights.forEach(function(x){var b=_dpBedBucket(x.bed);if(b>=0)s2[b].push(x.deep);});
+  h+='<div class="t-sub" style="margin-top:.9rem">② 入睡時間 vs 深層（深層平均分鐘）</div>'
+    +_dpGroupRows([{label:'午夜前',vals:s2[0]},{label:'0–1 點',vals:s2[1]},{label:'1 點後',vals:s2[2]}]);
+  // ③ 前一天行為
+  var g=_dpBehaviors(nights);
+  h+='<div class="t-sub" style="margin-top:.9rem">③ 前一天行為對照（以醒來日標日期，行為取前一天；兩組差 ≥5 分且各 ≥5 晚才標差異明顯）</div>'
+    +_dpCompareRow('咖啡杯數','≥2 杯',  '≤1 杯',g.cHi,g.cLo)
+    +_dpCompareRow('最後一杯咖啡（無咖啡的日子不計）','14:00 後','14:00 前',g.lateC,g.earlyC)
+    +_dpCompareRow('喝水量','≥3000ml','未滿 3000ml',g.wHi,g.wLo)
+    +_dpCompareRow('前一天是否工作日','工作日','非工作日',g.work,g.off);
+  // ④ 好壞期間
+  var sorted=nights.map(function(x){return x.deep;}).sort(function(a,b){return a-b;});
+  var thr=_dpPercentile(sorted,0.25);
+  var win=nights.slice(-30);
+  var periods=_dpLowPeriods(win,thr);
+  var inP={};periods.forEach(function(p){p.forEach(function(x){inP[x.date]=1;});});
+  h+='<div class="t-sub" style="margin-top:.9rem">④ 近 '+win.length+' 晚深層走勢（虛線＝全部 '+n+' 晚的 25 百分位偏低線）</div>'+_dpSpark(win,thr,inP);
+  h+='<div class="t-note" style="margin-top:.35rem">'+(periods.length
+    ?'偏低期間（連續 3 晚以上低於偏低線）：'+periods.map(function(p){return _escH(_dpMD(p[0].date)+'–'+_dpMD(p[p.length-1].date));}).join('、')
+    :'近 '+win.length+' 晚沒有連續 3 晚以上低於偏低線的期間')+'</div>';
+  body.innerHTML=h;
+}
+
 /* ── 🧑‍🤝‍🧑 人際圈與睡眠/完成率關聯（跨 App：Mental Dashboard wellness_v5 × SAS Hub）──
    資料來源 localStorage.wellness_v5：
      DB.profile.peopleCats [{id,name}]              分類 id → 人際圈分類名稱
@@ -3854,6 +4083,7 @@ go(_initTab);
 initFrames();
 try{buildDualTrackAggregation();renderDualTrackCard();}catch(e){}
 try{checkDataFreshness();}catch(e){}
+try{renderDeepFactors();}catch(e){}
 try{buildRiskLight(_combat);}catch(e){}
 try{buildWeekPressure();}catch(e){}
 try{buildOverloadFreq();}catch(e){}

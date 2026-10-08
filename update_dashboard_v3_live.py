@@ -22,6 +22,7 @@ sleep_v2_frozen_pre1001.json（由sleep_dashboard_v2.html的RAW.summary原樣
 
 import json
 import os
+import re
 import subprocess
 from datetime import datetime, timedelta
 
@@ -76,6 +77,31 @@ def load_summary():
     return summary
 
 
+def load_deep_nights():
+    """10-08新增（規格A，SAS Hub「深層睡眠影響因素」卡片）：只取sleep_v3_history.json的
+    v3精確逐晚資料（不含raw_samples、不含v2凍結段），轉成精簡常數V3_NIGHTS注入v3_live頁。
+    頁面開啟時由saveSleepToLocalStorage()寫入localStorage的sas_deep_nights。
+    欄位：date(醒來日)、bed/wake(HH:MM)、deep/rem/core/awake(分鐘)，依date排序。"""
+    with open(HISTORY_PATH, encoding='utf-8') as f:
+        history = json.load(f)
+    out = []
+    for date in sorted(history.get('nights', {}).keys()):
+        n = history['nights'][date]
+        try:
+            out.append({
+                'date': date,
+                'bed': datetime.fromisoformat(n['bedtime']).strftime('%H:%M'),
+                'wake': datetime.fromisoformat(n['wake']).strftime('%H:%M'),
+                'deep': n['deep_min'],
+                'rem': n['rem_min'],
+                'core': n['core_min'],
+                'awake': n['awake_min'],
+            })
+        except (KeyError, ValueError, TypeError):
+            continue
+    return out
+
+
 def load_segments():
     """10-01新增：從history.json的raw_samples產出逐段分期資料，供v3_live頁
     「睡眠週期」卡片使用。只處理 date >= V3_CUTOFF 的夜晚（此前沿用凍結v2，
@@ -125,6 +151,14 @@ def update_html(summary):
         print(f"❌ 找不到 RAW 標記：{os.path.basename(DASHBOARD_V3_LIVE_PATH)}")
         return False
     new_html = html[:idx_start + len(marker_start)] + new_raw + html[idx_end:]
+    # 10-08：V3_NIGHTS（v3逐晚精簡常數，單獨一行，緊接在RAW前）；已存在就原地替換，否則插在const RAW前
+    v3_line = 'const V3_NIGHTS = ' + json.dumps(load_deep_nights(), ensure_ascii=False, separators=(',', ':')) + ';\n'
+    pat = re.compile(r'^const V3_NIGHTS = .*;\n', re.M)
+    if pat.search(new_html):
+        new_html = pat.sub(lambda _m: v3_line, new_html, count=1)
+    else:
+        i = new_html.find(marker_start)
+        new_html = new_html[:i] + v3_line + new_html[i:]
     with open(DASHBOARD_V3_LIVE_PATH, 'w', encoding='utf-8') as f:
         f.write(new_html)
     print(f"✅ {os.path.basename(DASHBOARD_V3_LIVE_PATH)} 更新完成")
