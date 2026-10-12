@@ -3959,11 +3959,11 @@ function renderDeepFactors(){
 }
 
 /* ── 🪜 發展推進 x 睡眠／情緒（跨 App：CC 未來發展四象限 cc_career_v1 × SAS Hub）──
-   唯讀 localStorage.cc_career_v1.log：推進日＝當日有 progress 增加（舊）、status 等級上升、或 note／milestone 內容更新（見 _cmIsAdvance）。
+   唯讀 localStorage.cc_career_v1.log：推進日＝當日有 progress 增加（舊）、status 等級上升、note／milestone 內容更新（見 _cmIsAdvance），或 journal 學習紀錄的 date（見 _cmJournalDays）。
    睡眠：沿用 _dpNights()（sas_deep_nights，v3 逐晚精確資料，以醒來日標日期）；
          推進日「當晚」＝該日入睡、隔天醒來的那一晚，即 nights 中 date＝推進日+1 的紀錄。
    情緒：沿用 getMoods()（wellness_v5 moodScore），取當天平均。
-   涵蓋天數＝最早一筆 log 日期到今天；門檻：涵蓋 ≥14 天且推進日 ≥5 天。只呈現相關，不是因果。 */
+   涵蓋天數＝log 與 journal 中最早日期到今天；門檻：涵蓋 ≥14 天且推進日 ≥5 天。只呈現相關，不是因果。 */
 var CM_MIN_DAYS=14,CM_MIN_PROG=5;
 function _cmDayDiff(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
 function _cmNextDay(k){var d=new Date(k+'T12:00:00');d.setDate(d.getDate()+1);return dkey(d);}
@@ -3981,20 +3981,46 @@ function _cmIsAdvance(r){
   }
   return false;
 }
-function _cmProgressDays(rawStr){
+/* 第④種：cc_career_v1.cards[].items[].journal[] 每筆 date 都算推進日（依紀錄日期；無效／未來日期略過） */
+function _cmValidDate(d){
+  if(typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
+  var t=new Date(d+'T12:00:00');
+  return !isNaN(t.getTime())&&dkey(t)===d;
+}
+function _cmJournalDays(db,todayStr){
+  var out={};
+  if(!db||!Array.isArray(db.cards))return out;
+  db.cards.forEach(function(c){
+    if(!c||!Array.isArray(c.items))return;
+    c.items.forEach(function(it){
+      if(!it||!Array.isArray(it.journal))return;
+      it.journal.forEach(function(j){
+        if(!j||!_cmValidDate(j.date))return;
+        if(todayStr&&j.date>todayStr)return;
+        out[j.date]=1;
+      });
+    });
+  });
+  return out;
+}
+function _cmProgressDays(rawStr,todayStr){
   var db=null;try{db=JSON.parse(rawStr||'null');}catch(e){return{ok:false,all:[],prog:[]};}
-  if(!db||typeof db!=='object'||!Array.isArray(db.log))return{ok:false,all:[],prog:[]};
+  if(!db||typeof db!=='object')return{ok:false,all:[],prog:[]};
+  var logArr=Array.isArray(db.log)?db.log:[];
+  var jd=_cmJournalDays(db,todayStr);
+  if(!Array.isArray(db.log)&&!Object.keys(jd).length)return{ok:false,all:[],prog:[]};
   var all={},prog={};
-  db.log.forEach(function(r){
+  logArr.forEach(function(r){
     if(!r||typeof r.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(r.date))return;
     all[r.date]=1;
     if(_cmIsAdvance(r))prog[r.date]=1;
   });
+  Object.keys(jd).forEach(function(k){all[k]=1;prog[k]=1;});
   return{ok:true,all:Object.keys(all).sort(),prog:Object.keys(prog).sort()};
 }
 /* 純函式：回傳 {state:'none'|'wait'|'ok', days, progDays, rows:[{label,unit,a,b,na,nb}]} */
 function _cmAnalyze(rawStr,nights,moods,todayStr){
-  var pd=_cmProgressDays(rawStr);
+  var pd=_cmProgressDays(rawStr,todayStr);
   if(!pd.ok||!pd.all.length)return{state:'none',days:0,progDays:0,rows:[]};
   var first=pd.all[0],days=Math.max(1,_cmDayDiff(first,todayStr)+1);
   var progDays=pd.prog.length;
@@ -4024,7 +4050,7 @@ function renderCareerCard(){
   var r=_cmAnalyze(raw,_dpNights(),getMoods(),today());
   if(r.state==='none'||r.state==='wait'){
     card.style.opacity='.55';
-    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（狀態升級或進度描述／里程碑更新）後會自動累積。';
+    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（新增學習紀錄、狀態升級或下一步更新）後會自動累積。';
     body.innerHTML='';
     return;
   }
