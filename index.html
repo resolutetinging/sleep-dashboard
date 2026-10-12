@@ -3959,7 +3959,7 @@ function renderDeepFactors(){
 }
 
 /* ── 🪜 發展推進 x 睡眠／情緒（跨 App：CC 未來發展四象限 cc_career_v1 × SAS Hub）──
-   唯讀 localStorage.cc_career_v1.log：field='progress' 且 to>from 的 date＝推進日。
+   唯讀 localStorage.cc_career_v1.log：推進日＝當日有 progress 增加（舊）、status 等級上升、或 note／milestone 內容更新（見 _cmIsAdvance）。
    睡眠：沿用 _dpNights()（sas_deep_nights，v3 逐晚精確資料，以醒來日標日期）；
          推進日「當晚」＝該日入睡、隔天醒來的那一晚，即 nights 中 date＝推進日+1 的紀錄。
    情緒：沿用 getMoods()（wellness_v5 moodScore），取當天平均。
@@ -3967,6 +3967,20 @@ function renderDeepFactors(){
 var CM_MIN_DAYS=14,CM_MIN_PROG=5;
 function _cmDayDiff(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
 function _cmNextDay(k){var d=new Date(k+'T12:00:00');d.setDate(d.getDate()+1);return dkey(d);}
+var CM_STATUS_RANK={'需強化':1,'掌握中':2,'已精通':3};
+/* 推進紀錄判斷：①progress to>from（舊紀錄相容）②status 等級上升（未評估/未知值不算）③note／milestone to 為非空字串且 to≠from */
+function _cmIsAdvance(r){
+  if(!r||typeof r!=='object')return false;
+  if(r.field==='progress')return Number(r.to)>Number(r.from);
+  if(r.field==='status'){
+    var a=CM_STATUS_RANK[r.from],b=CM_STATUS_RANK[r.to];
+    return typeof a==='number'&&typeof b==='number'&&b>a;
+  }
+  if(r.field==='note'||r.field==='milestone'){
+    return typeof r.to==='string'&&r.to.trim()!==''&&r.to!==r.from;
+  }
+  return false;
+}
 function _cmProgressDays(rawStr){
   var db=null;try{db=JSON.parse(rawStr||'null');}catch(e){return{ok:false,all:[],prog:[]};}
   if(!db||typeof db!=='object'||!Array.isArray(db.log))return{ok:false,all:[],prog:[]};
@@ -3974,7 +3988,7 @@ function _cmProgressDays(rawStr){
   db.log.forEach(function(r){
     if(!r||typeof r.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(r.date))return;
     all[r.date]=1;
-    if(r.field==='progress'&&Number(r.to)>Number(r.from))prog[r.date]=1;
+    if(_cmIsAdvance(r))prog[r.date]=1;
   });
   return{ok:true,all:Object.keys(all).sort(),prog:Object.keys(prog).sort()};
 }
@@ -4010,7 +4024,7 @@ function renderCareerCard(){
   var r=_cmAnalyze(raw,_dpNights(),getMoods(),today());
   if(r.state==='none'||r.state==='wait'){
     card.style.opacity='.55';
-    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」調整能力細項進度後會自動累積。';
+    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（狀態升級或進度描述／里程碑更新）後會自動累積。';
     body.innerHTML='';
     return;
   }
