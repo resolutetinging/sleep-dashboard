@@ -3959,7 +3959,7 @@ function renderDeepFactors(){
 }
 
 /* ── 🪜 發展推進 x 睡眠／情緒（跨 App：CC 未來發展四象限 cc_career_v1 × SAS Hub）──
-   唯讀 localStorage.cc_career_v1.log：推進日＝當日有 progress 增加（舊）、status 等級上升、note／milestone 內容更新（見 _cmIsAdvance），或 journal 學習紀錄的 date（見 _cmJournalDays）。
+   唯讀 localStorage.cc_career_v1.log：推進日＝當日有 progress 增加（舊）、status 等級上升、note／milestone 內容更新（見 _cmIsAdvance），journal 學習紀錄的 date，或 topics 中 state=已學 的 learnedAt（見 _cmJournalDays）。
    睡眠：沿用 _dpNights()（sas_deep_nights，v3 逐晚精確資料，以醒來日標日期）；
          推進日「當晚」＝該日入睡、隔天醒來的那一晚，即 nights 中 date＝推進日+1 的紀錄。
    情緒：沿用 getMoods()（wellness_v5 moodScore），取當天平均。
@@ -3981,7 +3981,7 @@ function _cmIsAdvance(r){
   }
   return false;
 }
-/* 第④種：cc_career_v1.cards[].items[].journal[] 每筆 date 都算推進日（依紀錄日期；無效／未來日期略過） */
+/* 第④種：cc_career_v1.cards[].items[].journal[] 每筆 date 都算推進日；第⑤種：topics[] 中 state='已學' 的 learnedAt（依紀錄日期；無效／未來日期略過） */
 function _cmValidDate(d){
   if(typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
   var t=new Date(d+'T12:00:00');
@@ -3993,11 +3993,16 @@ function _cmJournalDays(db,todayStr){
   db.cards.forEach(function(c){
     if(!c||!Array.isArray(c.items))return;
     c.items.forEach(function(it){
-      if(!it||!Array.isArray(it.journal))return;
-      it.journal.forEach(function(j){
+      if(!it)return;
+      if(Array.isArray(it.journal))it.journal.forEach(function(j){
         if(!j||!_cmValidDate(j.date))return;
         if(todayStr&&j.date>todayStr)return;
         out[j.date]=1;
+      });
+      if(Array.isArray(it.topics))it.topics.forEach(function(t){
+        if(!t||t.state!=='已學'||!_cmValidDate(t.learnedAt))return;
+        if(todayStr&&t.learnedAt>todayStr)return;
+        out[t.learnedAt]=1;
       });
     });
   });
@@ -4050,7 +4055,7 @@ function renderCareerCard(){
   var r=_cmAnalyze(raw,_dpNights(),getMoods(),today());
   if(r.state==='none'||r.state==='wait'){
     card.style.opacity='.55';
-    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（新增學習紀錄、狀態升級或下一步更新）後會自動累積。';
+    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（主題學會、新增學習紀錄或狀態升級）後會自動累積。';
     body.innerHTML='';
     return;
   }
