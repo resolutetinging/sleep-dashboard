@@ -403,7 +403,13 @@ def main():
         return
     print(f"使用原始資料檔：{raw_path.name}")
 
-    samples = load_samples(raw_path)
+    # 10-12新增：iCloud原始檔尚未下載到本機時，讀檔會丟OSError（Resource deadlock
+    # avoided，10-11 09:37案例），比照v2跳過stub的做法，本次略過交給下一個排程時段。
+    try:
+        samples = load_samples(raw_path)
+    except OSError as e:
+        print(f"⏸ 跳過 {raw_path.name}（iCloud 尚未下載完成：{e.strerror or e}），v3 本次略過，交給下一個排程時段")
+        return
     print(f"解析出 {len(samples)} 筆原始樣本")
 
     sessions = split_sessions(samples)
