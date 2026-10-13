@@ -363,7 +363,7 @@
       <div class="def-header">
         <span class="def-name" style="font-size:12px">⏰ 睡眠債</span>
       </div>
-      <div class="def-desc">近 7 夜實際睡眠與每晚 8 小時需求的差額加總。本頁簡化為睡超過 8 小時可抵銷欠債，研究顯示補眠只能部分恢復。</div>
+      <div class="def-desc">近 7 夜（勾選「排除週末」時為排除週末後的近 7 夜）實際睡眠與每晚 8 小時需求的差額加總。本頁簡化為睡超過 8 小時可抵銷欠債，研究顯示補眠只能部分恢復。</div>
       <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Van Dongen 等人（2003）的實驗中，健康成人連續 14 天睡 6 小時以下，認知表現持續累積下滑，缺損最多相當於兩個通宵未睡，而主觀嗜睡感不會同步加重，受試者常不自覺。Banks 與 Dinges（2007）的回顧也指出慢性睡眠限制會累積認知缺損。補眠效果有限：Kitamura 等人（2016）估計欠 1 小時約需 4 天恢復；Depner 等人（2019）發現週末補眠沒能防止胰島素敏感度下降。成人建議每晚至少 7 小時（Watson 2015），NSF 為 7–9 小時（Hirshkowitz 2015），8 小時是本頁設定值。</p><p><span class="def-k">本頁怎麼算</span>總債 = 近 7 夜 Σ（480 − total_min）；睡得比 8 小時多的夜晚會抵銷欠債（總債可為負，代表盈餘）。警示門檻（單日低於 6.5 小時、累計超過 5 小時、連續 3 天低於 6.5 小時）為本頁自訂，見「睡眠債」面板。戰力扣分：債超過 3 小時後，每多 1 小時扣 2 分。</p><p><span class="def-k">解讀限制</span>「可抵銷」是簡化，實驗顯示補眠無法完全抵銷；個人需求量也不同，8 小時不是每個人的最佳值。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1093/sleep/26.2.117" target="_blank" rel="noopener">Van Dongen et al. (2003) Sleep</a></li><li><a href="https://doi.org/10.5664/jcsm.26918" target="_blank" rel="noopener">Banks & Dinges (2007) J Clin Sleep Med</a></li><li><a href="https://doi.org/10.1038/srep35812" target="_blank" rel="noopener">Kitamura et al. (2016) Sci Rep</a></li><li><a href="https://doi.org/10.1016/j.cub.2019.01.069" target="_blank" rel="noopener">Depner et al. (2019) Current Biology</a></li><li><a href="https://doi.org/10.5665/sleep.4716" target="_blank" rel="noopener">Watson et al. (2015) Sleep，AASM／SRS 共識</a></li><li><a href="https://doi.org/10.1016/j.sleh.2014.12.010" target="_blank" rel="noopener">Hirshkowitz et al. (2015) Sleep Health，NSF 建議</a></li></ul></div></details>
     </div>
     <div class="def-item">
@@ -385,7 +385,7 @@
         <span class="def-name" style="font-size:12px">📊 作息規律性</span>
       </div>
       <div class="def-desc">近 30 夜入睡時間與起床時間的標準差，越小代表作息越固定。</div>
-      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Phillips 等人（2017）追蹤 61 位大學生 30 天，提出睡眠規律性指數 SRI；睡眠最不規律者的褪黑激素開始分泌時間較晚，學業表現與 SRI 呈正相關（r = 0.37）。Windred 等人（2024）追蹤 6 萬多名英國人約 7.8 年，規律性最高者全因死亡風險低 20%–48%，且規律性比睡眠時數更能預測死亡風險。</p><p><span class="def-k">本頁怎麼算</span>近 30 夜入睡時間、起床時間各自算總體標準差；小於 30 分鐘為穩定、30–60 分鐘為稍不規律、大於 60 分鐘為高度不規律（見「作息規律性分析」）。這組切點未查到文獻依據，為本頁自訂。本頁算的不是 SRI。</p><p><span class="def-k">解讀限制</span>標準差對偶發的一兩晚極端值敏感；SRI 是逐分鐘比對前後 24 小時是否同一狀態，兩者不能互換。上述研究多為觀察性研究。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1038/s41598-017-03171-4" target="_blank" rel="noopener">Phillips et al. (2017) Sci Rep</a></li><li><a href="https://doi.org/10.1093/sleep/zsad253" target="_blank" rel="noopener">Windred et al. (2024) Sleep</a></li></ul></div></details>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Phillips 等人（2017）追蹤 61 位大學生 30 天，提出睡眠規律性指數 SRI；睡眠最不規律者的褪黑激素開始分泌時間較晚，學業表現與 SRI 呈正相關（r = 0.37）。Windred 等人（2024）追蹤 6 萬多名英國人約 7.8 年，規律性最高者全因死亡風險低 20%–48%，且規律性比睡眠時數更能預測死亡風險。</p><p><span class="def-k">本頁怎麼算</span>近 30 夜入睡時間、起床時間各自算總體標準差；小於 30 分鐘為穩定、30–60 分鐘為稍不規律、60 分鐘以上（含）為高度不規律（見「作息規律性分析」）。這組切點未查到文獻依據，為本頁自訂。本頁算的不是 SRI。</p><p><span class="def-k">解讀限制</span>標準差對偶發的一兩晚極端值敏感；SRI 是逐分鐘比對前後 24 小時是否同一狀態，兩者不能互換。上述研究多為觀察性研究。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1038/s41598-017-03171-4" target="_blank" rel="noopener">Phillips et al. (2017) Sci Rep</a></li><li><a href="https://doi.org/10.1093/sleep/zsad253" target="_blank" rel="noopener">Windred et al. (2024) Sleep</a></li></ul></div></details>
     </div>
     <div class="def-item">
       <div class="def-header">
@@ -1142,7 +1142,7 @@ function updateRegularity(data) {
       <strong style="color:var(--text)">標準差說明</strong>：
       <span style="color:#5e8f7e">●</span> &lt; 30 分鐘 穩定（門檻為本頁自訂）&nbsp;
       <span style="color:#e67e22">●</span> 30–60 分鐘 稍不規律 &nbsp;
-      <span style="color:#c0392b">●</span> &gt; 60 分鐘 作息混亂
+      <span style="color:#c0392b">●</span> ≥ 60 分鐘 作息混亂
     </div>`;
 
   // Advice section based on SD
