@@ -1069,15 +1069,10 @@ function updateTrend(data) {
         // 睡眠（不含清醒）總時長：畫在長條垂直中間（底部到核心頂端的中點），長條太矮不畫
         const coreTop = coreMeta.data[i].y;
         if (baseY - coreTop < 40) return;
+        // 10-13 使用者要求：與在床總時長同字型同顏色，不加外框
         ctx.textBaseline = 'middle';
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = 'rgba(40,36,32,.55)';
-        ctx.lineJoin = 'round';
-        ctx.fillStyle = '#ffffff';
-        const lbl = minToHm(sleepOnly[i]);
-        const my = (baseY + coreTop) / 2;
-        ctx.strokeText(lbl, bar.x, my);
-        ctx.fillText(lbl, bar.x, my);
+        ctx.fillStyle = '#4a4540';
+        ctx.fillText(minToHm(sleepOnly[i]), bar.x, (baseY + coreTop) / 2);
       });
       ctx.restore();
     }
