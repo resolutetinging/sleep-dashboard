@@ -50,6 +50,14 @@
   .def-name { font-size:13px; font-weight:600; }
   .def-pct { font-family:"DM Mono",monospace; font-size:10px; color:var(--text-dim); margin-left:auto; padding-top:2px; }
   .def-desc { font-size:11px; color:var(--text-dim); line-height:1.6; padding-left:16px; }
+  .def-more { padding-left:16px; margin-top:6px; }
+  .def-more summary { font-size:10px; color:var(--accent); cursor:pointer; padding:2px 0; }
+  .def-more-body { font-size:11px; color:var(--text-dim); line-height:1.65; overflow-wrap:anywhere; }
+  .def-more-body p { margin-top:6px; }
+  .def-k { display:block; font-weight:600; color:var(--text); font-size:10px; letter-spacing:.04em; }
+  .def-src { margin:2px 0 0 14px; }
+  .def-src li { margin-bottom:2px; }
+  .def-src a { color:var(--accent); }
 
   .my-avg { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px; }
   .my-avg h3 { font-size:10px; font-family:"DM Mono",monospace; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); margin-bottom:12px; }
@@ -308,36 +316,37 @@
       <div class="def-header">
         <span class="def-dot" style="background:var(--deep)"></span>
         <span class="def-name" style="color:var(--deep)">深度睡眠 Deep</span>
-        <span class="def-pct">建議 13–23%</span>
+        <span class="def-pct">常見 10–25%</span>
       </div>
-      <div class="def-desc">慢波睡眠（N3 期）。身體修復、免疫強化、生長激素分泌的黃金時段。深度最難被喚醒，若被中斷會有強烈昏沉感。隨年齡增長比例下降。</div>
+      <div class="def-desc">慢波睡眠（N3 期），整夜最難被叫醒的一段，多集中在前半夜。隨年齡增長比例下降。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Apple 把相當於 PSG（睡眠多項生理檢查）N3 的階段標為 Deep，N3 判讀依據是慢波佔該 30 秒一格 20% 以上（AASM 計分規則）。慢波睡眠比例在青春期前達高峰後隨年齡下降（Dijk 2009；Ohayon 2004）。一般認為 Deep 與身體修復、免疫有關，但本頁未逐項查證，不作定論。</p><p><span class="def-k">本頁怎麼算</span>Deep 比例 = deep_min ÷（deep + REM + core）。低於 10% 判為明顯不足（參考範圍見「Deep 基礎能量」卡片）。</p><p><span class="def-k">解讀限制</span>Apple 自己的驗證中，最常見錯誤是把真正的 Deep 判成 Core；獨立研究中 Apple Watch Series 8 的 Deep 正確率約 51%（Schyvens 2025，20 人）。單晚數字不宜解讀太細，看多週趨勢較可靠。目前沒有權威機構訂定「建議」的分期比例，10–25% 是健康成人的描述性範圍（Dijk 2009）。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf" target="_blank" rel="noopener">Apple (2025) Estimating Sleep Stages from Apple Watch</a></li><li><a href="https://doi.org/10.5664/jcsm.27440" target="_blank" rel="noopener">Dijk (2009) J Clin Sleep Med</a></li><li><a href="https://doi.org/10.1093/sleep/27.7.1255" target="_blank" rel="noopener">Ohayon et al. (2004) Sleep</a></li><li><a href="https://doi.org/10.1093/sleepadvances/zpaf021" target="_blank" rel="noopener">Schyvens et al. (2025) Sleep Advances</a></li></ul></div></details>
     </div>
-
     <div class="def-item">
       <div class="def-header">
         <span class="def-dot" style="background:var(--rem)"></span>
         <span class="def-name" style="color:var(--rem)">快速動眼 REM</span>
-        <span class="def-pct">建議 20–25%</span>
+        <span class="def-pct">常見 20–25%</span>
       </div>
-      <div class="def-desc">大腦高度活躍、眼球快速轉動。記憶鞏固、情緒處理、創意整合的核心階段。夢境主要發生在此。每晚 4–6 個週期，後半夜 REM 比例更高。</div>
+      <div class="def-desc">大腦活躍、眼球快速轉動、肌肉張力降低的階段，夢境多發生於此，後半夜的 REM 通常較長。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Apple 白皮書把 REM 單獨列為一類輸出。成人 REM 比例隨年齡下降（Ohayon 2004）。「記憶鞏固、情緒處理」等功能說法本次未查到可靠來源，僅為常見說法，不作定論。</p><p><span class="def-k">本頁怎麼算</span>REM 比例 = rem_min ÷（deep + REM + core）。低於 15% 判為不足、低於 20% 判為偏低（參考範圍見「REM 邏輯輸出」卡片）。</p><p><span class="def-k">解讀限制</span>手錶以心率與呼吸節律推測 REM，並非腦波；獨立研究中 Series 8 的 REM 正確率約 69%（Schyvens 2025）。REM 與清醒、Core 容易互相混淆，單晚波動大，看長期平均即可。20–25% 的一手來源未查到，二手來源（Medscape）有此數字。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf" target="_blank" rel="noopener">Apple (2025) Estimating Sleep Stages from Apple Watch</a></li><li><a href="https://doi.org/10.1093/sleepadvances/zpaf021" target="_blank" rel="noopener">Schyvens et al. (2025) Sleep Advances</a></li><li><a href="https://doi.org/10.1093/sleep/27.7.1255" target="_blank" rel="noopener">Ohayon et al. (2004) Sleep</a></li><li><a href="https://emedicine.medscape.com/article/1188226-overview" target="_blank" rel="noopener">Medscape：Normal Sleep（二手，付費牆）</a></li></ul></div></details>
     </div>
-
     <div class="def-item">
       <div class="def-header">
         <span class="def-dot" style="background:var(--core)"></span>
         <span class="def-name" style="color:var(--core)">核心睡眠 Core</span>
-        <span class="def-pct">建議 50–60%</span>
+        <span class="def-pct">常見 50–60%</span>
       </div>
-      <div class="def-desc">輕度至中度睡眠（N1–N2 期）。睡眠紡錘波出現，記憶初步整合，是深度與 REM 之間的橋接。佔比最高，是整夜睡眠的骨幹。</div>
+      <div class="def-desc">輕度至中度睡眠（相當於 N1 + N2 期），佔比最高，是整夜睡眠的骨幹。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Apple 白皮書明載 Core 對應 N1 與 N2，其中 N1 只佔一小部分。N2 的特徵是睡眠紡錘波與 K 複合波（AASM 計分規則，二手整理）。N1 + N2 合計比例只有描述性範圍，沒有官方建議值。</p><p><span class="def-k">本頁怎麼算</span>Core 比例 = core_min ÷（deep + REM + core）。低於 50% 為不足、高於 60% 為偏高（參考範圍見「Core 日常維運」卡片）。</p><p><span class="def-k">解讀限制</span>Core 是 Apple 把 N1 + N2 合併的類別，無法與 PSG 的三期一對一比較。Core 偏高常常只是 Deep 或 REM 被誤判成 Core，不一定代表真的睡得淺。50–60% 只由二手來源間接推算，標為文獻彙整。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf" target="_blank" rel="noopener">Apple (2025) Estimating Sleep Stages from Apple Watch</a></li><li><a href="https://doi.org/10.1093/sleepadvances/zpaf021" target="_blank" rel="noopener">Schyvens et al. (2025) Sleep Advances</a></li><li><a href="https://emedicine.medscape.com/article/1188226-overview" target="_blank" rel="noopener">Medscape：Normal Sleep（二手，付費牆）</a></li></ul></div></details>
     </div>
-
     <div class="def-item">
       <div class="def-header">
         <span class="def-dot" style="background:var(--awake)"></span>
         <span class="def-name" style="color:var(--awake)">清醒 Awake</span>
-        <span class="def-pct">正常 &lt; 5%</span>
+        <span class="def-pct">&lt;5% 本頁自訂</span>
       </div>
-      <div class="def-desc">在床上但未入睡的時段。短暫清醒（&lt;2 分鐘）屬正常睡眠週期轉換，頻繁或長時間清醒可能反映壓力、睡眠呼吸問題或環境干擾。</div>
+      <div class="def-desc">在床上但未入睡的時段。短暫清醒是睡眠週期轉換中本來就會發生的事。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>NSF 2017 共識把「入睡後清醒時間（WASO）」列為睡眠品質指標；二手整理列出 WASO 20 分鐘以內、半夜醒來 1 次以內為好睡眠（一手數值表本次未取得）。</p><p><span class="def-k">本頁怎麼算</span>awake_min 取手錶紀錄的清醒時間，不計入 total_min（total = deep + REM + core）。逐段分析把「2 分鐘以上的清醒達 4 次，或合計達 20 分鐘」視為片段化。頁面的「&lt;5%」未查到來源，標為本頁自訂。</p><p><span class="def-k">解讀限制</span>手錶容易把「醒著但躺著不動」判成睡著，Apple 驗證的清醒特異度約 75%，獨立研究 Series 8 約 52%（Schyvens 2025），所以 Awake 通常被低估。清醒少不代表沒醒過。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1016/j.sleh.2016.11.006" target="_blank" rel="noopener">Ohayon et al. (2017) Sleep Health，NSF 睡眠品質共識</a></li><li><a href="https://sleepreviewmag.com/sleep-health/prevailing-attitudes/good-quality-sleep-national-sleep-foundation-provides-guidance/" target="_blank" rel="noopener">Sleep Review 整理（二手）</a></li><li><a href="https://www.apple.com/health/pdf/Estimating_Sleep_Stages_from_Apple_Watch_Oct_2025.pdf" target="_blank" rel="noopener">Apple (2025) Estimating Sleep Stages from Apple Watch</a></li><li><a href="https://doi.org/10.1093/sleepadvances/zpaf021" target="_blank" rel="noopener">Schyvens et al. (2025) Sleep Advances</a></li></ul></div></details>
     </div>
   </div>
 
@@ -347,37 +356,43 @@
       <div class="def-header">
         <span class="def-name" style="font-size:12px">💤 睡眠效率</span>
       </div>
-      <div class="def-desc">實際睡眠時間 ÷ 在床時間。衡量睡眠「連續性」而非品質：高效率代表入睡後少清醒（睡眠不碎片化），低效率（&lt;85%）常見於失眠或焦慮。<br>⚠ 效率需搭配總睡眠時數解讀：睡 5h 全程熟睡效率仍高，但總量不足。</div>
+      <div class="def-desc">睡著的時間佔在床時間的比例，衡量睡眠「連續性」而非品質。需搭配總睡眠時數解讀：睡 5h 全程熟睡效率仍高，但總量不足。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>NSF 2017 共識以專家德爾菲法確認入睡潛伏期、醒來次數、入睡後清醒、睡眠效率是跨年齡的睡眠品質指標，並列出效率 85% 以上為良好（85% 取自二手整理）。共識同時指出睡眠結構（各分期比例）沒有達成共識。基準線 85% 見「睡眠效率」趨勢圖。</p><p><span class="def-k">本頁怎麼算</span>efficiency =（deep + REM + core）÷（deep + REM + core + awake）× 100，由更新腳本於匯入時計算。</p><p><span class="def-k">解讀限制</span>分母只含手錶偵測到的睡眠與清醒，不含躺床後尚未入睡的等待時間；加上手錶低估清醒，算出的數字通常比臨床量測高。不要與 85% 做精準比較，趨勢比絕對值有意義。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1016/j.sleh.2016.11.006" target="_blank" rel="noopener">Ohayon et al. (2017) Sleep Health，NSF 睡眠品質共識</a></li><li><a href="https://sleepreviewmag.com/sleep-health/prevailing-attitudes/good-quality-sleep-national-sleep-foundation-provides-guidance/" target="_blank" rel="noopener">Sleep Review 整理（二手）</a></li></ul></div></details>
     </div>
     <div class="def-item">
       <div class="def-header">
         <span class="def-name" style="font-size:12px">⏰ 睡眠債</span>
       </div>
-      <div class="def-desc">累積不足 8 小時的差額。無法在週末一次補回，需長期改善。</div>
+      <div class="def-desc">近 7 夜實際睡眠與每晚 8 小時需求的差額加總。本頁簡化為睡超過 8 小時可抵銷欠債，研究顯示補眠只能部分恢復。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Van Dongen 等人（2003）的實驗中，健康成人連續 14 天睡 6 小時以下，認知表現持續累積下滑，缺損最多相當於兩個通宵未睡，而主觀嗜睡感不會同步加重，受試者常不自覺。Banks 與 Dinges（2007）的回顧也指出慢性睡眠限制會累積認知缺損。補眠效果有限：Kitamura 等人（2016）估計欠 1 小時約需 4 天恢復；Depner 等人（2019）發現週末補眠沒能防止胰島素敏感度下降。成人建議每晚至少 7 小時（Watson 2015），NSF 為 7–9 小時（Hirshkowitz 2015），8 小時是本頁設定值。</p><p><span class="def-k">本頁怎麼算</span>總債 = 近 7 夜 Σ（480 − total_min）；睡得比 8 小時多的夜晚會抵銷欠債（總債可為負，代表盈餘）。警示門檻（單日低於 6.5 小時、累計超過 5 小時、連續 3 天低於 6.5 小時）為本頁自訂，見「睡眠債」面板。戰力扣分：債超過 3 小時後，每多 1 小時扣 2 分。</p><p><span class="def-k">解讀限制</span>「可抵銷」是簡化，實驗顯示補眠無法完全抵銷；個人需求量也不同，8 小時不是每個人的最佳值。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1093/sleep/26.2.117" target="_blank" rel="noopener">Van Dongen et al. (2003) Sleep</a></li><li><a href="https://doi.org/10.5664/jcsm.26918" target="_blank" rel="noopener">Banks & Dinges (2007) J Clin Sleep Med</a></li><li><a href="https://doi.org/10.1038/srep35812" target="_blank" rel="noopener">Kitamura et al. (2016) Sci Rep</a></li><li><a href="https://doi.org/10.1016/j.cub.2019.01.069" target="_blank" rel="noopener">Depner et al. (2019) Current Biology</a></li><li><a href="https://doi.org/10.5665/sleep.4716" target="_blank" rel="noopener">Watson et al. (2015) Sleep，AASM／SRS 共識</a></li><li><a href="https://doi.org/10.1016/j.sleh.2014.12.010" target="_blank" rel="noopener">Hirshkowitz et al. (2015) Sleep Health，NSF 建議</a></li></ul></div></details>
     </div>
     <div class="def-item">
       <div class="def-header">
         <span class="def-name" style="font-size:12px">🔄 睡眠週期</span>
       </div>
-      <div class="def-desc">一個完整週期約 90 分鐘，包含 Core→Deep→REM。健康睡眠需 4–6 個完整週期。</div>
+      <div class="def-desc">睡眠依序經過淺睡、深睡、REM 再重新開始的一輪，一輪約 90 分鐘左右，一晚約 4–6 輪。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>「每輪約 90–110 分鐘、前半夜深睡多、後半夜 REM 變長」是睡眠教材的通用說法，但一手研究來源本次未查到，視為一般說法而非經查證數字。週期長度因人因夜而異，90 分鐘是平均概念。4–6 個的提示見「單夜分析」文字。</p><p><span class="def-k">本頁怎麼算</span>兩種算法：（1）單夜簡易版：週期數 =（deep + REM + core）÷ 90，低於 4 個提示偏少。（2）逐段版：用手錶逐段紀錄切分每個週期，區分完整與不完整週期。</p><p><span class="def-k">解讀限制</span>簡易版只是除法，不是真的偵測到週期；睡 6 小時不等於一定有 4 個週期。逐段版依賴手錶分期的準確度。</p><p><span class="def-k">來源</span>未查到可靠一手來源。</p></div></details>
     </div>
     <div class="def-item">
       <div class="def-header">
         <span class="def-name" style="font-size:12px">🕐 社交時差</span>
       </div>
-      <div class="def-desc">平日與週末「中間睡眠點」的差值。中間睡眠點 = 入睡時間 + 總睡眠時數 ÷ 2，代表生理時鐘的中心位置。差值 &lt;1h 為理想，&gt;2h 等同輕度時差反應，長期影響代謝與認知。</div>
+      <div class="def-desc">平日與週末「中間睡眠點」的差值，反映生理時鐘與社會時間錯開的程度。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Wittmann 等人（2006）提出此概念：生理時間與社會時間不一致，使晚型的人在工作週累積睡眠不足；該研究（501 人）發現睡眠品質、心理狀態、菸酒咖啡因使用等關聯在 25 歲以下最強。Roenneberg 等人（2012）發現社交時差與較高 BMI 有關，且超出睡眠時數本身的影響。睡眠中點以 MCTQ 問卷測得（Roenneberg 2003）。</p><p><span class="def-k">本頁怎麼算</span>中間睡眠點 = 入睡時刻 + total_min ÷ 2。取週六日與平日各自的中位數，相減取絕對值；平日與週末各至少 3 筆才顯示。分級 1h／2h（綠／橘／紅）未查到文獻切點，為本頁自訂。</p><p><span class="def-k">解讀限制</span>原始定義用「工作日 vs 自由日」的自陳資料，本頁以週六日代替，不一定等於你的自由日；中點以不含清醒的睡眠時間估算。相關研究為相關性，不是因果。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1080/07420520500545979" target="_blank" rel="noopener">Wittmann et al. (2006) Chronobiol Int</a></li><li><a href="https://doi.org/10.1016/j.cub.2012.03.038" target="_blank" rel="noopener">Roenneberg et al. (2012) Curr Biol</a></li><li><a href="https://doi.org/10.1177/0748730402239679" target="_blank" rel="noopener">Roenneberg et al. (2003) J Biol Rhythms</a></li></ul></div></details>
     </div>
     <div class="def-item">
       <div class="def-header">
         <span class="def-name" style="font-size:12px">📊 作息規律性</span>
       </div>
-      <div class="def-desc">入睡時間的標準差。反映生理時鐘的一致性，建議 &lt;45 分鐘。波動越大，身體越難預測睡眠時機，深度睡眠與 REM 品質都會受影響。</div>
+      <div class="def-desc">近 30 夜入睡時間與起床時間的標準差，越小代表作息越固定。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>Phillips 等人（2017）追蹤 61 位大學生 30 天，提出睡眠規律性指數 SRI；睡眠最不規律者的褪黑激素開始分泌時間較晚，學業表現與 SRI 呈正相關（r = 0.37）。Windred 等人（2024）追蹤 6 萬多名英國人約 7.8 年，規律性最高者全因死亡風險低 20%–48%，且規律性比睡眠時數更能預測死亡風險。</p><p><span class="def-k">本頁怎麼算</span>近 30 夜入睡時間、起床時間各自算總體標準差；小於 30 分鐘為穩定、30–60 分鐘為稍不規律、大於 60 分鐘為高度不規律（見「作息規律性分析」）。這組切點未查到文獻依據，為本頁自訂。本頁算的不是 SRI。</p><p><span class="def-k">解讀限制</span>標準差對偶發的一兩晚極端值敏感；SRI 是逐分鐘比對前後 24 小時是否同一狀態，兩者不能互換。上述研究多為觀察性研究。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1038/s41598-017-03171-4" target="_blank" rel="noopener">Phillips et al. (2017) Sci Rep</a></li><li><a href="https://doi.org/10.1093/sleep/zsad253" target="_blank" rel="noopener">Windred et al. (2024) Sleep</a></li></ul></div></details>
     </div>
     <div class="def-item">
       <div class="def-header">
         <span class="def-name" style="font-size:12px">🏦 睡眠存款</span>
       </div>
-      <div class="def-desc">本週（週一至今）累積睡眠時數，目標 49h（7 天 × 7h）。<br>存款充足：本週能量持續穩定。<br>不足：優先補回睡眠，而非用意志力撐住。</div>
+      <div class="def-desc">本週（週一至今）累積睡眠時數，對照每週 49h 目標（7 天 × 7h，本頁自訂）。</div>
+      <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>概念與 Rupp 等人（2009）的睡眠延長研究有關：24 位成人先連睡 10 小時一週，之後面對 3 小時限制時，表現失誤較少、恢復較快。但該研究是刻意延長睡眠，與本頁「累計達標」不同；Depner 2019 也提醒事後補眠無法完全防止代謝影響。49h 不是文獻值，7 小時對應成人建議下限（Watson 2015），參考範圍見「睡眠債」說明。</p><p><span class="def-k">本頁怎麼算</span>本週已記錄夜晚的 total_min 加總 ÷（49 × 60 分鐘）；「排除週末」開關會影響加總。</p><p><span class="def-k">解讀限制</span>週一到週三天數少，數字天然偏低；它是進度條，不是診斷。睡眠債以 8 小時、存款以 7 小時為基準，兩者不同，不要混著比較。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1093/sleep/32.3.311" target="_blank" rel="noopener">Rupp et al. (2009) Sleep</a></li><li><a href="https://doi.org/10.5665/sleep.4716" target="_blank" rel="noopener">Watson et al. (2015) Sleep，AASM／SRS 共識</a></li><li><a href="https://doi.org/10.1016/j.sleh.2014.12.010" target="_blank" rel="noopener">Hirshkowitz et al. (2015) Sleep Health，NSF 建議</a></li><li><a href="https://doi.org/10.1016/j.cub.2019.01.069" target="_blank" rel="noopener">Depner et al. (2019) Current Biology</a></li></ul></div></details>
     </div>
   </div>
 
@@ -505,7 +520,7 @@
           </div>
         </div>
         <div class="metric-ref-row">
-          <div class="metric-ref-label"><span>AASM 建議範圍</span><span>13–23%</span></div>
+          <div class="metric-ref-label"><span>健康成人常見範圍（文獻彙整）</span><span>10–25%</span></div>
           <div class="metric-bar-ref"></div>
         </div>
       </div>
@@ -526,7 +541,7 @@
           </div>
         </div>
         <div class="metric-ref-row">
-          <div class="metric-ref-label"><span>AASM 建議範圍</span><span>20–25%</span></div>
+          <div class="metric-ref-label"><span>健康成人常見範圍（文獻彙整）</span><span>20–25%</span></div>
           <div class="metric-bar-ref"></div>
         </div>
       </div>
@@ -547,7 +562,7 @@
           </div>
         </div>
         <div class="metric-ref-row">
-          <div class="metric-ref-label"><span>AASM 建議範圍</span><span>50–60%</span></div>
+          <div class="metric-ref-label"><span>健康成人常見範圍（文獻彙整）</span><span>50–60%</span></div>
           <div class="metric-bar-ref"></div>
         </div>
       </div>
@@ -561,7 +576,7 @@
       <div class="panel-header">
         <div>
           <div class="panel-title">睡眠債 · 過去 7 天</div>
-          <div class="panel-sub">以 8 小時為標準計算累積差額</div>
+          <div class="panel-sub">以 8 小時為標準計算累積差額；6.5h／5h 警示門檻為本頁自訂</div>
         </div>
       </div>
       <div id="debtAlert" style="display:none;margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#b05858;color:#fff;">
@@ -710,19 +725,19 @@
     <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim)">
         <div style="width:24px;height:2px;background:var(--deep);border-radius:2px"></div>Deep 基礎能量
-        <span style="font-size:9px;opacity:.7">建議 13–23%</span>
+        <span style="font-size:9px;opacity:.7">文獻彙整 10–25%</span>
       </div>
       <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim)">
         <div style="width:24px;height:2px;background:var(--rem);border-radius:2px"></div>REM 邏輯輸出
-        <span style="font-size:9px;opacity:.7">建議 20–25%</span>
+        <span style="font-size:9px;opacity:.7">文獻彙整 20–25%</span>
       </div>
       <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim)">
         <div style="width:24px;height:2px;background:var(--core);border-radius:2px"></div>Core 日常維運
-        <span style="font-size:9px;opacity:.7">建議 50–60%</span>
+        <span style="font-size:9px;opacity:.7">文獻彙整 50–60%</span>
       </div>
       <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim)">
         <div style="width:24px;height:2px;background:var(--awake);border-radius:2px;opacity:.7"></div>Awake
-        <span style="font-size:9px;opacity:.7">正常 &lt;5%</span>
+        <span style="font-size:9px;opacity:.7">&lt;5%（本頁自訂）</span>
       </div>
     </div>
     <div class="chart-wrap"><canvas id="pctTrendChart" height="120"></canvas></div>
@@ -893,17 +908,14 @@ function updateMetrics(data) {
 
   // Deep Sleep
   document.getElementById('m-deep-val').textContent = deepPct.toFixed(1) + '%';
-  document.getElementById('m-deep-fill').style.width = Math.min(deepPct/23*100, 100) + '%';
+  document.getElementById('m-deep-fill').style.width = Math.min(deepPct/25*100, 100) + '%';
   const advDeep = document.getElementById('advice-deep');
   if (deepPct < 10) {
     advDeep.className = 'advice-box bad';
-    advDeep.innerHTML = '<span class="advice-status">⚠ 深度睡眠明顯不足（' + deepPct.toFixed(1) + '%）</span><span class="advice-detail">體感容易疲憊、免疫力下降。<br>建議：避免睡前飲酒與咖啡因，保持固定入睡時間，睡前 1 小時調暗燈光、停止使用螢幕。</span>';
-  } else if (deepPct < 13) {
-    advDeep.className = 'advice-box warn';
-    advDeep.innerHTML = '<span class="advice-status">⚡ 深度睡眠略低（' + deepPct.toFixed(1) + '%）</span><span class="advice-detail">身體修復效率有提升空間。<br>建議：規律運動（避免睡前 3 小時劇烈運動），維持涼爽睡眠環境（約 18–20°C）。</span>';
+    advDeep.innerHTML = '<span class="advice-status">⚠ 深度睡眠明顯不足（' + deepPct.toFixed(1) + '%）</span><span class="advice-detail">深度睡眠比例低於常見範圍下限（10%）；單晚數字受手錶誤判影響，請看多週趨勢。<br>建議：避免睡前飲酒與咖啡因，保持固定入睡時間，睡前 1 小時調暗燈光、停止使用螢幕。</span>';
   } else {
     advDeep.className = 'advice-box good';
-    advDeep.innerHTML = '<span class="advice-status">✓ 深度睡眠正常（' + deepPct.toFixed(1) + '%）</span><span class="advice-detail">身體修復與免疫功能處於良好狀態，繼續維持目前的睡眠規律即可。</span>';
+    advDeep.innerHTML = '<span class="advice-status">✓ 深度睡眠正常（' + deepPct.toFixed(1) + '%）</span><span class="advice-detail">深度睡眠比例落在常見範圍內，繼續維持目前的睡眠規律即可。</span>';
   }
 
   // REM
@@ -982,7 +994,7 @@ function updateTrend(data) {
       ]
     },
     options: {
-      responsive:true, maintainAspectRatio:!_isMobileChart(), animation:{duration:300},
+      responsive:true, maintainAspectRatio:!_isMobileChart(), animation:{duration:300}, layout:{ padding:{ top:22 } },
       plugins:{
         legend:{ display:false },
         tooltip:{ callbacks:{
@@ -1015,15 +1027,28 @@ function updateTrend(data) {
       if (data.length > 60) return;
       const ctx = chart.ctx;
       const meta = chart.getDatasetMeta(3); // top of stack = awake
+      const coreMeta = chart.getDatasetMeta(2);
+      const baseY = chart.scales.y.getPixelForValue(0);
       ctx.save();
       ctx.font = 'bold 9px "DM Mono",monospace';
-      ctx.fillStyle = '#4a4540';
       ctx.textAlign = 'center';
       meta.data.forEach((bar, i) => {
-        const t = Math.round(totals[i]);
-        const h = Math.floor(t/60), m = t%60;
-        const lbl = h > 0 ? `${h}h${m>0?m+'m':''}` : `${m}m`;
-        ctx.fillText(lbl, bar.x, bar.y - 4);
+        // 在床（含清醒）總時長：畫在長條頂端再往上約 14px，避開折線點與趨勢線
+        ctx.fillStyle = '#4a4540';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(minToHm(totals[i]), bar.x, bar.y - 14);
+        // 睡眠（不含清醒）總時長：畫在長條垂直中間（底部到核心頂端的中點），長條太矮不畫
+        const coreTop = coreMeta.data[i].y;
+        if (baseY - coreTop < 40) return;
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'rgba(40,36,32,.55)';
+        ctx.lineJoin = 'round';
+        ctx.fillStyle = '#ffffff';
+        const lbl = minToHm(sleepOnly[i]);
+        const my = (baseY + coreTop) / 2;
+        ctx.strokeText(lbl, bar.x, my);
+        ctx.fillText(lbl, bar.x, my);
       });
       ctx.restore();
     }
@@ -1076,7 +1101,7 @@ function updateRegularity(data) {
     const safe = jetlagHr <= 1.0;
     const color = safe ? '#5e8f7e' : (jetlagHr <= 2.0 ? '#e07030' : '#b05858');
     const label = safe ? '安全範圍' : '⚠️ 偏高';
-    inlineEl.innerHTML = `<span style="color:var(--text-dim)">週末補眠指數</span><br><span style="font-family:'DM Mono',monospace;font-weight:700;color:${color}">${jetlagHr.toFixed(1)}h</span> <span style="color:${color}">(${label})</span>`;
+    inlineEl.innerHTML = `<span style="color:var(--text-dim)">週末補眠指數</span><br><span style="font-family:'DM Mono',monospace;font-weight:700;color:${color}">${jetlagHr.toFixed(1)}h</span> <span style="color:${color}">(${label})</span><br><span style="font-size:9px;color:var(--text-dim)">1h／2h 分級為本頁自訂</span>`;
   }
 
   const recent = data.slice(-30);
@@ -1115,7 +1140,7 @@ function updateRegularity(data) {
     </div>
     <div style="padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7">
       <strong style="color:var(--text)">標準差說明</strong>：
-      <span style="color:#5e8f7e">●</span> &lt; 30 分鐘 穩定 &nbsp;
+      <span style="color:#5e8f7e">●</span> &lt; 30 分鐘 穩定（門檻為本頁自訂）&nbsp;
       <span style="color:#e67e22">●</span> 30–60 分鐘 稍不規律 &nbsp;
       <span style="color:#c0392b">●</span> &gt; 60 分鐘 作息混亂
     </div>`;
@@ -1316,11 +1341,11 @@ function updateNight() {
   const cyclesInt = Math.floor(sleepMin / 90);
   const deepPct = pctNum(n.deep_min, sleepMin);
   const remPct = pctNum(n.rem_min, sleepMin);
-  let cycleMsg = `⏱ 本晚睡眠 ${minToHm(sleepMin)}，約完成 <strong>${cycles} 個睡眠週期</strong>（建議 4–6 個）。`;
+  let cycleMsg = `⏱ 本晚睡眠 ${minToHm(sleepMin)}，約完成 <strong>${cycles} 個睡眠週期</strong>（一般說法 4–6 個）。`;
   if (cyclesInt < 4) cycleMsg += ' 週期數偏少，建議延長睡眠時間。';
   else if (cyclesInt >= 4 && cyclesInt <= 6) cycleMsg += ' 週期數良好。';
-  let deepNote = deepPct < 13 ? `深度睡眠 ${deepPct.toFixed(1)}% 偏低（建議 13–23%）。` : `深度睡眠 ${deepPct.toFixed(1)}% 正常。`;
-  let remNote = remPct < 20 ? `REM ${remPct.toFixed(1)}% 偏低（建議 20–25%）。` : `REM ${remPct.toFixed(1)}% 良好。`;
+  let deepNote = deepPct < 10 ? `深度睡眠 ${deepPct.toFixed(1)}% 偏低（健康成人常見範圍 10–25%，文獻彙整）。` : `深度睡眠 ${deepPct.toFixed(1)}% 正常。`;
+  let remNote = remPct < 20 ? `REM ${remPct.toFixed(1)}% 偏低（健康成人常見範圍 20–25%，文獻彙整）。` : `REM ${remPct.toFixed(1)}% 良好。`;
   document.getElementById('nightCycleInfo').innerHTML = cycleMsg + '<br>' + deepNote + '<br>' + remNote;
 }
 
@@ -1845,7 +1870,7 @@ function updatePctTrend(data) {
     beforeDraw(chart) {
       const { ctx, chartArea: { left, right, top, bottom }, scales: { y } } = chart;
       const bands = [
-        { min: 13, max: 23, color: COLORS.deep + '18' },
+        { min: 10, max: 25, color: COLORS.deep + '18' },
         { min: 20, max: 25, color: COLORS.rem  + '18' },
         { min: 50, max: 60, color: COLORS.core + '14' },
       ];
@@ -2064,7 +2089,7 @@ function updateDailySummary(totalDebt, score, singleScore) {
   else if (debtHours > 3) issues.push({ priority: 2, icon: '⚠️', text: `睡眠債 ${(debtHours).toFixed(1)} 小時，恢復能力受限`, action: '建議本週補回 30 分鐘以上的睡眠時數' });
 
   // Deep sleep
-  if (deepPct < 13) issues.push({ priority: 3, icon: '🔴', text: `昨晚深度睡眠僅 ${deepPct.toFixed(1)}%，身體修復不足`, action: '避免咖啡因攝取超過下午 2 點，睡前 1 小時調暗燈光' });
+  if (deepPct < 10) issues.push({ priority: 3, icon: '🔴', text: `昨晚深度睡眠僅 ${deepPct.toFixed(1)}%，身體修復不足`, action: '避免咖啡因攝取超過下午 2 點，睡前 1 小時調暗燈光' });
   else if (deepPct < 16) issues.push({ priority: 1, icon: '⚡', text: `深度睡眠 ${deepPct.toFixed(1)}% 偏低，體力恢復有限`, action: '維持涼爽睡眠環境（18–20°C）有助提升深度睡眠' });
 
   // REM
@@ -2167,7 +2192,7 @@ function updateSleepDebt(allData) {
   const debtSign = totalDebt > 0 ? '累積欠債' : '睡眠盈餘';
   document.getElementById('debtSummary').innerHTML =
     `7 天合計：<strong style="color:${debtColor}">${debtSign} ${minToHm(Math.abs(totalDebt))}</strong><br>
-     低睡眠日（< 6.5h）：<strong>${lowDays} 天</strong><br>
+     低睡眠日（< 6.5h，本頁自訂）：<strong>${lowDays} 天</strong><br>
      ${ highRisk ? '<strong style="color:#a05858">⚠ 建議近期補眠並降低高強度工作安排</strong>' : '整體睡眠狀況尚可' }`;
 
   // Weekly sleep bank (本週 Mon-Sun, 49h target)
@@ -2187,7 +2212,7 @@ function updateSleepDebt(allData) {
   const weekColor = weekPct >= 90 ? '#5e8f7e' : weekPct >= 70 ? '#5c7a96' : '#e67e22';
   const weekEl = document.getElementById('weekBank');
   if (weekEl) weekEl.innerHTML =
-    `<div style="margin-bottom:6px">📅 本週睡眠存款（目標 49h / 7×7h）</div>` +
+    `<div style="margin-bottom:6px">📅 本週睡眠存款（目標 49h / 7×7h，本頁自訂）</div>` +
     `<div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px">` +
     `<div style="width:${weekPct.toFixed(1)}%;height:100%;background:${weekColor};border-radius:4px"></div></div>` +
     `<span style="font-family:DM Mono,monospace;font-weight:700;color:${weekColor}">${(weekTotal/60).toFixed(1)}h</span>` +
