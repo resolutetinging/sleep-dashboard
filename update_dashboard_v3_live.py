@@ -64,7 +64,10 @@ def load_summary():
             'date': date,
             'bedtime': bedtime_dt.strftime('%H:%M'),
             'wake': wake_dt.strftime('%H:%M'),
-            'total_min': n['total_min'],
+            # 10-13 使用者拍板統一標準：total_min 一律為「不含清醒」的睡眠時間（深層＋REM＋核心），
+            # 與 iPhone「總睡眠」及 10-01 前凍結的 v2 定義一致。v3 history 的 total_min 仍是在床時間（含清醒），
+            # 只在注入 v3_live 時換算，history 與 v3 驗證頁不動；睡眠債／戰力／sas_sleep_latest 因此一起改用不含清醒。
+            'total_min': round(n['deep_min'] + n['rem_min'] + n['core_min'], 1),
             'deep_min': n['deep_min'],
             'rem_min': n['rem_min'],
             'core_min': n['core_min'],
