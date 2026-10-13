@@ -207,8 +207,22 @@
   /* Bold axis ticks */
   .chart-wrap canvas, .hypno-wrap canvas { font-weight:700 !important; }
 
+  /* 窄螢幕名詞定義面板（桌機隱藏） */
+  .def-open-btn { display:none; font-family:inherit; font-size:12px; font-weight:600; padding:5px 12px; border-radius:14px; border:1px solid var(--border); background:var(--surface); color:var(--accent); cursor:pointer; }
+  .def-panel[hidden] { display:none; }
+  .def-panel { display:none; }
   /* ── TABLET / LANDSCAPE MOBILE (≤ 900px) ── */
   @media(max-width:900px) {
+    .def-open-btn { display:inline-block; }
+    .def-panel { display:block; position:fixed; inset:0; z-index:1000; }
+    .def-mask { position:absolute; inset:0; background:rgba(0,0,0,.4); opacity:0; transition:opacity .25s; }
+    .def-sheet { position:absolute; left:0; right:0; bottom:0; height:92vh; height:92dvh; background:var(--bg); border-radius:16px 16px 0 0; display:flex; flex-direction:column; transform:translateY(100%); transition:transform .28s ease; box-shadow:0 -4px 24px rgba(0,0,0,.18); }
+    .def-panel.open .def-mask { opacity:1; }
+    .def-panel.open .def-sheet { transform:translateY(0); }
+    .def-sheet-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .def-sheet-head h2 { font-size:16px; font-weight:700; color:var(--text); }
+    .def-close { font-family:inherit; font-size:16px; line-height:1; width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; }
+    .def-sheet-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:16px 16px calc(24px + env(safe-area-inset-bottom)); }
     .app { grid-template-columns:1fr; }
     .sidebar { display:none; }
     .stats-row { grid-template-columns:repeat(2,1fr); }
@@ -309,6 +323,7 @@
     <div class="logo">Sleep Dashboard<span>睡眠分析</span></div>
   </div>
 
+  <div id="defWrap" style="display:flex;flex-direction:column;gap:28px">
   <div class="def-section">
     <h3>睡眠分期定義</h3>
 
@@ -395,8 +410,21 @@
       <details class="def-more"><summary>理論依據與算法</summary><div class="def-more-body"><p><span class="def-k">理論依據</span>概念與 Rupp 等人（2009）的睡眠延長研究有關：24 位成人先連睡 10 小時一週，之後面對 3 小時限制時，表現失誤較少、恢復較快。但該研究是刻意延長睡眠，與本頁「累計達標」不同；Depner 2019 也提醒事後補眠無法完全防止代謝影響。49h 不是文獻值，7 小時對應成人建議下限（Watson 2015），參考範圍見「睡眠債」說明。</p><p><span class="def-k">本頁怎麼算</span>本週已記錄夜晚的 total_min 加總 ÷（49 × 60 分鐘）；「排除週末」開關會影響加總。</p><p><span class="def-k">解讀限制</span>週一到週三天數少，數字天然偏低；它是進度條，不是診斷。睡眠債以 8 小時、存款以 7 小時為基準，兩者不同，不要混著比較。</p><p><span class="def-k">來源</span></p><ul class="def-src"><li><a href="https://doi.org/10.1093/sleep/32.3.311" target="_blank" rel="noopener">Rupp et al. (2009) Sleep</a></li><li><a href="https://doi.org/10.5665/sleep.4716" target="_blank" rel="noopener">Watson et al. (2015) Sleep，AASM／SRS 共識</a></li><li><a href="https://doi.org/10.1016/j.sleh.2014.12.010" target="_blank" rel="noopener">Hirshkowitz et al. (2015) Sleep Health，NSF 建議</a></li><li><a href="https://doi.org/10.1016/j.cub.2019.01.069" target="_blank" rel="noopener">Depner et al. (2019) Current Biology</a></li></ul></div></details>
     </div>
   </div>
+  </div><!-- /#defWrap -->
 
 </aside>
+
+<!-- 窄螢幕定義面板（內容節點 #defWrap 由JS在開關時於側欄與面板間搬移，僅維護一份） -->
+<div id="defPanel" class="def-panel" hidden>
+  <div class="def-mask" id="defMask"></div>
+  <div class="def-sheet" role="dialog" aria-modal="true" aria-labelledby="defPanelTitle">
+    <div class="def-sheet-head">
+      <h2 id="defPanelTitle">名詞定義</h2>
+      <button type="button" id="defCloseBtn" class="def-close" aria-label="關閉名詞定義">✕</button>
+    </div>
+    <div class="def-sheet-body" id="defPanelBody"></div>
+  </div>
+</div>
 
 <!-- MAIN CONTENT -->
 <main class="main">
@@ -406,6 +434,7 @@
       <div class="page-sub" id="dateRangeLabel">載入中...</div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;padding-bottom:4px;flex-wrap:wrap">
+      <button type="button" id="defOpenBtn" class="def-open-btn" aria-label="開啟名詞定義" aria-haspopup="dialog" aria-expanded="false">📖 定義</button>
       <!-- 10-01停用「📥 iCloud 更新」按鈕：它讀v2格式sleep_*.txt並寫入共用戰力key，會把v3戰力蓋回v2；資料由LaunchAgent每日2次（09:30/22:00）自動更新 -->
       <span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;background:rgba(92,122,150,.12);color:var(--accent);white-space:nowrap" title="衍生分析(戰力/風險燈號等)需開啟頁面才會即時重算，不隨此排程更新">🕐 睡眠原始資料每日自動更新（09:30/22:00）</span>
       <div class="toggle-wrap">
@@ -2769,6 +2798,35 @@ renderWeightedChart();
 runWeightedAI();
 // Chart.js 縮放重繪（DPR 變化偵測）
 (function(){var lastDPR=window.devicePixelRatio;function redrawCharts(){if(window.Chart&&window.Chart.instances){Object.values(window.Chart.instances).forEach(function(c){try{c.resize();}catch(e){}});}}function watchDPR(){var mq=window.matchMedia('(resolution: '+lastDPR+'dppx)');mq.addEventListener('change',function(){lastDPR=window.devicePixelRatio;redrawCharts();watchDPR();},{once:true});}watchDPR();var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(redrawCharts,150);});})();
+</script>
+<script>
+/* 窄螢幕定義面板：同一份節點(#defWrap)開啟時移入面板、關閉時移回側欄 */
+(function(){
+  var wrap=document.getElementById('defWrap'),home=wrap&&wrap.parentNode,panel=document.getElementById('defPanel'),
+      body=document.getElementById('defPanelBody'),btn=document.getElementById('defOpenBtn'),
+      mq=window.matchMedia('(max-width:900px)'),lastFocus=null;
+  if(!wrap||!panel||!btn)return;
+  function open(){
+    if(!mq.matches||panel.classList.contains('open'))return;
+    lastFocus=document.activeElement;
+    body.appendChild(wrap);panel.hidden=false;
+    void panel.offsetHeight;panel.classList.add('open');
+    document.body.style.overflow='hidden';btn.setAttribute('aria-expanded','true');
+    document.getElementById('defCloseBtn').focus();
+  }
+  function close(){
+    if(panel.hidden)return;
+    panel.classList.remove('open');panel.hidden=true;
+    home.appendChild(wrap);
+    document.body.style.overflow='';btn.setAttribute('aria-expanded','false');
+    if(lastFocus&&lastFocus.focus&&mq.matches)lastFocus.focus();
+  }
+  btn.addEventListener('click',open);
+  document.getElementById('defCloseBtn').addEventListener('click',close);
+  document.getElementById('defMask').addEventListener('click',close);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  (mq.addEventListener?mq.addEventListener('change',function(){if(!mq.matches)close();}):mq.addListener(function(){if(!mq.matches)close();}));
+})();
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sleep" data-cc-label="Sleep Dashboard"></script>
 </body>
