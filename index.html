@@ -3960,6 +3960,7 @@ function renderDeepFactors(){
 
 /* ── 🪜 發展推進 x 睡眠／情緒（跨 App：CC 未來發展四象限 cc_career_v1 × SAS Hub）──
    唯讀 localStorage.cc_career_v1.log：推進日＝當日有 progress 增加（舊）、status 等級上升、note／milestone 內容更新（見 _cmIsAdvance），journal 學習紀錄的 date，或 topics 中 state=已學 的 learnedAt（見 _cmJournalDays）。
+   10-13：CC 不再記錄主題學會日期與學習紀錄，新資料只剩狀態升級；journal／learnedAt 判定不改，仍照算既有資料。
    睡眠：沿用 _dpNights()（sas_deep_nights，v3 逐晚精確資料，以醒來日標日期）；
          推進日「當晚」＝該日入睡、隔天醒來的那一晚，即 nights 中 date＝推進日+1 的紀錄。
    情緒：沿用 getMoods()（wellness_v5 moodScore），取當天平均。
@@ -4055,7 +4056,7 @@ function renderCareerCard(){
   var r=_cmAnalyze(raw,_dpNights(),getMoods(),today());
   if(r.state==='none'||r.state==='wait'){
     card.style.opacity='.55';
-    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（主題學會、新增學習紀錄或狀態升級）後會自動累積。';
+    note.textContent='資料累積中（目前 '+Number(r.days)+' 天、推進日 '+Number(r.progDays)+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）。在 CC「未來發展四象限」有推進（細項狀態升級；10-13 前另含主題學會與學習紀錄）後會自動累積。';
     body.innerHTML='';
     return;
   }
