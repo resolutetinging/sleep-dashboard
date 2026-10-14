@@ -790,6 +790,7 @@
     </div>
     <div id="cycleCoverage" style="margin:-4px 0 10px;font-size:11px;color:var(--text-dim);line-height:1.6"></div>
     <div id="cycleBody">
+      <div id="cycleLegend" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 8px;font-size:11px;color:var(--text-dim)"></div>
       <div class="chart-wrap"><canvas id="cycleHypnoChart" height="90"></canvas></div>
       <div id="cycleSummary" style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:10px;font-size:12px;line-height:1.8"></div>
       <div id="cycleTable" style="margin-top:12px;overflow-x:auto"></div>
@@ -1639,6 +1640,9 @@ function renderCycleCard() {
 
   const cfg = _buildHypnoCfg(n.segments);
   cfg.options.maintainAspectRatio = !_isMobileChart();
+  // 10-14：圖例（由上而下對應圖中高度：清醒→REM→核心→深度），顏色取 HYPNO_COLORS
+  document.getElementById('cycleLegend').innerHTML = [['awake','清醒 Awake'],['rem','REM'],['core','核心 Core'],['deep','深度 Deep']]
+    .map(([k, l]) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;border-radius:2px;border-top:2.5px solid ${HYPNO_COLORS[k]};background:${HYPNO_COLORS[k]}33"></span>${l}</span>`).join('');
   if (cycleHypnoChart) cycleHypnoChart.destroy();
   cycleHypnoChart = new Chart(document.getElementById('cycleHypnoChart'), cfg);
 
