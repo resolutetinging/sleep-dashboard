@@ -1456,6 +1456,54 @@ function changeCycleNight(dir) {
   renderCycleCard();
 }
 
+// ── 10-14：實際體感回饋（附錄F）：localStorage sleep_feel_v1 = {version:1,nights:{date:{score,rules,ts}}} ──
+let _feelCurRules = [];
+let _feelSavedDate = null;
+const _FEEL_RULES = ['deep_end','light_end','last_incomplete','low_early_deep','low_rem','fragmented','all_good'];
+function _sleepFeelLoad() {
+  const out = { version: 1, nights: {} };
+  try {
+    const o = JSON.parse(localStorage.getItem('sleep_feel_v1') || 'null');
+    if (!o || typeof o !== 'object' || !o.nights || typeof o.nights !== 'object') return out;
+    Object.keys(o.nights).forEach(d => {
+      const v = o.nights[d];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') return;
+      if (!Number.isInteger(v.score) || v.score < 1 || v.score > 5) return;
+      out.nights[d] = {
+        score: v.score,
+        rules: Array.isArray(v.rules) ? v.rules.filter(x => _FEEL_RULES.indexOf(x) >= 0) : [],
+        ts: typeof v.ts === 'string' ? v.ts : ''
+      };
+    });
+  } catch (e) {}
+  return out;
+}
+function sleepFeelSet(date, score) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(score) || score < 1 || score > 5) return;
+  const db = _sleepFeelLoad();
+  const cur = db.nights[date];
+  if (cur && cur.score === score) { delete db.nights[date]; _feelSavedDate = null; }
+  else { db.nights[date] = { score: score, rules: _feelCurRules.slice(), ts: new Date().toISOString() }; _feelSavedDate = date; }
+  try { localStorage.setItem('sleep_feel_v1', JSON.stringify(db)); } catch (e) { _feelSavedDate = null; }
+  renderCycleCard();
+}
+function _sleepFeelPillHtml(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
+  const rec = _sleepFeelLoad().nights[date];
+  const sel = rec ? rec.score : 0;
+  let cells = '';
+  for (let i = 1; i <= 5; i++) {
+    const on = i === sel;
+    cells += `<button type="button" onclick="sleepFeelSet('${date}',${i})" aria-label="實際體感 ${i} 分" aria-pressed="${on}" style="flex:1;min-height:36px;border:0;${i > 1 ? 'border-left:1px solid var(--border);' : ''}background:${on ? 'var(--accent)' : 'var(--surface2)'};color:${on ? '#fff' : 'var(--text-dim)'};font-family:'DM Mono',monospace;font-size:13px;font-weight:600;cursor:pointer">${i}</button>`;
+  }
+  const saved = rec && _feelSavedDate === date ? '<span style="margin-left:8px;color:var(--accent)">已記錄</span>' : '';
+  return `<div style="margin-top:10px">
+      <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">實際體感（選填）${saved}</div>
+      <div id="sleepFeelPill" style="margin-top:6px;display:flex;border:1px solid var(--border);border-radius:18px;overflow:hidden;max-width:360px">${cells}</div>
+      <div style="margin-top:4px;max-width:360px;display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim)"><span>不接近</span><span>←　→</span><span>最接近</span></div>
+    </div>`;
+}
+
 // ── 可能體感（單晚，10-01新增）：由週期結構推測起床體感，用「可能／較易」等推測語氣，非醫療判斷 ──
 function _singleNightBodyFeel(n, r) {
   const nonAwakeBlocks = r.blocks.filter(b => b.st !== 'awake');
@@ -1469,37 +1517,47 @@ function _singleNightBodyFeel(n, r) {
   const lastIncomplete = r.cycles.length > 0 && !r.cycles[r.cycles.length - 1].complete;
 
   const lines = [];
+  const codes = [];
   let negative = false;
   if (lastStage === 'deep') {
     lines.push('起床前最後落在 deep，起床可能較昏沉、頭重，需要較久才清醒（睡眠慣性）。');
+    codes.push('deep_end');
     negative = true;
   } else if (lastStage === 'core' || lastStage === 'rem') {
     lines.push('起床前最後落在較淺的睡眠階段，起床時通常比較容易清醒。');
+    codes.push('light_end');
   }
   if (lastIncomplete) {
     lines.push('最後一個週期未完整結束，可能是被鬧鐘或外力在週期中途叫醒，起床較不清爽。');
+    codes.push('last_incomplete');
     negative = true;
   }
   if (r.first2Deep < 15) {
     lines.push('前段深睡偏少，身體修復感可能較差，白天較易覺得身體沉重。');
+    codes.push('low_early_deep');
     negative = true;
   }
   if (completeCount <= 3 || totalRem < 60) {
     lines.push('後半夜 REM 較少，白天情緒調節、專注或記憶可能較吃力。');
+    codes.push('low_rem');
     negative = true;
   }
   if (awakeCount >= 4 || awakeTotalMin >= 20) {
     lines.push('夜間清醒次數較多，睡眠較片段，醒來可能仍覺得沒睡飽。');
+    codes.push('fragmented');
     negative = true;
   }
   if (!negative) {
     lines.push('這晚的週期結構完整，起床體感應該不錯。');
+    codes.push('all_good');
   }
+  _feelCurRules = codes.slice();
   return `
     <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
       <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">可能體感</div>
       <div style="margin-top:6px">${lines.join('<br>')}</div>
       <div style="margin-top:6px;font-size:10px;color:var(--text-dim)">體感對應依一般睡眠研究的常見關聯，僅供參考，非醫療判斷</div>
+      ${_sleepFeelPillHtml(n.date)}
     </div>`;
 }
 
