@@ -1494,13 +1494,13 @@ function _sleepFeelPillHtml(date) {
   let cells = '';
   for (let i = 1; i <= 5; i++) {
     const on = i === sel;
-    cells += `<button type="button" onclick="sleepFeelSet('${date}',${i})" aria-label="實際體感 ${i} 分" aria-pressed="${on}" style="flex:1;min-height:36px;border:0;${i > 1 ? 'border-left:1px solid var(--border);' : ''}background:${on ? 'var(--accent)' : 'var(--surface2)'};color:${on ? '#fff' : 'var(--text-dim)'};font-family:'DM Mono',monospace;font-size:13px;font-weight:600;cursor:pointer">${i}</button>`;
+    cells += `<button type="button" onclick="sleepFeelSet('${date}',${i})" aria-label="實際體感 ${i} 分" aria-pressed="${on}" style="flex:1;min-height:36px;border:0;${i > 1 ? 'border-left:1px solid var(--border);' : ''}background:${on ? 'var(--accent)' : 'var(--surface2)'};color:${on ? '#fff' : 'var(--text-dim)'};font-family:inherit;font-size:12px;font-weight:${on ? 600 : 400};cursor:pointer">${i}</button>`;
   }
   const saved = rec && _feelSavedDate === date ? '<span style="margin-left:8px;color:var(--accent)">已記錄</span>' : '';
   return `<div style="margin-top:10px">
       <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">實際體感（選填）${saved}</div>
       <div id="sleepFeelPill" style="margin-top:6px;display:flex;border:1px solid var(--border);border-radius:18px;overflow:hidden;max-width:360px">${cells}</div>
-      <div style="margin-top:4px;max-width:360px;display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim)"><span>不接近</span><span>←　→</span><span>最接近</span></div>
+      <div style="margin-top:4px;max-width:360px;display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>不接近</span><span>←　→</span><span>最接近</span></div>
     </div>`;
 }
 
