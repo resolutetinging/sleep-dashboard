@@ -1019,8 +1019,8 @@ function updateTrend(data) {
           borderColor:COLORS.awake, backgroundColor:COLORS.awake, borderWidth:1.5,
           pointRadius:2.5, pointHoverRadius:4, tension:0, fill:false, order:-1 },
         { label:'趨勢線', data:trendData, type:'line',
-          borderColor:'#8a7060', borderWidth:2, borderDash:[5,3],
-          pointRadius:0, tension:0.4, fill:false, stack:'l_trend' }, // y 軸 stacked：每條折線需獨立 stack 名稱，否則會被疊加
+          borderColor:'#ff7a1a', backgroundColor:'#ff7a1a', borderWidth:3.5, borderDash:[7,4], // 10-14 使用者要求加粗＋亮色
+          pointRadius:0, tension:0.4, fill:false, order:-2, stack:'l_trend' }, // y 軸 stacked：每條折線需獨立 stack 名稱，否則會被疊加
       ]
     },
     options: {
