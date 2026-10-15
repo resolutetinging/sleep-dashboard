@@ -1316,7 +1316,7 @@ function checkDataFreshness(){
   if(!gaps.length){el.style.display='none';txt.innerHTML='';return;}
   el.style.display='block';
   txt.innerHTML=gaps.map(function(g){
-    return '<div>・'+_escH(g.text)+'　<a onclick="go(\''+_escH(g.tab)+'\')" style="cursor:pointer;color:var(--info);text-decoration:underline;white-space:nowrap">前往'+_escH(g.label)+'</a></div>';
+    return '<div>・'+_escH(g.text)+'　<a onclick="go(\''+(/^(ov|sl|mn|op|rf)$/.test(g.tab)?g.tab:'ov')+'\')" style="cursor:pointer;color:var(--info);text-decoration:underline;white-space:nowrap">前往'+_escH(g.label)+'</a></div>';
   }).join('');
 }
 function refreshDataHints(){

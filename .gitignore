@@ -4,3 +4,5 @@ json_cache/
 claude_development_*.txt
 .zero_data_alerted.json
 update_archive.log
+
+.DS_Store
