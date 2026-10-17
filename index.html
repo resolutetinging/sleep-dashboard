@@ -127,6 +127,30 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .risk-text{font-weight:700;font-size:.78rem;color:var(--text)}
 .risk-detail{font-size:.68rem;color:var(--faint)}
 
+/* 分析期間（10-16）：只存記憶體；套用後各分析卡改看指定期間，「今天」類元件不受影響 */
+.ap-bar{padding:8px 14px;border-radius:var(--rsm);border:.5px solid var(--border);background:var(--card);margin-bottom:.9rem}
+.ap-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:.68rem;color:var(--sub)}
+.ap-title{font-weight:700;color:var(--text);font-size:.72rem;margin-right:2px}
+.ap-seg{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
+.ap-seg-lbl{font-weight:700;color:var(--text);font-size:.65rem}
+.ap-fld{display:inline-flex;align-items:center;gap:4px;color:var(--faint);font-size:.64rem}
+.ap-fld input{font-family:inherit;font-size:.66rem;color:var(--text);background:var(--bg2);border:.5px solid var(--bstr);border-radius:6px;padding:2px 5px}
+.ap-cmp{display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:.65rem;color:var(--sub)}
+.ap-btn{font-size:.62rem;padding:3px 12px;border-radius:20px;border:.5px solid var(--bstr);background:transparent;color:var(--sub);cursor:pointer;font-family:inherit}
+.ap-btn.ap-apply{background:var(--text);color:var(--card);border-color:var(--text)}
+.ap-msg{font-size:.64rem;color:var(--faint);margin-top:4px;line-height:1.6}
+.ap-msg:empty{display:none}
+.ap-msg.ap-err{color:var(--text);font-weight:600;border-left:2px solid var(--warn);padding-left:6px}
+.ap-tag{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:600;color:var(--info);background:rgba(78,110,138,.10);border:.5px solid rgba(78,110,138,.3);border-radius:10px;padding:0 7px;letter-spacing:0;text-transform:none;vertical-align:middle;white-space:nowrap}
+.ap-tag.ap-tag-fixed{color:var(--faint);background:var(--bg2);border-color:var(--bstr)}
+.ap-note{font-size:.63rem;color:var(--faint);margin:.15rem 0 .45rem;line-height:1.6}
+.ap-on .corr-range-btn:not(#corr-excl-we-btn),.ap-on .fr-range-btn,.ap-on .scr-range-btn{opacity:.4}
+.ap-cmp-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;padding:.38rem 0;border-top:.5px dashed var(--border);font-size:.68rem;color:var(--sub)}
+.ap-cmp-row .ap-k{color:var(--text);font-weight:600;min-width:7em}
+.ap-cmp-row .ap-v{display:flex;gap:4px 12px;flex-wrap:wrap;align-items:baseline}
+.ap-d{color:var(--info);font-weight:600}
+.ap-seg-hd{font-size:.66rem;font-weight:700;color:var(--text);margin:.7rem 0 .2rem}
+
 /* MENTAL */
 .msr{display:flex;gap:1rem;margin-top:.65rem;flex-wrap:wrap}
 .mst .val{font-size:.82rem;font-weight:600}
@@ -383,6 +407,21 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div style="margin-top:5px"><strong style="color:var(--text)">配速</strong>：近14筆Daily Optimizer使用記錄（不是14個日曆天——沒開的日子如週末不計入分母，避免稀釋門檻基準）中，任務水管被判定過載的次數，區分「扛過去」（過載但當天任務全做完）與「沒扛住」（過載且沒做完）。這是跨天頻率訊號，只反映白天任務配速，跟上面兩排讀的睡眠/生理指標無關。門檻為初版設定，尚待實際資料校準。</div>
     </div>
   </div>
+</div>
+<div class="ap-bar" id="ap-bar">
+  <div class="ap-row">
+    <span class="ap-title">📆 分析期間</span>
+    <span class="ap-seg"><span class="ap-seg-lbl" id="ap-a-lbl" style="display:none">A 段</span>
+      <label class="ap-fld">起<input type="date" id="ap-a-s"></label>
+      <label class="ap-fld">迄<input type="date" id="ap-a-e"></label></span>
+    <label class="ap-cmp"><input type="checkbox" id="ap-cmp" onchange="apToggleCmp()">兩段對照</label>
+    <span class="ap-seg" id="ap-b-wrap" style="display:none"><span class="ap-seg-lbl">B 段</span>
+      <label class="ap-fld">起<input type="date" id="ap-b-s"></label>
+      <label class="ap-fld">迄<input type="date" id="ap-b-e"></label></span>
+    <button class="ap-btn ap-apply" id="ap-apply-btn" onclick="apApply()">套用</button>
+    <button class="ap-btn" id="ap-clear-btn" onclick="apClear()">清除</button>
+  </div>
+  <div class="ap-msg" id="ap-msg"></div>
 </div>
 <div class="bento">
 
@@ -728,7 +767,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
 
     <!-- 能量矩陣 -->
-    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.4rem">⬡ 能量矩陣分佈（近 7 日）</div>
+    <div id="dta-em-hd" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.4rem">⬡ 能量矩陣分佈（近 7 日）</div>
     <div class="em-grid">
       <div class="em-cell">
         <div class="em-count" id="dta-overclock" style="color:var(--rem)">—</div>
@@ -773,7 +812,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
 
     <!-- 決策相關性 -->
-    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.6rem;margin-top:.2rem">🔬 決策相關性追蹤（近 30 日）</div>
+    <div id="dta-rc-hd" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:.6rem;margin-top:.2rem">🔬 決策相關性追蹤（近 30 日）</div>
     <div class="corr-row">
       <div class="corr-icon">🧠</div>
       <div class="corr-body">
@@ -819,7 +858,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.8rem">
       <div>
         <div class="lbl" style="margin-bottom:2px">🔗 跨維度因果槓桿條</div>
-        <div style="font-size:.65rem;color:var(--faint)">近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）</div>
+        <div id="lev-desc" style="font-size:.65rem;color:var(--faint)">近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）</div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="lev-tab active" data-tab="combat" onclick="setLevTab('combat')">⚡ 睡眠品質分</button>
@@ -865,7 +904,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="lbl">📊 任務屬性熱點 × 狀態匹配建議</div>
     <div class="ctx-inner">
       <div>
-        <div class="t-sub" style="margin-bottom:.5rem">本週任務分佈</div>
+        <div class="t-sub" style="margin-bottom:.5rem" id="tax-hd">本週任務分佈</div>
         <div id="tax-bars">—</div>
       </div>
       <div>
@@ -1089,6 +1128,141 @@ function updateDebt(h){
 function dkey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function today(){return dkey(new Date());}
 function getReview(k){try{return JSON.parse(localStorage.getItem('review_'+k)||'null');}catch(e){return null;}}
+
+/* ── 分析期間（2026-10-16）──────────────────────────────────────────
+   狀態只存記憶體（重新整理回到預設），不新增任何 localStorage key。
+   只影響「看一段期間」的分析卡渲染；所有 setItem 的計算（sas_dta／sas_risk_flags／
+   sas_week_flags／sas_pace_flags／sas_weekly_recap／cc_energy_weights）一律走原本預設窗口，
+   不讀 _AP。日期錨點：期間起訖由使用者輸入、預設窗口由呼叫端以 today() 當終點傳入，
+   子函式不得自行 new Date() 當期間終點（lessons 09-09）。 */
+var _AP={on:false,cmp:false,A:null,B:null};   // A/B={s,e,days:[YYYY-MM-DD...]}
+var AP_MAX_DAYS=366;
+function _apValid(s){
+  if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;
+  var t=new Date(s+'T12:00:00');
+  return !isNaN(t.getTime())&&dkey(t)===s;
+}
+function _apAddDays(k,n){var d=new Date(k+'T12:00:00');d.setDate(d.getDate()+n);return dkey(d);}
+function _apDays(s,e){                       // s..e（含），兩端皆已驗證
+  var out=[],k=s;
+  for(var i=0;i<=AP_MAX_DAYS&&k<=e;i++){out.push(k);k=_apAddDays(k,1);}
+  return out;
+}
+function _apLastDays(n,endKey){              // 以 endKey 為終點往回 n 天（含），升冪
+  var out=[];for(var i=n-1;i>=0;i--)out.push(_apAddDays(endKey,-i));return out;
+}
+function _apMD(k){return Number(k.slice(5,7))+'/'+Number(k.slice(8,10));}
+function _apMMDD(k){return k.slice(5,7)+'/'+k.slice(8,10);}
+function _apRangeTxt(r){return _apMMDD(r.s)+'–'+_apMMDD(r.e);}
+function _apIn(r,k){return typeof k==='string'&&k>=r.s&&k<=r.e;}
+/* 回傳 null（未套用）或 [{key:'A',r},{key:'B',r}] */
+function _apSets(){
+  // 頁面載入早期（updateCombat 的啟動 IIFE 會在 _AP 宣告賦值前呼叫 rebuildCorrChart）視為未套用
+  if(typeof _AP==='undefined'||!_AP||!_AP.on||!_AP.A)return null;
+  return _AP.cmp&&_AP.B?[{key:'A',r:_AP.A},{key:'B',r:_AP.B}]:[{key:'A',r:_AP.A}];
+}
+function _apFmt(v,dec,unit){return v==null||!isFinite(v)?'—':Number(v).toFixed(dec)+(unit||'');}
+function _apDiffTxt(a,b,dec,unit){
+  if(a==null||b==null||!isFinite(a)||!isFinite(b))return '差 —';
+  var d=b-a;return '差 '+(d>=0?'+':'')+d.toFixed(dec)+(unit||'');
+}
+function _apInsuff(n){return '此期間資料不足（'+Number(n)+' 天）';}
+/* 驗證並設定期間；回傳錯誤字串或 '' */
+function _apSet(aS,aE,cmp,bS,bE){
+  function chk(s,e,nm){
+    if(!s||!e)return nm+'起日與迄日都要填。';
+    if(!_apValid(s)||!_apValid(e))return nm+'日期格式需為 YYYY-MM-DD 且為有效日期。';
+    if(s>e)return nm+'起日不可晚於迄日。';
+    if(_apDays(s,e).length>AP_MAX_DAYS)return nm+'期間最長 '+AP_MAX_DAYS+' 天。';
+    return '';
+  }
+  var err=chk(aS,aE,cmp?'A 段':'');
+  if(!err&&cmp)err=chk(bS,bE,'B 段');
+  if(err)return err;
+  _AP.on=true;_AP.cmp=!!cmp;
+  _AP.A={s:aS,e:aE,days:_apDays(aS,aE)};
+  _AP.B=cmp?{s:bS,e:bE,days:_apDays(bS,bE)}:null;
+  return '';
+}
+function apToggleCmp(){
+  var on=!!($('ap-cmp')&&$('ap-cmp').checked);
+  var w=$('ap-b-wrap');if(w)w.style.display=on?'':'none';
+  var l=$('ap-a-lbl');if(l)l.style.display=on?'':'none';
+}
+function _apMsg(txt,isErr){
+  var m=$('ap-msg');if(!m)return;
+  m.textContent=txt||'';m.classList.toggle('ap-err',!!isErr);
+}
+function apApply(){
+  var v=function(id){var el=$(id);return el?String(el.value||'').trim():'';};
+  var cmp=!!($('ap-cmp')&&$('ap-cmp').checked);
+  var err=_apSet(v('ap-a-s'),v('ap-a-e'),cmp,v('ap-b-s'),v('ap-b-e'));
+  if(err){_apMsg('⚠️ '+err,true);return false;}
+  var sets=_apSets();
+  _apMsg('已套用：'+sets.map(function(x){return (sets.length>1?x.key+' 段 ':'')+_apRangeTxt(x.r)+'（'+x.r.days.length+' 天）';}).join('　vs　')
+    +'。「今天」類元件（戰力、配速、三維狀態、三燈、資料維護提醒）不受影響；重新整理會回到預設。',false);
+  _apRenderAll();
+  return true;
+}
+function apClear(){
+  _AP.on=false;_AP.cmp=false;_AP.A=null;_AP.B=null;
+  ['ap-a-s','ap-a-e','ap-b-s','ap-b-e'].forEach(function(id){var el=$(id);if(el)el.value='';});
+  var c=$('ap-cmp');if(c)c.checked=false;
+  apToggleCmp();
+  _apMsg('',false);
+  _apRenderAll();
+}
+/* 卡片標籤與說明：未套用時全部移除，DOM 回到原狀 */
+var AP_CARDS=[
+  {sel:'.card.cm',note:'② 實時情緒曲線與節律／滯後分析改看此期間；理論基準線、人類圖提示、近期走勢配速建議屬今日建議，不受期間影響。期間模式不畫預測虛線。'},
+  {sel:'.card.csoc',note:''},
+  {sel:'.card.cco',note:'今日配速熔斷、睡前跨界行為指引、配速對齊校正屬今日建議，不受期間影響；上方 1週／2週… 按鈕在期間模式下暫不作用。'},
+  {sel:'.card.cfr',note:'上方 1週／2週… 按鈕在期間模式下暫不作用。'},
+  {sel:'#deep-card',note:''},
+  {sel:'#career-card',note:''},
+  {sel:'#dta-card',note:'能量矩陣診斷文字以 7 日門檻設計，期間模式不顯示診斷，只列天數。'},
+  {sel:'.card.csca',note:'右上 1週／2週… 按鈕在期間模式下暫不作用；自動校正係數（cc_energy_weights）仍依預設窗口計算。',cmpNote:'此卡不支援兩段對照（逐日柱狀與點選回溯並排無意義），僅顯示 A 段。'},
+  {sel:'.card.clv',note:'「今日戰略調校指引」仍依近 30 日規律計算，不受期間影響。'},
+  {sel:'.card.ctx',note:''},
+  {sel:'.card.chw',fixed:'固定本週，不受期間影響'},
+  {sel:'.card.clw',fixed:'固定上週，不受期間影響'}
+];
+function _apUpdateTags(){
+  var sets=_apSets();
+  document.body.classList.toggle('ap-on',!!sets);
+  AP_CARDS.forEach(function(c){
+    var card=document.querySelector(c.sel);if(!card)return;
+    var oldT=card.querySelector('.ap-tag');if(oldT)oldT.parentNode.removeChild(oldT);
+    var oldN=card.querySelector(':scope > .ap-note');if(oldN)oldN.parentNode.removeChild(oldN);
+    if(!sets)return;
+    var lbl=card.querySelector('.lbl');
+    if(lbl){
+      var t=document.createElement('span');
+      t.className='ap-tag'+(c.fixed?' ap-tag-fixed':'');
+      t.textContent=c.fixed?c.fixed:(sets.length>1?'A vs B':'期間：'+_apRangeTxt(sets[0].r));
+      if(!c.fixed&&sets.length>1)t.title='A 段 '+_apRangeTxt(sets[0].r)+'　B 段 '+_apRangeTxt(sets[1].r);
+      lbl.insertBefore(t,lbl.firstElementChild);
+    }
+    var nt=(sets.length>1&&c.cmpNote?c.cmpNote+' ':'')+(c.note||'');
+    if(nt&&card.firstElementChild){
+      var n=document.createElement('div');n.className='ap-note';n.textContent=nt;
+      card.insertBefore(n,card.firstElementChild.nextSibling);
+    }
+  });
+}
+function _apRenderAll(){
+  _apUpdateTags();
+  try{renderMoodRealSection();}catch(e){console.warn('ap mood',e);}
+  try{rebuildCorrChart();}catch(e){console.warn('ap corr',e);}
+  try{buildTaskTaxonomy();}catch(e){console.warn('ap tax',e);}
+  try{buildLeverageBars();}catch(e){console.warn('ap lev',e);}
+  try{renderFactorRadar(_radarTab);}catch(e){console.warn('ap radar',e);}
+  try{renderDeepFactors();}catch(e){console.warn('ap deep',e);}
+  try{renderCareerCard();}catch(e){console.warn('ap career',e);}
+  try{renderDualTrackCard();}catch(e){console.warn('ap dta',e);}
+  try{buildSleepCausalSection();}catch(e){console.warn('ap scr',e);}
+  try{renderSocialCircleCard();}catch(e){console.warn('ap social',e);}
+}
 
 /* ── 任務完成率統一口徑（2026-08-04 使用者定案） ─────────────────────────
    Daily Optimizer 寫入 review_YYYY-MM-DD 的 items 有四種 status：
@@ -1505,16 +1679,16 @@ function movingAvg5(arr){
     return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:null;
   });
 }
-function buildRealMoodArrays(days){
+// 10-16：改收「日期鍵陣列」（升冪），由呼叫端決定窗口與終點；預設＝_apLastDays(30,today())
+function buildRealMoodArrays(keys){
   var moods=getMoods(),moodMap={};
   moods.forEach(function(m){moodMap[m.date]=m.score;});
   var labels=[],raw=[];
-  for(var i=days-1;i>=0;i--){
-    var d=new Date();d.setDate(d.getDate()-i);
-    labels.push((d.getMonth()+1)+'/'+d.getDate());
-    var k=dkey(d);raw.push(moodMap[k]!==undefined?moodMap[k]:null);
-  }
-  return{labels:labels,raw:raw,smoothed:movingAvg5(raw)};
+  keys.forEach(function(k){
+    labels.push(_apMD(k));
+    raw.push(moodMap[k]!==undefined?moodMap[k]:null);
+  });
+  return{labels:labels,raw:raw,smoothed:movingAvg5(raw),keys:keys.slice()};
 }
 function calcRealCycle(smoothed){
   var pts=[];
@@ -1532,12 +1706,13 @@ function calcRealCycle(smoothed){
   if(!intervals.length)return null;
   return Math.round(intervals.reduce(function(a,b){return a+b;},0)/intervals.length);
 }
-function calcSleepToMoodLag(smoothedArr,days){
+function calcSleepToMoodLag(moodData,combatMapOverride){
   // 08-04：改呼叫共用getSleepQualityMap('trend7')，明確指定只用trend7維持原本7天視窗
   // ——不可改用預設的trend180 fallback，否則掃描天數暴增會改變「情緒真實週期」算出的結果
-  var combatMap=getSleepQualityMap('trend7');
-  var moodByDate={};
-  for(var i=0;i<days;i++){var d=new Date();d.setDate(d.getDate()-(days-1-i));moodByDate[dkey(d)]=smoothedArr[i];}
+  // 10-16：分析期間模式由呼叫端傳入已過濾到期間內的 map；日期改由 moodData.keys 對應
+  var combatMap=combatMapOverride||getSleepQualityMap('trend7');
+  var smoothedArr=moodData.smoothed,moodByDate={};
+  moodData.keys.forEach(function(k,i){moodByDate[k]=smoothedArr[i];});
   var cdates=Object.keys(combatMap).sort(),lags=[];
   for(var ci=1;ci<cdates.length;ci++){
     if(combatMap[cdates[ci-1]]-combatMap[cdates[ci]]<1.2)continue;
@@ -1552,7 +1727,7 @@ function calcSleepToMoodLag(smoothedArr,days){
   }
   return lags.length>=2?Math.round(lags.reduce(function(a,b){return a+b;},0)/lags.length):null;
 }
-function buildMoodRealChart(moodData,realCycle){
+function buildMoodRealChart(moodData,realCycle,noPred){
   var days=moodData.labels.length,smoothed=moodData.smoothed,raw=moodData.raw;
   var lastNonNullIdx=-1,lastVal=null;
   for(var i=smoothed.length-1;i>=0;i--){if(smoothed[i]!==null){lastNonNullIdx=i;lastVal=smoothed[i];break;}}
@@ -1561,11 +1736,10 @@ function buildMoodRealChart(moodData,realCycle){
   for(var i=smoothed.length-1;i>=0&&recent.length<halfCycle;i--){if(smoothed[i]!==null)recent.unshift(smoothed[i]);}
   var slope=recent.length>=2?(recent[recent.length-1]-recent[0])/(recent.length-1):0;
   var predLabels=[],predVals=[];
-  if(lastVal!==null){
-    var anchorAgo=days-1-lastNonNullIdx;
+  if(lastVal!==null&&!noPred){
+    var anchorKey=moodData.keys[lastNonNullIdx];
     for(var p=1;p<=5;p++){
-      var pd=new Date();pd.setDate(pd.getDate()-anchorAgo+p);
-      predLabels.push((pd.getMonth()+1)+'/'+pd.getDate());
+      predLabels.push(_apMD(_apAddDays(anchorKey,p)));
       predVals.push(Math.max(1,Math.min(10,Math.round((lastVal+slope*p)*10)/10)));
     }
   }
@@ -1581,12 +1755,12 @@ function buildMoodRealChart(moodData,realCycle){
     {label:'預測',data:predFull,borderColor:'#b08d62',borderDash:[4,4],tension:.3,pointRadius:0,fill:false,borderWidth:1.5,spanGaps:false}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
 }
-function buildCausalChainNarrative(moodData,avgLag){
+function buildCausalChainNarrative(moodData,avgLag,sqMapOverride){
   try{
     // 08-04：改呼叫共用getSleepQualityMap()（預設trend180 fallback），視窗從原本
     // trend30上限放寬到最多180天——刻意接受的行為改善（能看到更久的驟降事件），
     // 非本次教訓的「不可任意放寬視窗」情形，因為此函式本身沒有「只看近期」的設計意圖
-    var sqMap=getSleepQualityMap();
+    var sqMap=sqMapOverride||getSleepQualityMap();
     var ca=Object.keys(sqMap).map(function(date){
       return{date:date,c:Math.round(sqMap[date]*10*10)/10};
     }).sort(function(a,b){return a.date.localeCompare(b.date);});
@@ -1604,8 +1778,7 @@ function buildCausalChainNarrative(moodData,avgLag){
     var wd=new Date(worst.date.replace(/-/g,'/'));
     var mbyd={};
     for(var i=0;i<moodData.smoothed.length;i++){
-      var dd=new Date();dd.setDate(dd.getDate()-(moodData.smoothed.length-1-i));
-      if(moodData.smoothed[i]!==null)mbyd[dkey(dd)]=moodData.smoothed[i];
+      if(moodData.smoothed[i]!==null)mbyd[moodData.keys[i]]=moodData.smoothed[i];
     }
     var minV=99,minK=null;
     for(var off=Math.max(1,avgLag-2);off<=avgLag+3;off++){
@@ -1621,7 +1794,7 @@ function buildCausalChainNarrative(moodData,avgLag){
       +'，經過 '+lag+' 天延遲傳導，導致了 '+tmd+' 的情緒低谷（MA5 = '+Math.round(minV*10)/10+'）。';
   }catch(e){return null;}
 }
-function buildMoodAnalysis(moodData,realCycle,sleepLag){
+function buildMoodAnalysis(moodData,realCycle,sleepLag,periodOpt){
   var rhythmEl=document.getElementById('ma-rhythm');
   var lagEl=document.getElementById('ma-lag-section');
   var paceEl=document.getElementById('ma-pace');
@@ -1631,7 +1804,7 @@ function buildMoodAnalysis(moodData,realCycle,sleepLag){
   /* --- 人類圖決策防呆：今日原始分 vs 中位數 --- */
   var hdAlertEl=document.getElementById('ma-hd-alert');
   var hdAlertTextEl=document.getElementById('ma-hd-alert-text');
-  if(hdAlertEl){
+  if(hdAlertEl&&!periodOpt){   // 今日提示：期間模式不重算，維持預設窗口的結果
     var todayRaw=moodData.raw[moodData.raw.length-1];
     var validRaw=moodData.raw.filter(function(v){return v!==null;});
     var median=null;
@@ -1670,13 +1843,14 @@ function buildMoodAnalysis(moodData,realCycle,sleepLag){
   var lLines=[];
   if(sleepLag){
     lLines.push('⏳ 實測滯後效應：平均 '+sleepLag+' 天後情緒跟進下滑');
-    var chain=buildCausalChainNarrative(moodData,sleepLag);
+    var chain=buildCausalChainNarrative(moodData,sleepLag,periodOpt?periodOpt.sqMap:null);
     lLines.push(chain||'（近期未偵測到顯著睡眠品質分驟降事件，或滯後窗口內情緒資料不足）');
   }else{
     lLines.push('⏳ 實測滯後效應：積累中（需更多「睡眠下滑 → N天後情緒低谷」配對事件）');
     lLines.push('系統需偵測到至少 2 組配對事件方可推算滯後天數。');
   }
   if(lagEl)lagEl.textContent=lLines.join('\n');
+  if(periodOpt)return;   // Section 3 是今日配速建議，期間模式維持預設窗口的結果
   /* --- Section 3: 近期走勢 + 配速建議 --- */
   var pLines=[];
   var pts=[];
@@ -1706,6 +1880,60 @@ function buildMoodAnalysis(moodData,realCycle,sleepLag){
   if(paceEl)paceEl.textContent=pLines.join('\n');
 }
 
+/* 情緒雙軌 ② 實時曲線＋分析：預設近 30 日；分析期間單段＝同樣流程換日期；兩段＝第 N 天對齊疊加 */
+function _apFilterMap(map,r){var o={};Object.keys(map).forEach(function(k){if(_apIn(r,k))o[k]=map[k];});return o;}
+function renderMoodRealSection(){
+  var sets=_apSets();
+  if(!sets){
+    var _rmd=buildRealMoodArrays(_apLastDays(30,today()));
+    var _rc=calcRealCycle(_rmd.smoothed);
+    var _sl=calcSleepToMoodLag(_rmd);
+    buildMoodRealChart(_rmd,_rc);
+    buildMoodAnalysis(_rmd,_rc,_sl);
+    return;
+  }
+  var sqAll=getSleepQualityMap();
+  var segs=sets.map(function(x){
+    var md=buildRealMoodArrays(x.r.days);
+    var sq=_apFilterMap(sqAll,x.r);
+    var rc=calcRealCycle(md.smoothed);
+    var sl=calcSleepToMoodLag(md,sq);
+    var vr=md.raw.filter(function(v){return v!==null;});
+    var vs=md.smoothed.filter(function(v){return v!==null;});
+    var amp=vs.length>=2?Math.round((Math.max.apply(null,vs)-Math.min.apply(null,vs))/2*10)/10:null;
+    return{key:x.key,r:x.r,md:md,sq:sq,rc:rc,sl:sl,n:vr.length,ns:vs.length,
+      mean:vr.length?vr.reduce(function(a,b){return a+b;},0)/vr.length:null,halfAmp:amp};
+  });
+  if(segs.length===1){
+    var g=segs[0];
+    buildMoodRealChart(g.md,g.rc,true);
+    buildMoodAnalysis(g.md,g.rc,g.sl,{sqMap:g.sq});
+    if(g.ns<8){var re=$('ma-rhythm');if(re)re.textContent=_apInsuff(g.n)+'（情緒紀錄需 ≥8 天才推算週期）\n'+re.textContent;}
+    return;
+  }
+  // 兩段對照：MA5 以「第 N 天」對齊疊加
+  var A=segs[0],B=segs[1],L=Math.max(A.md.keys.length,B.md.keys.length),labels=[];
+  for(var i=0;i<L;i++)labels.push('第'+(i+1)+'天');
+  function pad(arr){return arr.concat(Array(L-arr.length).fill(null));}
+  mk('ov-mc-real',{type:'line',data:{labels:labels,datasets:[
+    {label:'A 段 MA5',data:pad(A.md.smoothed),borderColor:'#5c7a96',backgroundColor:'transparent',tension:.4,pointRadius:0,fill:false,borderWidth:1.8,spanGaps:true},
+    {label:'B 段 MA5',data:pad(B.md.smoothed),borderColor:'#b08d62',borderDash:[5,3],backgroundColor:'transparent',tension:.4,pointRadius:0,fill:false,borderWidth:1.8,spanGaps:true}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:LC,font:{size:9},boxWidth:14}}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
+  function segLine(g){
+    if(g.ns<8)return g.key+' 段 '+_apRangeTxt(g.r)+'：'+_apInsuff(g.n)+(g.mean!=null?'，平均 '+g.mean.toFixed(1)+' 分':'');
+    return g.key+' 段 '+_apRangeTxt(g.r)+'：平均 '+_apFmt(g.mean,1,' 分')+'（'+g.n+' 天）、實測週期 '+(g.rc?'~'+g.rc+' 天':'積累中')+'、振幅 '+(g.halfAmp!=null?'±'+g.halfAmp:'—');
+  }
+  var re2=$('ma-rhythm');
+  if(re2)re2.textContent='📊 兩段對照（左右兩段以第 N 天對齊）\n'+segLine(A)+'\n'+segLine(B)
+    +'\n平均情緒 '+_apDiffTxt(A.mean,B.mean,1,' 分')+'（B−A）；振幅 '+_apDiffTxt(A.halfAmp,B.halfAmp,1)+'（B−A）';
+  var le=$('ma-lag-section');
+  if(le){
+    var ll=['⏳ 睡眠品質分驟降 → 情緒跟進下滑的平均天數'];
+    [A,B].forEach(function(g){ll.push(g.key+' 段：'+(g.sl?'平均 '+g.sl+' 天':'積累中（期間內配對事件不足 2 組）'));});
+    le.textContent=ll.join('\n');
+  }
+}
+
 /* CORRELATION CHART */
 var corrRange=14;
 var _corrExclWeekend=false;
@@ -1724,23 +1952,21 @@ function setCorrRange(n){
   rebuildCorrChart();
 }
 var _WD_ZH=['日','一','二','三','四','五','六'];
-function rebuildCorrChart(){
-  var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
-  var combatMap=getSleepQualityMap();
+// 10-16：資料迴圈抽成 _corrSeries(keys)，keys 由呼叫端給（預設＝_apLastDays(corrRange,today())），
+// 結果與原本逐日 new Date() 往回推完全相同；分析期間改傳期間日期
+function _corrSeries(keys,moodMap,combatMap){
   var labels=[],moodLine=[],compLine=[],compColors=[],compRadius=[],combatLine=[];
-  var moodArr=[],pairedArr=[];
-  var over=0,under=0,ok=0;
-  for(var i=corrRange-1;i>=0;i--){
-    var d=new Date();d.setDate(d.getDate()-i);
-    if(_corrExclWeekend&&(d.getDay()===0||d.getDay()===6))continue;
-    var k=dkey(d);
+  var over=0,under=0,ok=0,mSum=0,mN=0,cSum=0,cN=0,dSum=0,dN=0;
+  keys.forEach(function(k){
+    var d=new Date(k+'T12:00:00');
+    if(_corrExclWeekend&&(d.getDay()===0||d.getDay()===6))return;
     labels.push([(d.getMonth()+1)+'/'+(d.getDate()),'('+_WD_ZH[d.getDay()]+')']);
     var ms=moodMap[k]!==undefined?moodMap[k]:null;
     var cs=combatMap[k]!==undefined?combatMap[k]:null;
     moodLine.push(ms);
     combatLine.push(cs!==null?parseFloat(cs.toFixed(1)):null);
-    if(ms!==null)moodArr.push(ms);
-    if(ms!==null&&cs!==null)pairedArr.push({mood:ms,combat:cs*10});
+    if(ms!==null){mSum+=ms;mN++;}
+    if(cs!==null){cSum+=cs*10;cN++;}
     var rev=getReview(k);
     if(rev&&ms!==null){
       var items=rev.items||[];
@@ -1752,17 +1978,99 @@ function rebuildCorrChart(){
         var cc=cls==='over'?'rgba(192,57,43,.85)':cls==='under'?'rgba(78,110,138,.85)':'rgba(39,174,96,.85)';
         compColors.push(cc);compRadius.push(8);
         if(cls==='over')over++;else if(cls==='under')under++;else ok++;
+        dSum+=dr;dN++;
       }else{compLine.push(null);compColors.push('transparent');compRadius.push(0);}
     }else{compLine.push(null);compColors.push('transparent');compRadius.push(0);}
-  }
-  var maxTicks=corrRange<=7?7:corrRange<=14?8:corrRange<=30?10:12;
-  mk('corr-chart',{type:'line',data:{labels,datasets:[
+  });
+  return{labels:labels,moodLine:moodLine,compLine:compLine,compColors:compColors,compRadius:compRadius,combatLine:combatLine,
+    over:over,under:under,ok:ok,mN:mN,cN:cN,dN:dN,
+    moodAvg:mN?mSum/mN:null,sleepAvg:cN?cSum/cN:null,doneAvg:dN?dSum/dN*100:null};
+}
+function _corrDraw(canvasId,ser,maxTicks){
+  var labels=ser.labels,moodLine=ser.moodLine,combatLine=ser.combatLine,compLine=ser.compLine,compRadius=ser.compRadius,compColors=ser.compColors;
+  mk(canvasId,{type:'line',data:{labels,datasets:[
     {label:'情緒',data:moodLine,borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.08)',tension:.4,pointRadius:3,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:2,spanGaps:true,order:2},
     {label:'睡眠品質分',data:combatLine,borderColor:'#5c7a96',backgroundColor:'transparent',tension:.4,pointRadius:2,pointBackgroundColor:'#5c7a96',borderWidth:1.5,borderDash:[4,3],spanGaps:false,order:3},
     {label:'完成度',data:compLine,borderWidth:0,showLine:false,pointRadius:compRadius,pointBackgroundColor:compColors,pointBorderWidth:0,order:1}
   ]},options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?'情緒: '+(ctx.raw!=null?ctx.raw:'—'):ctx.datasetIndex===1?ctx.raw!=null?'睡眠品質分: '+Math.round(ctx.raw*10):null:ctx.raw!=null?'完成度: '+Math.round(ctx.raw*10)+'%':null}}},
     scales:{x:{ticks:{color:LC,font:{size:9},maxTicksLimit:maxTicks},grid:{display:false}},y:{min:0,max:10,ticks:{color:LC,font:{size:9},maxTicksLimit:4},grid:{color:TC}}}}});
+}
+function _corrMaxTicks(n){return n<=7?7:n<=14?8:n<=30?10:12;}
+/* 期間模式附加區（摘要＋B 段小圖）；預設模式隱藏並銷毀 B 圖，DOM 未建立前不動 */
+function _corrExtra(segs){
+  var host=$('corr-ap-extra');
+  if(!segs[0].key){
+    if(host)host.style.display='none';
+    if(CI['corr-chart-b']){CI['corr-chart-b'].destroy();delete CI['corr-chart-b'];}
+    return;
+  }
+  if(!host){
+    var base=$('corr-chart');if(!base)return;base=base.parentNode;
+    host=document.createElement('div');host.id='corr-ap-extra';
+    host.innerHTML='<div id="corr-ap-sum" style="margin-top:.45rem"></div>'
+      +'<div id="corr-b-wrap" style="display:none"><div class="ap-seg-hd" id="corr-b-hd"></div><div class="ch-lg" style="position:relative;"><canvas id="corr-chart-b"></canvas></div></div>';
+    base.parentNode.insertBefore(host,base.nextSibling);
+  }
+  host.style.display='';
+  function line(g){
+    var s=g.ser,pre=(segs.length>1?g.key+' 段 ':'')+_apRangeTxt(g.r)+'：';
+    if(!s.mN&&!s.cN)return pre+_apInsuff(0);
+    return pre+'情緒均 '+_apFmt(s.moodAvg,1)+'（'+s.mN+' 天）、睡眠品質分均 '+_apFmt(s.sleepAvg,0)+'（'+s.cN+' 晚）、完成率均 '+_apFmt(s.doneAvg,0,'%')+'（'+s.dN+' 天）；透支 '+s.over+'／對齊 '+s.ok+'／低輸出 '+s.under+' 天';
+  }
+  var rows=segs.map(function(g){return '<div class="ap-note" style="margin:0">'+_escH(line(g))+'</div>';});
+  if(segs.length>1){
+    var a=segs[0].ser,b=segs[1].ser;
+    rows.push('<div class="ap-note" style="margin:0"><span class="ap-d">'+_escH('B−A：情緒 '+_apDiffTxt(a.moodAvg,b.moodAvg,1)+'、睡眠品質分 '+_apDiffTxt(a.sleepAvg,b.sleepAvg,0)+'、完成率 '+_apDiffTxt(a.doneAvg,b.doneAvg,0,'%')+'、透支天數 '+_apDiffTxt(a.over,b.over,0))+'</span></div>');
+  }
+  var sum=$('corr-ap-sum');if(sum)sum.innerHTML=rows.join('');
+  var bw=$('corr-b-wrap');
+  if(segs.length>1){
+    if(bw)bw.style.display='';
+    var hd=$('corr-b-hd');if(hd)hd.textContent='B 段 '+_apRangeTxt(segs[1].r)+'（上圖為 A 段 '+_apRangeTxt(segs[0].r)+'）';
+    _corrDraw('corr-chart-b',segs[1].ser,_corrMaxTicks(segs[1].keys.length));
+  }else{
+    if(bw)bw.style.display='none';
+    if(CI['corr-chart-b']){CI['corr-chart-b'].destroy();delete CI['corr-chart-b'];}
+  }
+}
+function _corrOverDates(keys,moodMap,combatMap){
+  var overDates=[];
+  keys.forEach(function(kj){
+    var msj=moodMap[kj]!==undefined?moodMap[kj]:null;
+    if(msj===null)return;
+    var revj=getReview(kj);if(!revj)return;
+    var itmj=revj.items||[];if(!itmj.length)return;
+    var drj=calcCompletionRate(itmj);if(drj===null)return;
+    var csj=combatMap[kj]!==undefined?combatMap[kj]:null;
+    if(alignClass(msj,csj!==null?csj*10:(_combat||50),drj)==='over')overDates.push(kj);
+  });
+  return overDates;
+}
+function _corrDebtWarnings(overDates){
+  function fmtMD(dateStr,offset){var d=new Date(dateStr);d.setDate(d.getDate()+offset);return(d.getMonth()+1)+'/'+(d.getDate());}
+  var groups=[],gcur=[overDates[0]];
+  for(var oi=1;oi<overDates.length;oi++){
+    if((new Date(overDates[oi])-new Date(overDates[oi-1]))/86400000<=2)gcur.push(overDates[oi]);
+    else{groups.push(gcur);gcur=[overDates[oi]];}
+  }
+  groups.push(gcur);
+  return groups.map(function(g){
+    var s=fmtMD(g[0],0),e=g.length>1?fmtMD(g[g.length-1],0):null;
+    var span=e?s+'~'+e:s;
+    var d6s=fmtMD(g[0],6),d6e=g.length>1?fmtMD(g[g.length-1],6):null;
+    var dspan=d6e&&d6e!==d6s?d6s+'~'+d6e:d6s;
+    return '預警：由於 '+span+' '+(g.length>1?'連續硬撐':'透支')+'（紅點），預計 6 天後（約 '+dspan+'）將迎來隱性疲勞崩盤期。請提前清空該時段重度行程，改排充能任務。';
+  });
+}
+function rebuildCorrChart(){
+  var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
+  var combatMap=getSleepQualityMap();
+  var sets=_apSets();
+  var segs=sets?sets.map(function(x){return{key:x.key,r:x.r,keys:x.r.days};}):[{key:null,r:null,keys:_apLastDays(corrRange,today())}];
+  segs.forEach(function(g){g.ser=_corrSeries(g.keys,moodMap,combatMap);});
+  _corrDraw('corr-chart',segs[0].ser,_corrMaxTicks(segs[0].keys.length));
+  _corrExtra(segs);
 
   // ── 三大防禦行動面板 ──
   var combatScore=_combat||parseInt(localStorage.getItem('sas_combat_weighted')||'0')||50;
@@ -1777,39 +2085,19 @@ function rebuildCorrChart(){
     throttleEl.innerHTML=thr;
   }
 
-  // 2. 債務拆彈預警（精準日期）
-  var overDates=[];
-  for(var j=corrRange-1;j>=0;j--){
-    var dj=new Date();dj.setDate(dj.getDate()-j);
-    var kj=dkey(dj);
-    var msj=moodMap[kj]!==undefined?moodMap[kj]:null;
-    if(msj===null)continue;
-    var revj=getReview(kj);if(!revj)continue;
-    var itmj=revj.items||[];if(!itmj.length)continue;
-    var drj=calcCompletionRate(itmj);if(drj===null)continue;
-    var csj=combatMap[kj]!==undefined?combatMap[kj]:null;
-    if(alignClass(msj,csj!==null?csj*10:(_combat||50),drj)==='over')overDates.push(kj);
-  }
+  // 2. 債務拆彈預警（精準日期）；分析期間模式改列期間內的透支紅點
   var debtEl=$('corr-debtbomb');
   if(debtEl){
-    if(!overDates.length){
-      debtEl.textContent='近'+corrRange+'日無意志力透支紅點，債務風險低。';
+    if(!sets){
+      var overDates=_corrOverDates(segs[0].keys,moodMap,combatMap);
+      if(!overDates.length)debtEl.textContent='近'+corrRange+'日無意志力透支紅點，債務風險低。';
+      else debtEl.innerHTML=_corrDebtWarnings(overDates).join('<br><br>');
     }else{
-      function fmtMD(dateStr,offset){var d=new Date(dateStr);d.setDate(d.getDate()+offset);return(d.getMonth()+1)+'/'+(d.getDate());}
-      var groups=[],gcur=[overDates[0]];
-      for(var oi=1;oi<overDates.length;oi++){
-        if((new Date(overDates[oi])-new Date(overDates[oi-1]))/86400000<=2)gcur.push(overDates[oi]);
-        else{groups.push(gcur);gcur=[overDates[oi]];}
-      }
-      groups.push(gcur);
-      var warnings=groups.map(function(g){
-        var s=fmtMD(g[0],0),e=g.length>1?fmtMD(g[g.length-1],0):null;
-        var span=e?s+'~'+e:s;
-        var d6s=fmtMD(g[0],6),d6e=g.length>1?fmtMD(g[g.length-1],6):null;
-        var dspan=d6e&&d6e!==d6s?d6s+'~'+d6e:d6s;
-        return '預警：由於 '+span+' '+(g.length>1?'連續硬撐':'透支')+'（紅點），預計 6 天後（約 '+dspan+'）將迎來隱性疲勞崩盤期。請提前清空該時段重度行程，改排充能任務。';
-      });
-      debtEl.innerHTML=warnings.join('<br><br>');
+      debtEl.innerHTML=segs.map(function(g){
+        var od=_corrOverDates(g.keys,moodMap,combatMap);
+        var pre=(segs.length>1?g.key+' 段 ':'此期間 ')+_apRangeTxt(g.r)+'：';
+        return _escH(pre)+(od.length?_corrDebtWarnings(od).map(_escH).join('<br>'):_escH('無意志力透支紅點。'));
+      }).join('<br><br>');
     }
   }
 
@@ -1895,7 +2183,9 @@ function renderPipeAlign(){
   el.innerHTML=parts.join('<br><br>');
 }
 
-function buildTaskTaxonomy(){
+// 10-16：統計迴圈抽成 _taxCompute(keys)，keys 由呼叫端給（預設＝_apLastDays(14,today())）；
+// 明細列取窗口最後 7 天（預設即「近7日」）。isLow 判定照舊（含 _combat 今日戰力條件）
+function _taxCompute(keys){
   var counts={logic:0,social:0,input:0,other:0};
   var done_counts={logic:0,social:0,input:0,other:0};   // 加權完成分（done 1 / part 0.5）
   var eff_counts={logic:0,social:0,input:0,other:0};    // 排除 ⊘不做 後的有效分母
@@ -1903,9 +2193,12 @@ function buildTaskTaxonomy(){
   var skipsLowDetails={logic:[],social:[],input:[],other:[]};
   var taskLists={logic:[],social:[],input:[],other:[]};
   var moods=getMoods();var moodMap={};moods.forEach(m=>{moodMap[m.date]=m.score;});
-  for(var i=13;i>=0;i--){
-    var d=new Date();d.setDate(d.getDate()-i);var k=dkey(d);
-    var rev=getReview(k);if(!rev)continue;
+  var revDays=0;
+  keys.forEach(function(k,idx){
+    var i=keys.length-1-idx;                         // 距窗口終點的天數（同原本迴圈的 i）
+    var rev=getReview(k);if(!rev)return;
+    revDays++;
+    var mdTxt=_apMD(k);
     var ms=moodMap[k]!==undefined?moodMap[k]:5;
     var isLow=ms<5||(_combat&&_combat<40);
     (rev.items||[]).forEach(item=>{
@@ -1915,33 +2208,17 @@ function buildTaskTaxonomy(){
       // 完成率分子分母改走統一口徑：⊘不做整筆排除、part 記 0.5
       if(!isNoTask(item.status)){eff_counts[cat]++;done_counts[cat]+=taskScore(item.status);}
       // ⊘不做是有意識的決定，不是低狀態下的放棄，不列入 skipsLow
-      if(!isDone&&!isNoTask(item.status)&&isLow){skipsLow[cat]++;skipsLowDetails[cat].push({name:item.name,date:(d.getMonth()+1)+'/'+(d.getDate())});}
-      if(i<7){var dd=new Date();dd.setDate(dd.getDate()-i);taskLists[cat].push({name:item.name,status:item.status||'',date:(dd.getMonth()+1)+'/'+(dd.getDate()),done:isDone});}
+      if(!isDone&&!isNoTask(item.status)&&isLow){skipsLow[cat]++;skipsLowDetails[cat].push({name:item.name,date:mdTxt});}
+      if(i<7){taskLists[cat].push({name:item.name,status:item.status||'',date:mdTxt,done:isDone});}
     });
-  }
+  });
   var total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
-  var defs=[{k:'logic',label:'邏輯/工作',col:'#5c7a96'},{k:'social',label:'社交耗能',col:'#9e6b7a'},{k:'input',label:'身心靈/輸入',col:'#5e8f7e'},{k:'other',label:'其他',col:'#b08d62'}];
-  var legend='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:.65rem;font-size:.65rem;font-weight:700;color:#1a1814;padding:.4rem .6rem;background:var(--bg2);border-radius:var(--rsm)">'+
-    '<span>第一% <span style="font-weight:400;color:var(--faint)">= 佔總任務比例</span></span>'+
-    '<span>✓ 第二% <span style="font-weight:400;color:var(--faint)">= 此類任務完成率</span></span>'+
-    '<span style="color:var(--info);font-weight:400">▶ 點擊列展開近7日任務明細</span></div>';
-  var bars=$('tax-bars');
-  if(bars)bars.innerHTML=legend+defs.map(d=>{
-    var pct=Math.round(counts[d.k]/total*100);
-    // 分母改用 eff_counts（排除 ⊘不做）；該類全部 ⊘不做時依定案口徑記 100%
-    var donePct=eff_counts[d.k]?Math.round(done_counts[d.k]/eff_counts[d.k]*100):(counts[d.k]?100:0);
-    var tasks=taskLists[d.k];
-    var taskHtml=tasks.length?tasks.map(t=>'<div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid var(--border);font-size:.65rem"><span style="color:'+(t.done?'var(--ok)':t.status==='part'?'var(--info)':t.status==='skip'?'var(--warn)':'var(--faint)')+';flex-shrink:0;font-size:.75rem">'+(t.done?'✓':t.status==='part'?'◐':t.status==='skip'?'→':t.status==='no'?'⊘':'○')+'</span><span style="color:var(--sub);flex:1">'+_escH(t.name)+'</span><span style="color:var(--faint);font-size:.6rem;white-space:nowrap">'+_escH(t.date)+'</span></div>').join(''):
-      '<div style="font-size:.65rem;color:var(--faint);padding:4px 0">近7日無記錄</div>';
-    return '<div style="margin-bottom:5px">'+
-      '<div class="tax-bar-row" onclick="toggleExpand(&quot;ex-'+d.k+'&quot;)" style="cursor:pointer">'+
-      '<span class="tax-label">'+d.label+'</span>'+
-      '<div class="tax-track"><div class="tax-fill" style="width:'+pct+'%;background:'+d.col+'"></div></div>'+
-      '<span class="tax-num">'+pct+'%&nbsp;<span style="color:var(--ok)">✓'+donePct+'%</span>&nbsp;<span style="font-size:.58rem;color:var(--info)">▶</span></span>'+
-      '</div>'+
-      '<div id="ex-'+d.k+'" style="display:none;margin:4px 0 8px 74px;border:.5px solid var(--border);border-radius:var(--rsm);padding:6px 8px;background:var(--bg2)">'+taskHtml+'</div>'+
-      '</div>';
-  }).join('');
+  return{counts:counts,done_counts:done_counts,eff_counts:eff_counts,skipsLow:skipsLow,skipsLowDetails:skipsLowDetails,taskLists:taskLists,total:total,revDays:revDays};
+}
+var TAX_DEFS=[{k:'logic',label:'邏輯/工作',col:'#5c7a96'},{k:'social',label:'社交耗能',col:'#9e6b7a'},{k:'input',label:'身心靈/輸入',col:'#5e8f7e'},{k:'other',label:'其他',col:'#b08d62'}];
+function _taxDonePct(t,k){return t.eff_counts[k]?Math.round(t.done_counts[k]/t.eff_counts[k]*100):(t.counts[k]?100:0);}
+function _taxInsights(t){
+  var counts=t.counts,total=t.total,skipsLow=t.skipsLow,skipsLowDetails=t.skipsLowDetails;
   var insights=[];
   var catNames={logic:'邏輯/工作',social:'社交',input:'身心靈/輸入',other:'其他'};
   var socialPct=Math.round(counts.social/total*100);
@@ -1955,8 +2232,61 @@ function buildTaskTaxonomy(){
   var inputPct=Math.round(counts.input/total*100);
   if(inputPct<10&&total>5)insights.push({icon:'🌱',text:'身心靈/輸入任務佔比僅 <strong>'+inputPct+'%</strong>，建議增加恢復型任務比例。'});
   if(!insights.length)insights.push({icon:'✓',text:'任務分佈暫無明顯失衡，繼續觀察。'});
+  return insights;
+}
+function _taxInsightHtml(t){return '<div style="display:flex;gap:8px;align-items:baseline;font-size:.78rem;line-height:1.7;color:var(--sub)"><span style="flex-shrink:0">'+t.icon+'</span><span>'+t.text+'</span></div>';}
+function buildTaskTaxonomy(){
+  var sets=_apSets();
+  var hd=$('tax-hd');
+  if(sets&&sets.length>1){ _taxRenderCmp(sets); return; }
+  var t=_taxCompute(sets?sets[0].r.days:_apLastDays(14,today()));
+  if(hd)hd.textContent=sets?'期間任務分佈（'+_apRangeTxt(sets[0].r)+'）':'本週任務分佈';
+  var counts=t.counts,total=t.total,taskLists=t.taskLists;
+  var legend='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:.65rem;font-size:.65rem;font-weight:700;color:#1a1814;padding:.4rem .6rem;background:var(--bg2);border-radius:var(--rsm)">'+
+    '<span>第一% <span style="font-weight:400;color:var(--faint)">= 佔總任務比例</span></span>'+
+    '<span>✓ 第二% <span style="font-weight:400;color:var(--faint)">= 此類任務完成率</span></span>'+
+    '<span style="color:var(--info);font-weight:400">▶ 點擊列展開'+(sets?'期間最後7日':'近7日')+'任務明細</span></div>';
+  var bars=$('tax-bars');
+  var pre=(sets&&!t.revDays)?'<div class="ap-note">'+_escH(_apInsuff(0))+'</div>':'';
+  if(bars)bars.innerHTML=pre+legend+TAX_DEFS.map(d=>{
+    var pct=Math.round(counts[d.k]/total*100);
+    // 分母改用 eff_counts（排除 ⊘不做）；該類全部 ⊘不做時依定案口徑記 100%
+    var donePct=_taxDonePct(t,d.k);
+    var tasks=taskLists[d.k];
+    var taskHtml=tasks.length?tasks.map(t=>'<div style="display:flex;align-items:center;gap:7px;padding:3px 0;border-bottom:.5px solid var(--border);font-size:.65rem"><span style="color:'+(t.done?'var(--ok)':t.status==='part'?'var(--info)':t.status==='skip'?'var(--warn)':'var(--faint)')+';flex-shrink:0;font-size:.75rem">'+(t.done?'✓':t.status==='part'?'◐':t.status==='skip'?'→':t.status==='no'?'⊘':'○')+'</span><span style="color:var(--sub);flex:1">'+_escH(t.name)+'</span><span style="color:var(--faint);font-size:.6rem;white-space:nowrap">'+_escH(t.date)+'</span></div>').join(''):
+      '<div style="font-size:.65rem;color:var(--faint);padding:4px 0">'+(sets?'期間最後7日無記錄':'近7日無記錄')+'</div>';
+    return '<div style="margin-bottom:5px">'+
+      '<div class="tax-bar-row" onclick="toggleExpand(&quot;ex-'+d.k+'&quot;)" style="cursor:pointer">'+
+      '<span class="tax-label">'+d.label+'</span>'+
+      '<div class="tax-track"><div class="tax-fill" style="width:'+pct+'%;background:'+d.col+'"></div></div>'+
+      '<span class="tax-num">'+pct+'%&nbsp;<span style="color:var(--ok)">✓'+donePct+'%</span>&nbsp;<span style="font-size:.58rem;color:var(--info)">▶</span></span>'+
+      '</div>'+
+      '<div id="ex-'+d.k+'" style="display:none;margin:4px 0 8px 74px;border:.5px solid var(--border);border-radius:var(--rsm);padding:6px 8px;background:var(--bg2)">'+taskHtml+'</div>'+
+      '</div>';
+  }).join('');
   var ins=$('tax-insights');
-  if(ins)ins.innerHTML=insights.map(t=>'<div style="display:flex;gap:8px;align-items:baseline;font-size:.78rem;line-height:1.7;color:var(--sub)"><span style="flex-shrink:0">'+t.icon+'</span><span>'+t.text+'</span></div>').join('');
+  if(ins)ins.innerHTML=_taxInsights(t).map(_taxInsightHtml).join('');
+}
+/* 兩段對照：各類別 A、B 佔比與完成率並列＋差值；建議各列一組 */
+function _taxRenderCmp(sets){
+  var A=_taxCompute(sets[0].r.days),B=_taxCompute(sets[1].r.days);
+  var hd=$('tax-hd');if(hd)hd.textContent='任務分佈 A vs B';
+  var segTxt='A 段 '+_apRangeTxt(sets[0].r)+'（覆盤 '+A.revDays+' 天）　B 段 '+_apRangeTxt(sets[1].r)+'（覆盤 '+B.revDays+' 天）';
+  var rows=TAX_DEFS.map(function(d){
+    var pa=Math.round(A.counts[d.k]/A.total*100),pb=Math.round(B.counts[d.k]/B.total*100);
+    var da=_taxDonePct(A,d.k),db=_taxDonePct(B,d.k);
+    return '<div class="ap-cmp-row"><span class="ap-k">'+_escH(d.label)+'</span><span class="ap-v">'
+      +'<span>A 佔比 '+pa+'% ✓'+da+'%</span><span>B 佔比 '+pb+'% ✓'+db+'%</span>'
+      +'<span class="ap-d">'+_escH('佔比'+_apDiffTxt(pa,pb,0,'%').slice(1)+'、完成率'+_apDiffTxt(da,db,0,'%').slice(1))+'</span></span></div>';
+  }).join('');
+  var bars=$('tax-bars');
+  if(bars)bars.innerHTML='<div class="ap-note">'+_escH(segTxt)+'</div>'
+    +(A.revDays?'':'<div class="ap-note">'+_escH('A 段'+_apInsuff(0))+'</div>')
+    +(B.revDays?'':'<div class="ap-note">'+_escH('B 段'+_apInsuff(0))+'</div>')+rows
+    +'<div class="ap-note" style="margin-top:.4rem">差值為 B−A；兩段對照不列逐筆任務明細。</div>';
+  var ins=$('tax-insights');
+  if(ins)ins.innerHTML='<div class="ap-seg-hd" style="margin-top:0">A 段</div>'+_taxInsights(A).map(_taxInsightHtml).join('')
+    +'<div class="ap-seg-hd">B 段</div>'+_taxInsights(B).map(_taxInsightHtml).join('');
 }
 
 function toggleExpand(id){var el=$(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
@@ -2096,12 +2426,8 @@ function renderOv(){
       {label:'情緒',data:RM.concat(Array(5).fill(null)),borderColor:'#9e6b7a',backgroundColor:'rgba(158,107,122,.09)',tension:.45,pointRadius:1.5,pointBackgroundColor:'#9e6b7a',fill:true,borderWidth:1.5},
       {label:'預測',data:Array(29).fill(null).concat([RM[29]]).concat(PM),borderColor:'#b08d62',borderDash:[4,4],tension:.45,pointRadius:0,fill:false,borderWidth:1.5}
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:LC,font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{min:1,max:10,ticks:{color:LC,font:{size:8},maxTicksLimit:4},grid:{color:TC}}}}});
-    // 圖表二：實時 MA5 去噪 + 分析
-    var _rmd=buildRealMoodArrays(30);
-    var _rc=calcRealCycle(_rmd.smoothed);
-    var _sl=calcSleepToMoodLag(_rmd.smoothed,30);
-    buildMoodRealChart(_rmd,_rc);
-    buildMoodAnalysis(_rmd,_rc,_sl);
+    // 圖表二：實時 MA5 去噪 + 分析（10-16 抽成 renderMoodRealSection，分析期間共用）
+    renderMoodRealSection();
   }
   rebuildCorrChart();
   buildTaskTaxonomy();
@@ -2438,9 +2764,22 @@ ${hd.ziYear?'流年：'+hd.ziYear:''}
 //  雙軌制綜觀聚合管線（純後端，不操作任何既有 DOM）
 //  輸出：localStorage.sas_dta  → { energyMatrix, debtDynamics, reviewCorrelation }
 // ══════════════════════════════════════════════════════════════
+// 10-16：計算抽成 _dtaCompute(trend7, reviewKeys)（純函式、不寫入）；
+// buildDualTrackAggregation() 永遠以預設窗口（trend7＋近 30 日）呼叫並寫 sas_dta，不受分析期間影響
 function buildDualTrackAggregation() {
   var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
-  var trend7=sl.trend7||[];
+  var c=_dtaCompute(sl.trend7||[],_apLastDays(30,today()));
+  // ── 寫入 sas_dta ─────────────────────────────────────────
+  var result={
+    generatedAt:new Date().toISOString(),
+    energyMatrix:c.energyMatrix,
+    debtDynamics:c.debtDynamics,
+    reviewCorrelation:c.reviewCorrelation
+  };
+  try{localStorage.setItem('sas_dta',JSON.stringify(result));}catch(e){}
+  return result;
+}
+function _dtaCompute(trend7,reviewKeys){
   var REST_BRICKS=['💤 午休蓄能','🌿 傍晚充能','🔋 快充小憩'];
 
   // ── 1. 能量矩陣分佈（Energy Matrix） ──────────────────────
@@ -2517,12 +2856,9 @@ function buildDualTrackAggregation() {
   });
 
   var corrRows=[];
-  var todayD=new Date();
-  for(var i=29;i>=0;i--){
-    var d=new Date(todayD);d.setDate(todayD.getDate()-i);
-    var k=dkey(d);
+  reviewKeys.forEach(function(k){
     var rev=null;try{rev=JSON.parse(localStorage.getItem('review_'+k)||'null');}catch(e){}
-    if(!rev)continue;
+    if(!rev)return;
 
     // REM score（僅 trend7 視窗內有效）
     var sc=sleepByDate[k]||null;
@@ -2563,7 +2899,7 @@ function buildDualTrackAggregation() {
       doneCount:doneIt,
       stopLossRate:effIt>0?Math.round(skipIt/effIt*100):0
     });
-  }
+  });
 
   // 按 REM 分段彙總
   var tiers={high:{n:0,overloaded:0,stopLossSum:0},mid:{n:0,overloaded:0,stopLossSum:0},low:{n:0,overloaded:0,stopLossSum:0}};
@@ -2580,7 +2916,7 @@ function buildDualTrackAggregation() {
     ti.avgStopLossRate=ti.n>0?Math.round(ti.stopLossSum/ti.n):null;
   });
   var reviewCorrelation={
-    windowDays:30,
+    windowDays:reviewKeys.length,
     remTiers:{
       high:{label:'REM 高檔（≥70）', ...tiers.high},
       mid :{label:'REM 一般（40–69）',...tiers.mid },
@@ -2593,16 +2929,7 @@ function buildDualTrackAggregation() {
     },
     raw:corrRows
   };
-
-  // ── 寫入 sas_dta ─────────────────────────────────────────
-  var result={
-    generatedAt:new Date().toISOString(),
-    energyMatrix:energyMatrix,
-    debtDynamics:debtDynamics,
-    reviewCorrelation:reviewCorrelation
-  };
-  try{localStorage.setItem('sas_dta',JSON.stringify(result));}catch(e){}
-  return result;
+  return{energyMatrix:energyMatrix,debtDynamics:debtDynamics,reviewCorrelation:reviewCorrelation};
 }
 
 function dtaToggleAcc(){
@@ -2613,6 +2940,12 @@ function dtaToggleAcc(){
 }
 
 function renderDualTrackCard(){
+  var _dSets=_apSets();
+  if(_dSets){_dtaRenderPeriod(_dSets);return;}
+  var _eh=$('dta-em-hd');if(_eh)_eh.textContent='⬡ 能量矩陣分佈（近 7 日）';
+  var _rh=$('dta-rc-hd');if(_rh)_rh.textContent='🔬 決策相關性追蹤（近 30 日）';
+  var _bv=$('dta-corr-brain-val');if(_bv)_bv.style.color='var(--warn)';
+  var _dv=$('dta-corr-body-val');if(_dv)_dv.style.color='var(--info)';
   var dta={};try{dta=JSON.parse(localStorage.getItem('sas_dta')||'{}');}catch(e){}
   var em=dta.energyMatrix||{};
   var rc=dta.reviewCorrelation||{};
@@ -2681,6 +3014,61 @@ function renderDualTrackCard(){
     if(bodyEl) bodyEl.textContent='近 30 日內 Deep<40 天數不足（需 ≥1 天含覆盤資料）';
     if(bodyVal) bodyVal.textContent='—';
   }
+}
+
+/* 雙軌綜觀：分析期間（只算不寫；睡眠取 trend180 等最長陣列中落在期間內的晚） */
+function _dtaPeriodCompute(r){
+  var sl={};try{sl=JSON.parse(localStorage.getItem('sas_sleep_latest')||'{}');}catch(e){}
+  var src=sl.trend180||sl.trend30||sl.trend14||sl.trend7||[];
+  return _dtaCompute(src.filter(function(n){return n&&_apIn(r,n.date);}),r.days);
+}
+function _dtaCorrStats(raw){
+  var br=raw.filter(function(x){return x.remScore!==null&&x.remScore>80&&x.totalItems>0;});
+  var bo=raw.filter(function(x){return x.deepScore!==null&&x.deepScore<40&&x.totalItems>0;});
+  return{bn:br.length,bOver:br.filter(function(x){return x.isOverloaded;}).length,
+    bPct:br.length?Math.round(br.filter(function(x){return x.isOverloaded;}).length/br.length*100):null,
+    dn:bo.length,dStop:bo.length?Math.round(bo.reduce(function(a,x){return a+x.stopLossRate;},0)/bo.length):null};
+}
+function _dtaRenderPeriod(sets){
+  var segs=sets.map(function(x){var c=_dtaPeriodCompute(x.r);return{key:x.key,r:x.r,c:c,st:_dtaCorrStats(c.reviewCorrelation.raw||[])};});
+  var cmp=segs.length>1;
+  var eh=$('dta-em-hd');if(eh)eh.textContent='⬡ 能量矩陣分佈（'+(cmp?'A vs B':'期間 '+_apRangeTxt(segs[0].r))+'）';
+  var rh=$('dta-rc-hd');if(rh)rh.textContent='🔬 決策相關性追蹤（'+(cmp?'A vs B':'期間 '+_apRangeTxt(segs[0].r))+'）';
+  [['dta-overclock','dta-diag-overclock','High-Brain-Overclock'],['dta-fullcharge','dta-diag-fullcharge','Full-Charge'],['dta-defense','dta-diag-defense','Total-Defense']].forEach(function(t){
+    var vals=segs.map(function(g){return g.c.energyMatrix.counts[t[2]]||0;});
+    var el=$(t[0]);if(el)el.textContent=cmp?vals[0]+' / '+vals[1]:String(vals[0]);
+    var dg=$(t[1]);
+    if(dg){
+      if(cmp){dg.textContent='A '+vals[0]+' 天、B '+vals[1]+' 天，'+_apDiffTxt(vals[0],vals[1],0,' 天')+'（B−A）';dg.style.display='block';}
+      else{dg.textContent='';dg.style.display='none';}
+    }
+  });
+  var note=$('dta-matrix-note');
+  if(note){
+    note.textContent=segs.map(function(g){var w=g.c.energyMatrix.windowDays;return (cmp?g.key+' 段 ':'此期間 ')+_apRangeTxt(g.r)+'：'+(w?'共 '+w+' 晚有睡眠分期資料':_apInsuff(0));}).join('　')
+      +'。診斷文字以 7 日門檻設計，期間模式不顯示。';
+    note.style.display='';
+  }
+  var bEl=$('dta-corr-brain'),bVal=$('dta-corr-brain-val'),dEl=$('dta-corr-body'),dVal=$('dta-corr-body-val');
+  if(!cmp){
+    var st=segs[0].st;
+    if(st.bn>=1){
+      if(bEl)bEl.textContent='此期間共 '+st.bn+' 天 REM>80，其中 '+st.bOver+' 天觸發 🔥 超載';
+      if(bVal){bVal.textContent=st.bPct+'%';bVal.style.color=st.bPct>=50?'var(--danger)':st.bPct>=25?'var(--warn)':'var(--ok)';}
+    }else{if(bEl)bEl.textContent=_apInsuff(st.bn)+'：期間內 REM>80 天數不足（需 ≥1 天含覆盤資料）';if(bVal){bVal.textContent='—';bVal.style.color='var(--warn)';}}
+    if(st.dn>=1){
+      if(dEl)dEl.textContent='此期間共 '+st.dn+' 天 Deep<40，覆盤平均停損率';
+      if(dVal){dVal.textContent=st.dStop+'%';dVal.style.color=st.dStop>=40?'var(--ok)':st.dStop>=20?'var(--warn)':'var(--faint)';}
+    }else{if(dEl)dEl.textContent=_apInsuff(st.dn)+'：期間內 Deep<40 天數不足（需 ≥1 天含覆盤資料）';if(dVal){dVal.textContent='—';dVal.style.color='var(--info)';}}
+    return;
+  }
+  var A=segs[0].st,B=segs[1].st;
+  function bt(k,x){return k+'：'+(x.bn>=1?x.bn+' 天中 '+x.bOver+' 天超載（'+x.bPct+'%）':'天數不足');}
+  function dt(k,x){return k+'：'+(x.dn>=1?x.dn+' 天平均停損 '+x.dStop+'%':'天數不足');}
+  if(bEl)bEl.textContent=bt('A',A)+'；'+bt('B',B);
+  if(bVal){bVal.textContent=(A.bPct==null||B.bPct==null)?'—':_apDiffTxt(A.bPct,B.bPct,0,'%');bVal.style.color='var(--info)';}
+  if(dEl)dEl.textContent=dt('A',A)+'；'+dt('B',B);
+  if(dVal){dVal.textContent=(A.dStop==null||B.dStop==null)?'—':_apDiffTxt(A.dStop,B.dStop,0,'%');dVal.style.color='var(--info)';}
 }
 
 // Chrome 縮放偵測：devicePixelRatio 變化時重繪所有 Chart.js 圖表
@@ -3125,6 +3513,14 @@ function renderDualTrackCard(){
         trend7=trend7.concat([{date:todayStr,deepP:prev.deepP||0,remP:prev.remP||0,durH:prev.durH||0,bedtime:null,wake:null,_estimated:true}]);
       }
     }
+    // 10-16 分析期間：畫面改用最長 trend 陣列中落在期間（兩段對照時取 A 段）內的晚，不補今日估算柱；
+    // runEnergyCorrection（寫 cc_energy_weights）一律吃上面的預設 trendDefault，不受期間影響
+    var trendDefault=trend7;
+    var _scrSets=_apSets();
+    if(_scrSets){
+      var _ar=_scrSets[0].r;
+      trend7=(sl.trend180||sl.trend30||sl.trend14||sl.trend7||[]).filter(function(n){return n&&_apIn(_ar,n.date);});
+    }
 
     var deepVals=trend7.map(function(n){return n.deepP||0;}).filter(Boolean);
     var durVals =trend7.map(function(n){return n.durH ||0;}).filter(Boolean);
@@ -3149,7 +3545,12 @@ function renderDualTrackCard(){
     var DEEP_CEIL=30;
 
     // 校正運算（不影響顯示邏輯）
-    runEnergyCorrection(trend7);
+    runEnergyCorrection(trendDefault);
+    if(_scrSets&&!trend7.length){
+      var _em=document.createElement('div');_em.style.cssText='font-size:.68rem;color:var(--faint);';
+      _em.textContent=_apInsuff(0)+'：期間內沒有睡眠分期資料（最長回溯 180 天）。';
+      wrap.appendChild(_em);
+    }
 
     trend7.forEach(function(n){
       var anom=isAnom(n);
@@ -3232,7 +3633,7 @@ function renderDualTrackCard(){
     var weights={};try{weights=JSON.parse(localStorage.getItem('cc_energy_weights')||'{}');}catch(e){}
     var corrStr=weights.lastCorrected?' · 係數已校正 ×'+(weights.highIntensity||1).toFixed(2):'';
     var medEl=document.getElementById('scr-median-lbl');
-    if(medEl) medEl.textContent='深睡% 絕對值　⚡ = 有斷電紀錄　紫柱 = 偏離個人中位數 ±30%'+corrStr;
+    if(medEl) medEl.textContent=(_scrSets?'期間 '+_apRangeTxt(_scrSets[0].r)+'（'+trend7.length+' 晚）　':'')+'深睡% 絕對值　⚡ = 有斷電紀錄　紫柱 = 偏離個人中位數 ±30%'+corrStr;
   };
 })();
 
@@ -3311,24 +3712,33 @@ function buildLeverageBars(){
     });
   }catch(e){}
   // ── 預載 doneByDate（全 31 天，涵蓋 T-1 所需的前一天窗口）──
-  for(var di=31;di>=0;di--){
-    var dd=new Date();dd.setDate(dd.getDate()-di);var dk=dkey(dd);
+  // 10-16：日期由 _apLastDays(32,today()) 給（同原本 di=31..0）；分析期間再補期間與前一天
+  var _levTodayK=today();
+  var _apSetsL=_apSets();
+  var _doneKeys=_apLastDays(32,_levTodayK);
+  if(_apSetsL)_apSetsL.forEach(function(x){_doneKeys=_doneKeys.concat([_apAddDays(x.r.s,-1)],x.r.days);});
+  _doneKeys.forEach(function(dk){
+    if(doneByDate[dk]!==undefined)return;
     var drev=getReview(dk);
     if(drev&&drev.items&&drev.items.length){
       var dcr=calcCompletionRate(drev.items);
       if(dcr!==null)doneByDate[dk]=dcr;
     }
-  }
+  });
   // ── 建立 (目標日 t, 行為日 f = t-1) 配對 + 週末雙日過濾 ──
   // T-1 因果對齊：前一日行為因子 → 次日睡眠/情緒/完成率
   // 週末過濾：目標日或行為日任一為週末，整對捨棄
-  var pairs=[];
-  for(var li=29;li>=0;li--){
-    var ld=new Date();ld.setDate(ld.getDate()-li);
-    var ld1=new Date(ld);ld1.setDate(ld.getDate()-1);
-    if(_corrExclWeekend&&(ld.getDay()===0||ld.getDay()===6||ld1.getDay()===0||ld1.getDay()===6))continue;
-    pairs.push({t:dkey(ld),f:dkey(ld1)});
+  function _levPairs(tKeys){
+    var out=[];
+    tKeys.forEach(function(tk){
+      var fk=_apAddDays(tk,-1);
+      var ld=new Date(tk+'T12:00:00'),ld1=new Date(fk+'T12:00:00');
+      if(_corrExclWeekend&&(ld.getDay()===0||ld.getDay()===6||ld1.getDay()===0||ld1.getDay()===6))return;
+      out.push({t:tk,f:fk});
+    });
+    return out;
   }
+  var pairs=_levPairs(_apLastDays(30,_levTodayK));
   function getV(id,date){
     if(id==='combat')return sleepByDate[date]?sleepByDate[date].combat:null;
     if(id==='mood')return moodByDate[date]!==undefined?moodByDate[date]:null;
@@ -3367,22 +3777,37 @@ function buildLeverageBars(){
     ]
   };
   var FACTORS=LEV_FACTORS[_levTab]||LEV_FACTORS.mood;
-  var results=[];
-  FACTORS.forEach(function(f){
-    if(f.id===_levTab)return;
-    var xs=[],ys=[];
-    // target 取目標日（t），factor 取 T-1 行為日（f）
-    pairs.forEach(function(p){
-      var tv=getV(_levTab,p.t),fv=getV(f.id,p.f);
-      if(tv!==null&&fv!==null){xs.push(tv);ys.push(fv);}
+  function _levResults(prs){
+    var res=[];
+    FACTORS.forEach(function(f){
+      if(f.id===_levTab)return;
+      var xs=[],ys=[];
+      // target 取目標日（t），factor 取 T-1 行為日（f）
+      prs.forEach(function(p){
+        var tv=getV(_levTab,p.t),fv=getV(f.id,p.f);
+        if(tv!==null&&fv!==null){xs.push(tv);ys.push(fv);}
+      });
+      if(xs.length>=5)res.push({id:f.id,label:f.label,r:pearson(xs,ys),slope:calcSlope(ys,xs),n:xs.length});
     });
-    if(xs.length>=5)results.push({id:f.id,label:f.label,r:pearson(xs,ys),slope:calcSlope(ys,xs),n:xs.length});
-  });
-  results.sort(function(a,b){return Math.abs(b.r||0)-Math.abs(a.r||0);});
+    res.sort(function(a,b){return Math.abs(b.r||0)-Math.abs(a.r||0);});
+    return res;
+  }
+  // results＝預設近 30 日（今日戰略調校指引一律用它）；dispResults＝畫面槓桿條用（分析期間時換成期間）
+  var results=_levResults(pairs);
+  var dispResults=results;
+  var levDesc=$('lev-desc');
+  if(levDesc)levDesc.textContent=_apSetsL?(_apSetsL.length>1?'A 段 '+_apRangeTxt(_apSetsL[0].r)+' vs B 段 '+_apRangeTxt(_apSetsL[1].r):'期間 '+_apRangeTxt(_apSetsL[0].r))+' · 各因子與目標指標的 Pearson 相關係數（r）':'近 30 日 · 各因子與目標指標的 Pearson 相關係數（r）';
+  if(_apSetsL&&_apSetsL.length>1){
+    _levRenderCmp(_apSetsL.map(function(x){return{key:x.key,r:x.r,res:_levResults(_levPairs(x.r.days)),days:x.r.days.length};}),FACTORS);
+  }else if(_apSetsL){
+    dispResults=_levResults(_levPairs(_apSetsL[0].r.days));
+  }
   var container=$('lev-bars');if(!container)return;
-  if(!results.length){
-    container.innerHTML='<div style="font-size:.7rem;color:var(--faint);text-align:center;padding:1.2rem 0">資料點不足（需各因子至少 5 天配對資料），繼續記錄後自動更新。</div>';
-    return;
+  var _levCmp=!!(_apSetsL&&_apSetsL.length>1);
+  if(!_levCmp&&!dispResults.length){
+    container.innerHTML='<div style="font-size:.7rem;color:var(--faint);text-align:center;padding:1.2rem 0">'+(_apSetsL?_escH(_apInsuff(_apSetsL[0].r.days.length))+'：':'')+'資料點不足（需各因子至少 5 天配對資料），繼續記錄後自動更新。</div>';
+    if(_apSetsL){var _lf=$('lev-footer');if(_lf){_lf.textContent='';_lf.style.display='none';}}
+    if(!_apSetsL||!results.length)return;
   }
   function fmtImpact(fid,slope){
     if(slope===null||slope===undefined||Math.abs(slope)<0.005)return'';
@@ -3399,7 +3824,7 @@ function buildLeverageBars(){
     return'';
   }
   var html='';
-  results.forEach(function(f){
+  if(!_levCmp)dispResults.forEach(function(f){
     var r=f.r;
     var rStr=r!==null?(r>=0?'+':'')+r.toFixed(2):'—';
     var absR=r!==null?Math.abs(r):0;
@@ -3423,19 +3848,20 @@ function buildLeverageBars(){
       '</div>'+
     '</div>';
   });
-  container.innerHTML=html;
+  if(!_levCmp&&dispResults.length)container.innerHTML=html;
   var footer=$('lev-footer');
-  if(footer){
+  if(footer&&!_levCmp&&dispResults.length){
     var TL={combat:'睡眠品質分',mood:'情緒分數',done:'任務完成率'};
-    var sig=results.filter(function(f){return f.r!==null&&Math.abs(f.r)>=0.3;});
+    var sig=dispResults.filter(function(f){return f.r!==null&&Math.abs(f.r)>=0.3;});
     var best=sig.filter(function(f){return f.r>0;}).sort(function(a,b){return b.r-a.r;})[0]||null;
     var worst=sig.filter(function(f){return f.r<0;}).sort(function(a,b){return a.r-b.r;})[0]||null;
     var parts=[];
     if(best)parts.push('🟢 黃金槓桿：'+best.label+'（r='+best.r.toFixed(2)+'）');
     if(worst)parts.push('🔴 頭號戰犯：'+worst.label+'（r='+worst.r.toFixed(2)+'）');
-    footer.textContent=parts.length?parts.join('　·　'):'近 30 日各因子與 '+TL[_levTab]+' 相關性均低於 0.3，持續積累資料。';
+    footer.textContent=parts.length?parts.join('　·　'):(_apSetsL?'此期間':'近 30 日')+'各因子與 '+TL[_levTab]+' 相關性均低於 0.3，持續積累資料。';
     footer.style.display='block';
   }
+  if(!results.length)return;   // 今日指引只依預設近 30 日結果；預設無結果時維持原狀
   // ── 今日戰略調校指引 ──
   var actionEl=$('lev-action');
   if(actionEl){
@@ -3504,6 +3930,30 @@ function buildLeverageBars(){
       return'<div style="'+(i>0?'padding-top:.4rem;margin-top:.4rem;border-top:.5px dashed var(--border);':'')+
         'font-size:.72rem;color:var(--sub);line-height:1.75">'+s+'</div>';
     }).join('');
+  }
+}
+/* 槓桿條兩段對照：每個因子 A、B 的 r 並列＋差值（B−A）；n<5 的因子照原規則不算 */
+function _levRenderCmp(segs,FACTORS){
+  var container=$('lev-bars'),footer=$('lev-footer');
+  if(!container)return;
+  var by=segs.map(function(g){var m={};g.res.forEach(function(x){m[x.id]=x;});return m;});
+  var html=segs.map(function(g){
+    return '<div class="ap-note" style="margin:0">'+_escH(g.key+' 段 '+_apRangeTxt(g.r)+'（'+g.days+' 天）'+(g.res.length?'':'：'+_apInsuff(g.days)))+'</div>';
+  }).join('');
+  FACTORS.forEach(function(f){
+    if(f.id===_levTab)return;
+    var a=by[0][f.id],b=by[1][f.id];
+    function cell(k,x){
+      if(!x)return k+' —（配對 <5 天）';
+      return k+' r='+(x.r===null?'—':(x.r>=0?'+':'')+x.r.toFixed(2))+' n='+x.n;
+    }
+    var d=(a&&b&&a.r!==null&&b.r!==null)?_apDiffTxt(a.r,b.r,2):'差 —';
+    html+='<div class="ap-cmp-row"><span class="ap-k">'+_escH(f.label)+'</span><span class="ap-v"><span>'+_escH(cell('A',a))+'</span><span>'+_escH(cell('B',b))+'</span><span class="ap-d">'+_escH(d)+'</span></span></div>';
+  });
+  container.innerHTML=html;
+  if(footer){
+    footer.textContent='兩段對照只列相關係數，不畫槓桿條；差值為 B−A。|r| ≥ 0.3 才視為有參考性，樣本少時 r 波動大。';
+    footer.style.display='block';
   }
 }
 function setLevTab(tab){
@@ -3591,12 +4041,9 @@ function _frCategoryMap(catName,days){
 // （二元/計數類因子例外：家庭/外部人際/工作為0或1、咖啡為當日杯數，依定義每一天恆有值，
 // 不會缺值，故只有結果端 undefined 時才跳過該日——這跟情緒分數不同，情緒只有真的手動
 // 記錄過的那天才有值，沒記錄的日子就是缺值，該跳過）
-function buildFactorRadarSeries(factorType){
-  var days=[];
-  for(var i=frRange-1;i>=0;i--){
-    var d=new Date();d.setDate(d.getDate()-i);
-    days.push(dkey(d));
-  }
+// 10-16：days 由呼叫端給（預設＝_apLastDays(frRange,today())，分析期間＝期間日期）
+function buildFactorRadarSeries(factorType,days){
+  days=days||_apLastDays(frRange,today());
   var sleepMap=_frSleepQualityMap();
   var moodMap=_frMoodMap();
   var doneMap=_frDoneRateMap(days);
@@ -3657,21 +4104,33 @@ function _frImpactParts(a,tab){
   return parts;
 }
 function fmtRadarImpact(a,tab){return _frImpactParts(a,tab).join('　');}
-function toggleFactorRadarDetail(tab,axes,idx){
+function toggleFactorRadarDetail(tab,axes,idx,segKey){
   var a=axes[idx];if(!a)return;
   var el=$('factor-radar-detail-'+tab);if(!el)return;
-  var text=fmtRadarImpact(a,tab);
+  var text=(segKey?segKey+' 段　':'')+fmtRadarImpact(a,tab);
   if(el.textContent===text&&el.style.display==='block'){el.textContent='';el.style.display='none';}
   else{el.textContent=text;el.style.display='block';}
 }
 // 08-12：使用者要求正向/負向判斷不要只靠hover/點擊單一圓點才看得到，改成卡片下方常駐
 // 顯示所有軸的方向摘要——noData(資料不足/沒有變化)的軸沒有方向判斷可言，摘要裡略過，
 // 已經有專門的empty狀態或淡化樣式處理那些軸，這裡只列真正算得出方向的軸，不重複資訊
-function renderFactorRadarSummary(tab,axes){
+function renderFactorRadarSummary(tab,axes,axesB){
   var el=$('factor-radar-summary-'+tab);if(!el)return;
+  if(axesB){   // 兩段對照：A、B 各列一組（差值見各列 r）
+    var h=[['A',axes],['B',axesB]].map(function(p){
+      var v=p[1].filter(function(a){return!a.noData;});
+      return '<div class="ap-seg-hd" style="margin-top:.35rem">'+p[0]+' 段</div>'+(v.length?_frSummaryRows(v):'<div class="fr-summary-row">'+_escH(_apInsuff(p[1].reduce(function(m,a){return Math.max(m,a.n);},0)))+'</div>');
+    }).join('');
+    var dl=axes.map(function(a,i){var b=axesB[i];return(!a.noData&&b&&!b.noData)?a.label+' r '+_apDiffTxt(a.r,b.r,2):null;}).filter(Boolean);
+    el.innerHTML=h+(dl.length?'<div class="fr-summary-row"><span class="ap-d">'+_escH('B−A：'+dl.join('、'))+'</span></div>':'');
+    return;
+  }
   var valid=axes.filter(function(a){return!a.noData;});
   if(!valid.length){el.innerHTML='';return;}
-  el.innerHTML=valid.map(function(a){
+  el.innerHTML=_frSummaryRows(valid);
+}
+function _frSummaryRows(valid){
+  return valid.map(function(a){
     var color=a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;
     var strength=Math.abs(a.r)>=0.5?'強相關':Math.abs(a.r)>=0.3?'中度相關':'弱相關';
     var dirTxt=a.slope>=0?'正向助益':'負向影響';
@@ -3688,14 +4147,15 @@ function hideFrTooltip(){
 // 08-12：使用者反映相關係數大多偏弱，雷達圖上的點天生集中在圖形中心，Chart.js原生tooltip
 // 疊在擠成一團的點正上方很難讀。改用Chart.js的external tooltip模式自己接管渲染：算出hover點
 // 在卡片座標系裡的位置，把說明框放到旁邊空白處，再拉一條虛線連回原本的點，不擋住其他點
-function frRadarExternalTooltip(context,axes,tab){
+function frRadarExternalTooltip(context,axes,tab,axesB){
   var box=$('fr-tt-box'),svg=$('fr-tt-line'),lineEl=$('fr-tt-line-el');
   if(!box||!svg||!lineEl)return;
   var tm=context.tooltip;
   if(!tm||tm.opacity===0){hideFrTooltip();return;}
   var dp=tm.dataPoints&&tm.dataPoints[0];
   if(!dp){hideFrTooltip();return;}
-  var a=axes[dp.dataIndex];
+  var _isB=!!(axesB&&dp.datasetIndex===1);
+  var a=(_isB?axesB:axes)[dp.dataIndex];
   if(!a){hideFrTooltip();return;}
   var canvas=context.chart.canvas;
   var card=canvas.closest('.card');
@@ -3705,7 +4165,7 @@ function frRadarExternalTooltip(context,axes,tab){
   var pointX=canvasRect.left-cardRect.left+tm.caretX;
   var pointY=canvasRect.top-cardRect.top+tm.caretY;
 
-  box.innerHTML=_frImpactParts(a,tab).map(function(p){return'<div>'+_scEsc(p)+'</div>';}).join('');
+  box.innerHTML=(axesB?['<div><strong>'+(_isB?'B 段':'A 段')+'</strong></div>']:[]).join('')+_frImpactParts(a,tab).map(function(p){return'<div>'+_scEsc(p)+'</div>';}).join('');
   box.style.display='block';
   var boxW=box.offsetWidth,boxH=box.offsetHeight;
   var cardW=card.clientWidth,cardH=card.clientHeight;
@@ -3731,12 +4191,17 @@ function frRadarExternalTooltip(context,axes,tab){
   svg.style.display='block';
 }
 function renderFactorRadar(tab){
-  var axes=buildFactorRadarSeries(tab);
+  var sets=_apSets();
+  var descEl=$('fr-range-desc');
+  if(descEl)descEl.textContent=(sets?(sets.length>1?'A 段 '+_apRangeTxt(sets[0].r)+' vs B 段 '+_apRangeTxt(sets[1].r):'期間 '+_apRangeTxt(sets[0].r)):'近 '+frRange+' 日')+' · 以因子為中心，一次檢視對多項結果的影響方向與強度';
+  var axes=buildFactorRadarSeries(tab,sets?sets[0].r.days:_apLastDays(frRange,today()));
+  var axesB=(sets&&sets.length>1)?buildFactorRadarSeries(tab,sets[1].r.days):null;
   var maxN=axes.reduce(function(m,a){return Math.max(m,a.n);},0);
+  if(axesB)maxN=axesB.reduce(function(m,a){return Math.max(m,a.n);},maxN);
   // 只有「完全算不出相關性」(noData，配對天數<3) 才整卡隱藏；
   // insufficient(配對天數<14) 只是信心不足，仍要畫出來並用既有淡化樣式標示，
   // 否則14天視窗內只要有一天缺值(如當天沒喝咖啡)就整卡消失，變成時有時無。
-  var allInsufficient=axes.every(function(a){return a.noData;});
+  var allInsufficient=axes.every(function(a){return a.noData;})&&(!axesB||axesB.every(function(a){return a.noData;}));
   var wrapEl=$('factor-radar-wrap-'+tab);
   var emptyEl=$('factor-radar-empty-'+tab);
   if(allInsufficient){
@@ -3747,35 +4212,46 @@ function renderFactorRadar(tab){
       // 情緒/任務完成率）常常只有部分軸有足夠樣本，其餘軸單純是n<3——只要其中一軸的樣本數
       // 已經夠多卻還是算不出相關性，代表原因是「沒有變化」而非「天數不夠」，用any不用every，
       // 否則像本例情緒/睡眠都是14天但noVariance、任務完成率是n=0，all()判斷會整組落回舊訊息
-      var anyNoVariance=axes.some(function(a){return a.noVariance;});
+      var anyNoVariance=axes.concat(axesB||[]).some(function(a){return a.noVariance;});
       emptyEl.textContent=anyNoVariance
         ? '📊 這段期間「'+(FR_TAB_LABEL[tab]||tab)+'」這個因子幾乎沒有變化（樣本最多 '+maxN+' 天），可切換更長的時間範圍再看看'
-        : '📊 資料累積中（目前 '+maxN+' 天，建議 14 天以上更準確）';
+        : (sets?'📊 '+_apInsuff(maxN)+'（配對天數需 ≥3 天，建議 14 天以上更準確）':'📊 資料累積中（目前 '+maxN+' 天，建議 14 天以上更準確）');
     }
     return;
   }
   if(wrapEl)wrapEl.style.display='';
   if(emptyEl)emptyEl.style.display='none';
-  renderFactorRadarSummary(tab,axes);
-  var labels=axes.map(function(a){return a.insufficient?[a.label,'樣本不足 n='+a.n]:[a.label,'n='+a.n];});
-  var pointBg=axes.map(function(a){
-    if(a.noData||a.insufficient)return'transparent';
-    return a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;
-  });
-  var pointBorder=axes.map(function(a){
-    if(a.noData||a.insufficient)return FACTOR_RADAR_FAINT;
-    return a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;
-  });
-  var pointR=axes.map(function(a){return a.insufficient?4:6;});
-  var data=axes.map(function(a){return a.radius;});
+  renderFactorRadarSummary(tab,axes,axesB);
+  var detEl=$('factor-radar-detail-'+tab);if(detEl&&sets){detEl.textContent='';detEl.style.display='none';}
+  function ptStyle(ax){
+    return{
+      bg:ax.map(function(a){if(a.noData||a.insufficient)return'transparent';return a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;}),
+      bd:ax.map(function(a){if(a.noData||a.insufficient)return FACTOR_RADAR_FAINT;return a.slope>=0?FACTOR_RADAR_WARM:FACTOR_RADAR_COOL;}),
+      r:ax.map(function(a){return a.insufficient?4:6;})
+    };
+  }
+  var labels=axesB
+    ? axes.map(function(a,i){var b=axesB[i];return[a.label,'A n='+a.n+(a.insufficient?' 不足':'')+'／B n='+b.n+(b.insufficient?' 不足':'')];})
+    : axes.map(function(a){return a.insufficient?[a.label,'樣本不足 n='+a.n]:[a.label,'n='+a.n];});
+  var pA=ptStyle(axes);
+  var datasets=[{
+    data:axes.map(function(a){return a.radius;}),fill:false,showLine:false,
+    pointRadius:pA.r,pointHoverRadius:pA.r.map(function(r){return r+2;}),
+    pointBackgroundColor:pA.bg,pointBorderColor:pA.bd,pointBorderWidth:2
+  }];
+  if(axesB){
+    // 兩段對照：兩層疊加。A 圓點＋實線，B 菱形＋虛線；點的暖／冷色仍代表正向／負向
+    datasets[0].label='A 段';datasets[0].showLine=true;datasets[0].borderColor='rgba(92,122,150,.55)';datasets[0].borderWidth=1.2;
+    var pB=ptStyle(axesB);
+    datasets.push({label:'B 段',data:axesB.map(function(a){return a.radius;}),fill:false,showLine:true,
+      borderColor:'rgba(176,141,98,.7)',borderDash:[4,3],borderWidth:1.2,pointStyle:'rectRot',
+      pointRadius:pB.r,pointHoverRadius:pB.r.map(function(r){return r+2;}),
+      pointBackgroundColor:pB.bg,pointBorderColor:pB.bd,pointBorderWidth:2});
+  }
   var canvasId='factor-radar-'+tab;
-  mk(canvasId,{type:'radar',data:{labels:labels,datasets:[{
-    data:data,fill:false,showLine:false,
-    pointRadius:pointR,pointHoverRadius:pointR.map(function(r){return r+2;}),
-    pointBackgroundColor:pointBg,pointBorderColor:pointBorder,pointBorderWidth:2
-  }]},options:{
+  mk(canvasId,{type:'radar',data:{labels:labels,datasets:datasets},options:{
     responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{enabled:false,external:function(context){frRadarExternalTooltip(context,axes,tab);}}},
+    plugins:{legend:{display:!!axesB,labels:{color:LC,font:{size:9},boxWidth:12}},tooltip:{enabled:false,external:function(context){frRadarExternalTooltip(context,axes,tab,axesB);}}},
     scales:{r:{min:0,max:100,ticks:{display:false},
       grid:{color:TC},
       angleLines:{color:function(ctx){var a=axes[ctx.index];return a&&(a.noData||a.insufficient)?FACTOR_RADAR_FAINT:TC;}},
@@ -3783,7 +4259,9 @@ function renderFactorRadar(tab){
     }},
     onClick:function(evt,elements){
       if(!elements||!elements.length)return;
-      toggleFactorRadarDetail(tab,axes,elements[0].index);
+      var el0=elements[0];
+      if(axesB&&el0.datasetIndex===1)toggleFactorRadarDetail(tab,axesB,el0.index,'B');
+      else toggleFactorRadarDetail(tab,axes,el0.index,axesB?'A':null);
     }
   }});
 }
@@ -3918,7 +4396,9 @@ function _dpSpark(win,thr,inPeriod){
 function renderDeepFactors(){
   var card=$('deep-card'),body=$('deep-body'),note=$('deep-note');
   if(!card||!body||!note)return;
-  var nights=_dpNights(),n=nights.length;
+  var all=_dpNights(),sets=_apSets();
+  if(sets){_dpRenderPeriod(card,body,note,all,sets);return;}
+  var nights=all,n=nights.length;
   if(n<DEEP_MIN_NIGHTS){
     card.style.opacity='.55';
     note.textContent='目前只有 '+n+' 晚 v3 逐晚資料（需要至少 '+DEEP_MIN_NIGHTS+' 晚才有參考性），資料不足。請先開啟睡眠頁讓它寫入資料。樣本少只看傾向，不是因果或醫療判斷。';
@@ -3927,7 +4407,11 @@ function renderDeepFactors(){
   }
   card.style.opacity='';
   note.textContent='共 '+n+' 晚 v3 精確資料（'+_dpMD(nights[0].date)+' 起）。樣本少只看傾向，不是因果或醫療判斷。';
-  var h='';
+  body.innerHTML=_dpBodyHtml(nights,null);
+}
+/* 四區內容；win 為 null 時＝預設（④取最後 30 晚），否則 ④ 顯示整段期間 */
+function _dpBodyHtml(nights,periodLbl){
+  var n=nights.length,h='';
   // ① 睡多久
   var s1=[[],[],[]];
   nights.forEach(function(x){var hr=x.total/60;(hr<6.5?s1[0]:hr<=7.5?s1[1]:s1[2]).push(x.deep);});
@@ -3948,13 +4432,62 @@ function renderDeepFactors(){
   // ④ 好壞期間
   var sorted=nights.map(function(x){return x.deep;}).sort(function(a,b){return a-b;});
   var thr=_dpPercentile(sorted,0.25);
-  var win=nights.slice(-30);
+  var win=periodLbl?nights:nights.slice(-30);
   var periods=_dpLowPeriods(win,thr);
   var inP={};periods.forEach(function(p){p.forEach(function(x){inP[x.date]=1;});});
-  h+='<div class="t-sub" style="margin-top:.9rem">④ 近 '+win.length+' 晚深層走勢（虛線＝全部 '+n+' 晚的 25 百分位偏低線）</div>'+_dpSpark(win,thr,inP);
+  h+='<div class="t-sub" style="margin-top:.9rem">'+(periodLbl
+      ?'④ 此期間 '+win.length+' 晚深層走勢（虛線＝此期間 '+n+' 晚的 25 百分位偏低線）'
+      :'④ 近 '+win.length+' 晚深層走勢（虛線＝全部 '+n+' 晚的 25 百分位偏低線）')+'</div>'+_dpSpark(win,thr,inP);
   h+='<div class="t-note" style="margin-top:.35rem">'+(periods.length
     ?'偏低期間（連續 3 晚以上低於偏低線）：'+periods.map(function(p){return _escH(_dpMD(p[0].date)+'–'+_dpMD(p[p.length-1].date));}).join('、')
-    :'近 '+win.length+' 晚沒有連續 3 晚以上低於偏低線的期間')+'</div>';
+    :(periodLbl?'此期間 ':'近 ')+win.length+' 晚沒有連續 3 晚以上低於偏低線的期間')+'</div>';
+  return h;
+}
+/* 分析期間：單段＝同四區只用期間內的晚；兩段＝①②③ A、B 並列＋差值，④ 兩張小圖 */
+function _dpRenderPeriod(card,body,note,all,sets){
+  var segs=sets.map(function(x){return{key:x.key,r:x.r,nights:all.filter(function(nt){return _apIn(x.r,nt.date);})};});
+  var okSegs=segs.filter(function(g){return g.nights.length>=DEEP_MIN_NIGHTS;});
+  card.style.opacity=okSegs.length?'':'.55';
+  if(segs.length===1){
+    var g=segs[0],n=g.nights.length;
+    if(n<DEEP_MIN_NIGHTS){
+      note.textContent=_apInsuff(n)+'：此期間 v3 逐晚資料只有 '+n+' 晚（需要至少 '+DEEP_MIN_NIGHTS+' 晚才有參考性；v3 逐晚資料 08-27 起才有）。';
+      body.innerHTML='';return;
+    }
+    note.textContent='此期間 '+_apRangeTxt(g.r)+' 共 '+n+' 晚 v3 精確資料。樣本少只看傾向，不是因果或醫療判斷。';
+    body.innerHTML=_dpBodyHtml(g.nights,_apRangeTxt(g.r));
+    return;
+  }
+  var A=segs[0],B=segs[1];
+  note.textContent=segs.map(function(g){return g.key+' 段 '+_apRangeTxt(g.r)+'：'+(g.nights.length<DEEP_MIN_NIGHTS?_apInsuff(g.nights.length)+'（需 ≥'+DEEP_MIN_NIGHTS+' 晚）':g.nights.length+' 晚');}).join('　')+'。差值為 B−A，樣本少只看傾向。';
+  if(!okSegs.length){body.innerHTML='';return;}
+  function ok(g){return g.nights.length>=DEEP_MIN_NIGHTS;}
+  function grp(g,fn){var a=[[],[],[]];if(ok(g))g.nights.forEach(function(x){var i=fn(x);if(i>=0)a[i].push(x.deep);});return a;}
+  function row(lbl,va,vb){
+    var ma=_dpMean(va),mb=_dpMean(vb);
+    return '<div class="ap-cmp-row"><span class="ap-k">'+_escH(lbl)+'</span><span class="ap-v"><span>'+_escH('A '+_apFmt(ma,1,' 分')+'（'+va.length+' 晚）')+'</span><span>'+_escH('B '+_apFmt(mb,1,' 分')+'（'+vb.length+' 晚）')+'</span><span class="ap-d">'+_escH(_apDiffTxt(ma,mb,1,' 分'))+'</span></span></div>';
+  }
+  var fDur=function(x){var hr=x.total/60;return hr<6.5?0:hr<=7.5?1:2;};
+  var a1=grp(A,fDur),b1=grp(B,fDur),a2=grp(A,function(x){return _dpBedBucket(x.bed);}),b2=grp(B,function(x){return _dpBedBucket(x.bed);});
+  var h='<div class="t-sub">整體深層平均</div>'+row('全部晚',ok(A)?A.nights.map(function(x){return x.deep;}):[],ok(B)?B.nights.map(function(x){return x.deep;}):[]);
+  h+='<div class="t-sub" style="margin-top:.9rem">① 睡多久 vs 深層</div>'+row('少於 6.5 小時',a1[0],b1[0])+row('6.5–7.5 小時',a1[1],b1[1])+row('多於 7.5 小時',a1[2],b1[2]);
+  h+='<div class="t-sub" style="margin-top:.9rem">② 入睡時間 vs 深層</div>'+row('午夜前',a2[0],b2[0])+row('0–1 點',a2[1],b2[1])+row('1 點後',a2[2],b2[2]);
+  h+='<div class="t-sub" style="margin-top:.9rem">③ 前一天行為對照（各段判定規則同單段：差 ≥5 分且兩組各 ≥5 晚）</div>';
+  [A,B].forEach(function(g){
+    h+='<div class="ap-seg-hd">'+g.key+' 段 '+_escH(_apRangeTxt(g.r))+'</div>';
+    if(!ok(g)){h+='<div class="t-note">'+_escH(_apInsuff(g.nights.length))+'</div>';return;}
+    var b=_dpBehaviors(g.nights);
+    h+=_dpCompareRow('咖啡杯數','≥2 杯','≤1 杯',b.cHi,b.cLo)+_dpCompareRow('最後一杯咖啡（無咖啡的日子不計）','14:00 後','14:00 前',b.lateC,b.earlyC)
+      +_dpCompareRow('喝水量','≥3000ml','未滿 3000ml',b.wHi,b.wLo)+_dpCompareRow('前一天是否工作日','工作日','非工作日',b.work,b.off);
+  });
+  h+='<div class="t-sub" style="margin-top:.9rem">④ 深層走勢（各段虛線＝該段的 25 百分位偏低線）</div>';
+  [A,B].forEach(function(g){
+    h+='<div class="ap-seg-hd">'+g.key+' 段 '+_escH(_apRangeTxt(g.r))+'</div>';
+    if(!ok(g)){h+='<div class="t-note">'+_escH(_apInsuff(g.nights.length))+'</div>';return;}
+    var thr=_dpPercentile(g.nights.map(function(x){return x.deep;}).sort(function(a,b){return a-b;}),0.25);
+    var per=_dpLowPeriods(g.nights,thr),inP={};per.forEach(function(p){p.forEach(function(x){inP[x.date]=1;});});
+    h+=_dpSpark(g.nights,thr,inP)+'<div class="t-note" style="margin-top:.25rem">'+(per.length?'偏低期間：'+per.map(function(p){return _escH(_dpMD(p[0].date)+'–'+_dpMD(p[p.length-1].date));}).join('、'):'無連續 3 晚以上低於偏低線的期間')+'</div>';
+  });
   body.innerHTML=h;
 }
 
@@ -4025,11 +4558,18 @@ function _cmProgressDays(rawStr,todayStr){
   return{ok:true,all:Object.keys(all).sort(),prog:Object.keys(prog).sort()};
 }
 /* 純函式：回傳 {state:'none'|'wait'|'ok', days, progDays, rows:[{label,unit,a,b,na,nb}]} */
-function _cmAnalyze(rawStr,nights,moods,todayStr){
+// 10-16：range（{s,e}，選填）＝分析期間；涵蓋天數改為 [max(最早紀錄,s), min(today,e)]，門檻不變
+function _cmAnalyze(rawStr,nights,moods,todayStr,range){
   var pd=_cmProgressDays(rawStr,todayStr);
   if(!pd.ok||!pd.all.length)return{state:'none',days:0,progDays:0,rows:[]};
   var first=pd.all[0],days=Math.max(1,_cmDayDiff(first,todayStr)+1);
   var progDays=pd.prog.length;
+  if(range){
+    var lo=first>range.s?first:range.s,hi=todayStr<range.e?todayStr:range.e;
+    if(hi<lo)return{state:'wait',days:0,progDays:0,rows:[]};
+    first=lo;days=_cmDayDiff(lo,hi)+1;
+    progDays=pd.prog.filter(function(k){return k>=lo&&k<=hi;}).length;
+  }
   if(days<CM_MIN_DAYS||progDays<CM_MIN_PROG)return{state:'wait',days:days,progDays:progDays,rows:[]};
   var progSet={};pd.prog.forEach(function(k){progSet[k]=1;});
   var sleepBy={};(nights||[]).forEach(function(n){sleepBy[n.date]=n;});
@@ -4053,6 +4593,8 @@ function renderCareerCard(){
   var card=$('career-card'),body=$('career-body'),note=$('career-note');
   if(!card||!body||!note)return;
   var raw=null;try{raw=localStorage.getItem('cc_career_v1');}catch(e){}
+  var sets=_apSets();
+  if(sets){_cmRenderPeriod(card,body,note,raw,sets);return;}
   var r=_cmAnalyze(raw,_dpNights(),getMoods(),today());
   if(r.state==='none'||r.state==='wait'){
     card.style.opacity='.55';
@@ -4066,6 +4608,36 @@ function renderCareerCard(){
     function f(m,n){return (m==null?'—':Number(m).toFixed(1)+' '+_escH(x.unit))+'<span class="dp-n">（'+Number(n)+' 天）</span>';}
     return '<div class="dp-cmp"><div class="dp-cmp-t">'+_escH(x.label)+'</div>'
       +'<div class="dp-cmp-b">推進日 '+f(x.a,x.na)+'　vs　非推進日 '+f(x.b,x.nb)+'</div></div>';
+  }).join('');
+}
+
+function _cmRenderPeriod(card,body,note,raw,sets){
+  var nights=_dpNights(),moods=getMoods(),tk=today();
+  var segs=sets.map(function(x){return{key:x.key,r:x.r,res:_cmAnalyze(raw,nights,moods,tk,x.r)};});
+  var okSegs=segs.filter(function(g){return g.res.state==='ok';});
+  card.style.opacity=okSegs.length?'':'.55';
+  function st(g){
+    var pre=(segs.length>1?g.key+' 段 ':'此期間 ')+_apRangeTxt(g.r)+'：';
+    if(g.res.state!=='ok')return pre+_apInsuff(g.res.days)+'（推進日 '+g.res.progDays+' 天；需涵蓋 ≥'+CM_MIN_DAYS+' 天且推進日 ≥'+CM_MIN_PROG+' 天）';
+    return pre+'涵蓋 '+g.res.days+' 天、推進日 '+g.res.progDays+' 天';
+  }
+  note.textContent=segs.map(st).join('　')+'。只呈現相關，不是因果；樣本少僅供參考。';
+  if(!okSegs.length){body.innerHTML='';return;}
+  function f(m,n,u){return _apFmt(m,1,' '+u)+'（'+Number(n)+' 天）';}
+  if(segs.length===1){
+    body.innerHTML=segs[0].res.rows.map(function(x){
+      return '<div class="dp-cmp"><div class="dp-cmp-t">'+_escH(x.label)+'</div>'
+        +'<div class="dp-cmp-b">'+_escH('推進日 '+f(x.a,x.na,x.unit)+'　vs　非推進日 '+f(x.b,x.nb,x.unit))+'</div></div>';
+    }).join('');
+    return;
+  }
+  var A=segs[0].res,B=segs[1].res,rowsRef=(A.state==='ok'?A:B).rows;
+  body.innerHTML=rowsRef.map(function(x,i){
+    var ra=A.state==='ok'?A.rows[i]:null,rb=B.state==='ok'?B.rows[i]:null;
+    function seg(k,r){return r?k+'：推進日 '+f(r.a,r.na,r.unit)+' vs 非推進日 '+f(r.b,r.nb,r.unit):k+'：資料不足';}
+    var gapA=ra&&ra.a!=null&&ra.b!=null?ra.a-ra.b:null,gapB=rb&&rb.a!=null&&rb.b!=null?rb.a-rb.b:null;
+    return '<div class="dp-cmp"><div class="dp-cmp-t">'+_escH(x.label)+'</div>'
+      +'<div class="dp-cmp-b">'+_escH(seg('A',ra))+'<br>'+_escH(seg('B',rb))+'<br><span class="ap-d">'+_escH('推進日−非推進日落差 '+_apDiffTxt(gapA,gapB,1,' '+x.unit)+'（B−A）')+'</span></div></div>';
   }).join('');
 }
 
@@ -4094,7 +4666,8 @@ function _scNextDay(k){
 }
 /* 第一層：join 與配對成功率統計。回傳
    {total,matched,unmatched,hasData, dayCats:{日期:{分類名:true}}} */
-function buildSocialCircleJoin(){
+// 10-16：range（選填）＝分析期間，只計日期落在期間內的紀錄（日期壞掉的紀錄在期間模式不計）
+function buildSocialCircleJoin(range){
   var out={total:0,matched:0,unmatched:0,hasData:false,dayCats:{}};
   var db=null;
   try{db=JSON.parse(localStorage.getItem('wellness_v5')||'null');}catch(e){}
@@ -4111,6 +4684,7 @@ function buildSocialCircleJoin(){
   (db.entries||[]).forEach(function(e){
     if(!e||!Array.isArray(e.impactFactors))return;
     var dk2=_scDateKey(e.timestamp||e.date);
+    if(range&&!_apIn(range,dk2))return;
     e.impactFactors.forEach(function(f){
       if(!f||f.category!=='friends')return;
       out.total++;
@@ -4159,6 +4733,8 @@ function buildSocialCircleStats(join){
 function renderSocialCircleCard(){
   var cov=$('sc-coverage'),body=$('sc-body');
   if(!cov||!body)return;
+  var _scSets=_apSets();
+  if(_scSets){_scRenderPeriod(cov,body,_scSets);return;}
   var join=buildSocialCircleJoin();
   if(!join.hasData){
     cov.innerHTML='';
@@ -4195,6 +4771,35 @@ function renderSocialCircleCard(){
       +'<span style="color:var(--faint);font-weight:400;font-size:.65rem">　樣本 '+s.days+' 天</span></span>'+right+'</div>';
   }).join('')
   +'<div style="margin-top:.55rem;font-size:.65rem;color:var(--faint);line-height:1.75">以上為觀察值：樣本顯示與各人際圈互動的那些天，同期的睡眠與完成率落在什麼水準，不代表因果。「樣本 N 天」是互動天數，各指標括號內才是真正算進該平均的有效樣本數，兩者可能不同。同一天若同時與多個人際圈互動，該天會重複計入各分類。</div>';
+}
+
+function _scRenderPeriod(cov,body,sets){
+  var segs=sets.map(function(x){var j=buildSocialCircleJoin(x.r);return{key:x.key,r:x.r,join:j,stats:j.hasData?buildSocialCircleStats(j):[]};});
+  cov.innerHTML=segs.map(function(g){
+    var pre=(segs.length>1?g.key+' 段 ':'此期間 ')+_apRangeTxt(g.r)+'：';
+    if(!g.join.hasData)return '<div>'+_escH(pre+_apInsuff(0)+'（無人際互動紀錄）')+'</div>';
+    var pct=Math.round(g.join.matched/g.join.total*100);
+    return '<div>'+_escH(pre+'涵蓋 '+g.join.matched+'/'+g.join.total+' 筆人際互動紀錄（配對成功率 '+pct+'%）'+(g.join.matched/g.join.total<SC_LOW_MATCH?'，配對成功率偏低，結果僅供參考':''))+'</div>';
+  }).join('');
+  function sl(s){return s.sleepInsufficient?'資料不足（僅 '+s.sleepN+' 夜）':(Math.round(s.sleep*10)/10).toFixed(1)+' / 10（'+s.sleepN+' 夜）';}
+  function rt(s){return s.rateInsufficient?'資料不足（僅 '+s.rateN+' 天）':Math.round(s.rate*100)+'%（'+s.rateN+' 天）';}
+  var cats={};segs.forEach(function(g){g.stats.forEach(function(s){cats[s.cat]=1;});});
+  var names=Object.keys(cats);
+  if(!names.length){body.innerHTML='<div style="font-size:.7rem;color:var(--faint);line-height:1.75">'+_escH(_apInsuff(0))+'：期間內沒有可依人際圈拆解的已配對紀錄。</div>';return;}
+  body.innerHTML=names.map(function(cn){
+    var parts=segs.map(function(g){
+      var s=g.stats.filter(function(x){return x.cat===cn;})[0];
+      return '<span>'+_escH((segs.length>1?g.key+' ':'')+(s?'樣本 '+s.days+' 天｜睡眠 '+sl(s)+'｜完成率 '+rt(s):'無互動'))+'</span>';
+    });
+    if(segs.length>1){
+      var a=segs[0].stats.filter(function(x){return x.cat===cn;})[0],b=segs[1].stats.filter(function(x){return x.cat===cn;})[0];
+      var ds=(a&&b&&!a.sleepInsufficient&&!b.sleepInsufficient)?_apDiffTxt(a.sleep,b.sleep,1):'差 —';
+      var dr=(a&&b&&!a.rateInsufficient&&!b.rateInsufficient)?_apDiffTxt(a.rate*100,b.rate*100,0,'%'):'差 —';
+      parts.push('<span class="ap-d">'+_escH('睡眠'+ds.slice(1)+'、完成率'+dr.slice(1))+'</span>');
+    }
+    return '<div class="ap-cmp-row"><span class="ap-k">'+_scEsc(cn)+'</span><span class="ap-v">'+parts.join('')+'</span></div>';
+  }).join('')
+  +'<div style="margin-top:.55rem;font-size:.65rem;color:var(--faint);line-height:1.75">只計期間內的互動日；睡眠取互動日次日（可能落在期間外一天）。有效樣本少於 '+SC_MIN_DAYS+' 時不算平均'+(segs.length>1?'，差值為 B−A，任一段不足則不算差值':'')+'。觀察值，不代表因果。</div>';
 }
 
 /* INIT */
