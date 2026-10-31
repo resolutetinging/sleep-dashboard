@@ -4,67 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-A personal sleep analytics dashboard. Sleep data is exported from the iPhone via the **HealthAutoExport** app to an iCloud folder, then a Python script parses the JSON files and injects the data directly into a self-contained HTML file. That HTML file is committed to GitHub and served via GitHub Pages.
+A personal sleep analytics dashboard. An iPhone Shortcut exports raw Apple Health sleep samples (`sleep_raw_YYYY-MM-DD.txt`) to iCloud; Python scripts on the Mac compute per-night stages and inject the data into self-contained HTML pages, which are committed and served via GitHub Pages.
 
-**⚠️ Three-file split (updated 2026-07-17, don't confuse these):**
-- `index.html` — the actual page served at the repo root on GitHub Pages ("SAS Hub"). Contains **no embedded RAW data**; reads sleep stats purely from `localStorage` (`sas_sleep_latest`, `sas_combat_*`), which gets populated by opening `sleep_dashboard_v2.html`.
-- `sleep_dashboard_v2.html` — the file with the embedded `const RAW = …` data block. This is the one `update_dashboard.py` writes to and the one that matters for data pipeline work.
-- `archive/sleep_dashboard.html` — the original (v1) version of the RAW-data page. **Archived 2026-07-17**: nothing references it anymore, `update_dashboard.py` no longer writes or commits it. Kept only as a historical snapshot; do not resume updating it.
+**Since 2026-10-31 the v2 pipeline is archived. v3 is the only live pipeline.** Spec: `/Users/tinayu/Desktop/Claude Project/Spec/sleep-dashboard-spec-v1.0.md`.
 
-## Key commands
+## Files (don't confuse these)
 
-**Manually trigger a full update (parse data → update HTML → git push):**
-```bash
-python3 ~/sleep-dashboard/update_dashboard.py
-```
+- `sleep_dashboard_v3_live.html` — **the live dashboard.** Writes the 7 shared `sas_*` localStorage keys (`SAS_KEY_SUFFIX=''`) that SAS Hub, Daily Optimizer and the Control Center Guard read for 戰力.
+- `index.html` — SAS Hub. No embedded data; reads `sas_*` from localStorage.
+- `sleep_v3_history.json` — permanent per-night v3 results + raw samples, keyed by wake date. Merge rules: changes ≤3 min are rounding noise; a narrower raw-file time span never overwrites (`_raw_span()`).
+- `sleep_v2_frozen_pre1001.json` — the only source of the 259 nights before 2026-10-01. `update_dashboard_v3_live.py` `load_summary()` merges it with v3 history by `V3_CUTOFF = "2026-10-01"`. **Never delete or regenerate it.**
+- Archived (2026-10-31, banner on page, do not resume updating): `sleep_dashboard_v2.html` (v2 page, writes only `sas_*_v2` keys, data stops at 10-31), `sleep_dashboard_v3.html` (early v3 verification page), `update_dashboard.py` (v2 script, no longer called). Restore point: git tag `v2-final-20261031`.
+- `archive/sleep_dashboard.html` — v1 snapshot, archived 2026-07-17.
 
-**Run the shell wrapper (copies iCloud JSONs to local cache first, then runs the Python script):**
-```bash
-bash ~/sleep-dashboard/run_update.sh
-```
+## Pipeline
 
-**After editing `sleep_dashboard_v2.html` manually, commit and push:**
-```bash
-cd ~/sleep-dashboard
-git add sleep_dashboard_v2.html
-git commit -m "your message"
-git push
-```
+1. iPhone Shortcut writes `sleep_raw_DATE.txt` to `/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update/`
+2. `run_update.sh` waits up to 60 s for `sleep_raw_TODAY.txt`, copies iCloud files into `json_cache/` (skips stubs; re-copies when iCloud is newer)
+3. `update_dashboard_v3.py` splits sessions (gap ≥90 min starts a new session; sessions <60 min are dropped), computes stages, merges into `sleep_v3_history.json`
+4. `update_dashboard_v3_live.py` injects `const RAW` / `V3_NIGHTS` into `sleep_dashboard_v3_live.html`, commits and pushes via SSH (`~/.ssh/github_ed25519`) with post-push verification
+5. End of `run_update.sh`: retries any unpushed commit up to 3 times (laptop sleeping mid-run is common; a "⏸" in the log is normal)
 
-## Data pipeline
+LaunchAgent `~/Library/LaunchAgents/com.sleep.dashboard.update.plist`: 09:30 and 22:00 plus `RunAtLoad`. Idempotent; no new data → no commit.
 
-1. HealthAutoExport app writes daily JSON files to:
-   `/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update/`
-2. `run_update.sh` copies those files into `json_cache/`
-3. `update_dashboard.py` reads all `.json`/`.txt` files from the iCloud folder, parses them, and overwrites the `const RAW = …` data block inside `sleep_dashboard_v2.html`
-4. The script then commits and pushes to the `origin` remote via SSH, with a post-push verification step (fetch + compare HEAD) added 2026-07-17 after a silent-push-failure incident
-5. GitHub Pages serves the repo directly on every push to `main` (no separate build step)
+Manual run: `bash ~/sleep-dashboard/run_update.sh` (logs: `update.log`, `update_error.log`).
 
-This runs automatically via the macOS LaunchAgent at `~/Library/LaunchAgents/com.sleep.dashboard.update.plist`. As of 2026-07-17 it fires at four times a day (09:30 / 13:00 / 18:00 / 22:00) plus on every login/reload (`RunAtLoad`), so a missed run (laptop asleep) gets caught up later the same day. The underlying script is idempotent (skips the commit if there's no new data), so multiple runs per day are harmless.
+## Rules
 
-## Architecture of `sleep_dashboard_v2.html`
-
-The dashboard is a **single self-contained HTML file** — all CSS, JavaScript, chart logic, and data live inside it. Chart.js (v4.4.0) is loaded from a CDN.
-
-The data injection point the Python script targets:
-```
-const RAW = {…JSON…};
-
-const COLORS
-```
-
-The `RAW` object has two keys:
-- `summary` — full history array (all nights), used for trend charts
-- `detail` — last 90 nights (same records but with an empty `segments` array added)
-
-Each record: `{ date, bedtime, wake, total_min, deep_min, rem_min, core_min, awake_min, efficiency }`
-
-When editing the dashboard's visuals or logic, only `sleep_dashboard_v2.html` needs to change. Do not touch the `const RAW = …` block by hand — it is always overwritten by `update_dashboard.py`.
-
-## Two supported JSON input formats
-
-`update_dashboard.py` handles both:
-- **HealthAutoExport format**: `raw.data.metrics` array; find the entry with `name == "sleep_analysis"`, then iterate its `data` array
-- **Shortcut flattened format**: a single `{ "date": "…", "deep": …, … }` object at the top level
-
-All time fields (e.g. `sleepStart`, `sleepEnd`) may be either `"2026-05-11T00:54:51"` or `"2026-05-11 00:54:51"`. Sleep values are in **hours** and converted to minutes by `hr2min()`. Records with fewer than 60 minutes of total sleep are skipped, as are dates before 2026-01-01.
+- Do not hand-edit the injected `const RAW = …` block in any page.
+- The disabled v2/v3 comparison (`load_v2_records()` / `compare_v2_v3()` in `update_dashboard_v3.py`) is kept for reference; existing `v2_v3_divergence` records in history are kept as-is.
+- Git troubleshooting: `git_troubleshooting_sop.txt`.
