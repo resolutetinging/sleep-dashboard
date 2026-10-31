@@ -44,7 +44,8 @@ mkdir -p "$DEST"
 # 等待今天的檔案（最多 60 秒）
 TODAY=$(date +%Y-%m-%d)
 for i in $(seq 1 12); do
-    TODAY_FILE=$(ls "$SRC"/*"$TODAY"* 2>/dev/null | head -1)
+    # 10-31 v2 封存：只等 v3 的 sleep_raw_TODAY.txt（原本 *TODAY* 會先抓到 v2 的 sleep_TODAY.txt）
+    TODAY_FILE=$(ls "$SRC"/sleep_raw_"$TODAY".txt 2>/dev/null | head -1)
     if [ -n "$TODAY_FILE" ] && [ -s "$TODAY_FILE" ]; then
         echo "✓ 今日檔案已就緒（${i}×5s）"
         break
@@ -80,7 +81,8 @@ for f in "$SRC"/*.json "$SRC"/*.txt; do
     fi
 done
 
-python3 /Users/tinayu/sleep-dashboard/update_dashboard.py
+# 10-31 v2 封存：停跑 v2 管線（update_dashboard.py 保留不刪；回復點 git tag v2-final-20261031）
+# python3 /Users/tinayu/sleep-dashboard/update_dashboard.py
 
 # 09-30新增：v3 migration monitor period排程，跟v2共用同一份run_update.sh
 # 已經抓好的json_cache/sleep_raw_*.txt，不重複打iCloud。update_dashboard_v3.py

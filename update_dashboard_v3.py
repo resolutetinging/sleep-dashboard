@@ -292,7 +292,7 @@ def merge_records(history, new_records, raw_samples_by_date):
     return new_dates, changed_dates, unchanged_dates
 
 
-def load_v2_records():
+def load_v2_records():  # 10-31 v2 封存後停用（main 不再呼叫）
     """唯讀解析sleep_dashboard_v2.html裡的const RAW={...}區塊，回傳{date: record}。
     這個函式絕對不寫入v2的檔案，只讀取供交叉比對用。抓不到就回傳空dict，
     不中斷v3自己的流程（v2/v3交叉比對是加分功能，不是v3能不能跑的前提）。"""
@@ -335,7 +335,7 @@ def _bedtime_diff_min(v3_bedtime_iso, v2_bedtime_hhmm):
     return min(diff, 1440 - diff)
 
 
-def compare_v2_v3(history, v2_by_date):
+def compare_v2_v3(history, v2_by_date):  # 10-31 v2 封存後停用（main 不再呼叫）
     """拿v2跟v3同一晚的四項分期數字互相比對（理論上該收斂到接近的數字，
     因為兩邊都是拿Duration算的），只在差距超過V2_V3_DIVERGENCE_TOLERANCE_MIN時
     才記錄，避免把正常的捨入方式差異也當成警訊。09-30起同時比對bedtime。
@@ -443,7 +443,9 @@ def main():
     else:
         print("⚠ 異動 0 夜")
 
-    v2_by_date = load_v2_records()
+    # 10-31 v2 封存後停用：v2 管線已停跑，不再做 v2/v3 交叉比對；load_v2_records()／compare_v2_v3()
+    # 函式本體保留，history 內既有 v2_v3_divergence 紀錄保留不動（回復點 git tag v2-final-20261031）
+    v2_by_date = {}
     if v2_by_date:
         overlap = sorted(set(history['nights']) & set(v2_by_date))
         flagged, bedtime_flagged = compare_v2_v3(history, v2_by_date)
@@ -476,7 +478,9 @@ def main():
         for r in all_records
     ]
 
-    if inject_html(chart_records):
+    # 10-31 v2 封存後停用：sleep_dashboard_v3.html（早期驗證頁）停更，不再注入 RAW_V3；
+    # sleep_v3_history.json 照常由上方 save_history() 寫入（v3_live 讀它）
+    if False and inject_html(chart_records):
         print(f"\n已寫入 {HTML_PATH}（圖表顯示累計全部 {len(chart_records)} 夜，"
               f"不再受Shortcut過去1週視窗限制）")
 

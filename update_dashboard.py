@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """
+【2026-10-31 已封存】v2 管線停用，run_update.sh 不再呼叫本檔；檔案保留不刪。
+回復點：git tag v2-final-20261031。10/1 前歷史以 sleep_v2_frozen_pre1001.json 為準。
+
 Sleep Dashboard 自動更新腳本
 每天由 Mac 排程執行，讀取 iCloud 的 HealthAutoExport JSON 檔案
 支持原始 HealthAutoExport 格式與 Shortcut 扁平化格式
