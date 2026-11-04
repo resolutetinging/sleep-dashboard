@@ -23,6 +23,11 @@
     --accent: #5c7a96;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
+  /* 資料過期提醒橫幅 */
+  .stale-banner { display:none; align-items:flex-start; gap:10px; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--awake); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:13px; line-height:1.7; color:var(--text); }
+  .stale-banner.show { display:flex; }
+  .stale-banner .stale-msg { flex:1; min-width:0; overflow-wrap:anywhere; }
+  .stale-banner .stale-x { flex:none; background:none; border:none; color:var(--text-dim); font-size:18px; line-height:1; cursor:pointer; padding:2px 6px; }
   body { background:var(--bg); color:var(--text); font-family:"Noto Sans TC",sans-serif; min-height:100vh; }
 
   /* LAYOUT */
@@ -428,6 +433,7 @@
 
 <!-- MAIN CONTENT -->
 <main class="main">
+  <div class="stale-banner" id="staleBanner" role="status"><div class="stale-msg" id="staleMsg"></div><button type="button" class="stale-x" id="staleX" aria-label="暫時收起">×</button></div>
   <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <div class="page-title">睡眠分析儀錶板</div>
@@ -2883,6 +2889,32 @@ runWeightedAI();
   document.getElementById('defMask').addEventListener('click',close);
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
   (mq.addEventListener?mq.addEventListener('change',function(){if(!mq.matches)close();}):mq.addListener(function(){if(!mq.matches)close();}));
+})();
+</script>
+<script>
+/* 資料過期提醒：now >= 10:00 且頁面最新一晚 < 今天 → 顯示（收起只限本次瀏覽，不寫 storage） */
+function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function staleCheck(latest, now){
+  if (!latest || now.getHours() < 10) return null;
+  var t = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  if (latest >= t) return null;
+  var p=function(x){ var a=x.split('-'); return Date.UTC(+a[0], +a[1]-1, +a[2]); };
+  var n = Math.round((p(t)-p(latest))/86400000);
+  var md=function(x){ var a=x.split('-'); return (+a[1])+'/'+(+a[2]); };
+  var head = n>=2 ? '睡眠資料已 '+n+' 天沒更新' : '今天（'+md(t)+'）的睡眠資料還沒更新';
+  return '⚠️ '+head+'，目前最新到 '+md(latest)+'。常見原因是 iPhone 匯出檔還在 iCloud 同步，或排程時 Mac 沒開機。請找 Claude 查，或在 Mac 終端機執行 bash ~/sleep-dashboard/run_update.sh 手動補跑。';
+}
+(function(){
+  try {
+    var arr = (typeof RAW!=='undefined' && RAW.summary) || [];
+    var last = arr.length ? arr[arr.length-1].date : null;
+    var msg = staleCheck(last, new Date());
+    var box = document.getElementById('staleBanner');
+    if (!msg || !box) return;
+    document.getElementById('staleMsg').textContent = msg;
+    box.classList.add('show');
+    document.getElementById('staleX').addEventListener('click', function(){ box.classList.remove('show'); });
+  } catch(e) {}
 })();
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sleep" data-cc-label="Sleep Dashboard"></script>
