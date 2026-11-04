@@ -737,6 +737,7 @@
       </div>
     </div>
     <div class="chart-wrap"><canvas id="trendChart" height="120"></canvas></div>
+    <div id="trendLegend" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 0 0;font-size:11px;color:var(--text-dim)"></div>
   </div>
 
   <!-- STAGE PERCENTAGE CHART -->
@@ -1085,6 +1086,12 @@ function updateTrend(data) {
     }
   };
 
+  // 11-04：睡眠時長趨勢圖例（使用者要求加圖示），顏色與上方 datasets 一致
+  const _lgBar = (c, l) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:${c}"></span>${l}</span>`;
+  const _lgLine = (c, l, dash, w) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:18px;height:0;border-top:${w}px ${dash?'dashed':'solid'} ${c}"></span>${l}</span>`;
+  const _lgEl = document.getElementById('trendLegend');
+  if (_lgEl) _lgEl.innerHTML = [_lgBar(COLORS.deep+'cc','深度'), _lgBar(COLORS.rem+'cc','REM'), _lgBar(COLORS.core+'cc','核心'), _lgBar(COLORS.awake+'88','清醒'),
+    _lgLine(COLORS.deep,'睡眠（不含清醒）',false,2), _lgLine(COLORS.awake,'在床（含清醒）',false,2), _lgLine('#ff7a1a','趨勢線（前後 7 晚平均）',true,3)].join('');
   if (trendChart) { trendChart.destroy(); trendChart = null; }
   trendChart = new Chart(document.getElementById('trendChart'), { ...cfg, plugins:[totalLabelPlugin] });
 }
