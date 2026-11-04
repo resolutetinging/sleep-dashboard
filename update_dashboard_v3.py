@@ -37,15 +37,19 @@ v2的檔案，絕對不寫入。**
 執行方式：
     python3 update_dashboard_v3.py
 """
+import os
 import re
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
-RAW_DIR = Path(
+# iCloud 原始目錄：現在只當 fallback（run_update.sh 會先把可讀的檔案複製到 json_cache/）。
+# RAW_DIR_OVERRIDE / RAW_CACHE_OVERRIDE 僅供測試用，預設行為不變。
+RAW_DIR = Path(os.environ.get("RAW_DIR_OVERRIDE") or (
     "/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/"
     "Documents/Daily Sleep Update"
-)
+))
+RAW_CACHE_DIR = Path(os.environ.get("RAW_CACHE_OVERRIDE") or (Path(__file__).resolve().parent / "json_cache"))
 HTML_PATH = Path(__file__).resolve().parent / "sleep_dashboard_v3.html"
 HISTORY_PATH = Path(__file__).resolve().parent / "sleep_v3_history.json"
 RAW_V3_LINE = re.compile(r"const RAW_V3 = \[.*?\];", re.DOTALL)
@@ -66,11 +70,85 @@ STAGE_FIELDS = ('deep_min', 'rem_min', 'core_min', 'awake_min')
 V2_V3_DIVERGENCE_TOLERANCE_MIN = 4
 
 
+def _load_samples_timeout(path, timeout):
+    """timeout=None 直接讀；否則在 daemon 執行緒讀，逾時視為 OSError（不可讀）。"""
+    if timeout is None:
+        return load_samples(path)
+    import threading
+    box = {}
+    def work():
+        try:
+            box['v'] = load_samples(path)
+        except BaseException as e:
+            box['e'] = e
+    t = threading.Thread(target=work, daemon=True)
+    t.start(); t.join(timeout)
+    if t.is_alive():
+        raise OSError(f"讀取逾時 {timeout} 秒")
+    if 'e' in box:
+        raise box['e']
+    return box['v']
+
+
+_RAW_NAME = re.compile(r"^sleep_raw_(\d{4}-\d{2}-\d{2})(?:\s.*)?\.txt$")
+
+
 def latest_raw_path():
-    """sleep_raw_<date>.txt 的檔名是捷徑執行當天日期，每天不同，
-    不能寫死檔名，改抓資料夾裡最新的一份。"""
-    candidates = sorted(RAW_DIR.glob("sleep_raw_*.txt"))
-    return candidates[-1] if candidates else None
+    """sleep_raw_<date>.txt 的檔名是捷徑執行當天日期，每天不同，不能寫死檔名。
+    11-04修正：優先讀 run_update.sh 已驗證可讀的 json_cache/，iCloud 目錄只當 fallback
+    （iCloud 檔案可能是尚未下載的 dataless 佔位檔，讀會丟 OSError）。
+    最新日期若同時有正本與「 2.txt」「 3.txt」等重複副本，挑『可讀且樣本涵蓋時間跨度最大』
+    的一份（跨度相同再比檔案大小），並印出選擇原因。"""
+    found = {}  # 檔名 -> Path
+    # iCloud 讀檔可能阻塞到下載完成（launchd 會卡住），所以只在 cache 完全沒有 raw 檔時才碰 iCloud，
+    # 且讀取放在 daemon 執行緒內限時 30 秒（見 _load_samples_timeout）。
+    dirs = [RAW_CACHE_DIR]
+    for d in dirs:
+        try:
+            for f in d.glob("sleep_raw_*.txt"):
+                if _RAW_NAME.match(f.name) and f.name not in found:
+                    found[f.name] = f
+        except OSError:
+            continue
+    if not found:
+        dirs = [RAW_DIR]
+    else:
+        dirs = []
+    for d in dirs:
+        try:
+            for f in d.glob("sleep_raw_*.txt"):
+                if _RAW_NAME.match(f.name) and f.name not in found:
+                    found[f.name] = f
+        except OSError:
+            continue
+    if not found:
+        return None
+    latest_date = max(_RAW_NAME.match(n).group(1) for n in found)
+    same_day = sorted(n for n in found if _RAW_NAME.match(n).group(1) == latest_date)
+    scored = []
+    for n in same_day:
+        f = found[n]
+        try:
+            samples = _load_samples_timeout(f, 30 if f.parent != RAW_CACHE_DIR else None)
+            size = f.stat().st_size
+        except OSError as e:
+            print(f"  候選 {n}（{f.parent.name}/）不可讀：{e.strerror or e}，略過")
+            continue
+        if samples:
+            span = max(x['start'] + timedelta(seconds=x['dur_sec']) for x in samples) - min(x['start'] for x in samples)
+            span_min = span.total_seconds() / 60
+        else:
+            span_min = 0
+        print(f"  候選 {n}（{f.parent.name}/）：{len(samples)} 筆樣本，涵蓋 {span_min:.0f} 分鐘，{size} bytes")
+        scored.append((span_min, size, f.parent == RAW_CACHE_DIR, n, f))
+    if not scored:
+        # 全部不可讀：回傳排序最後的一份，讓 main() 照既有流程印出「尚未下載完成」並略過
+        return found[same_day[-1]]
+    scored.sort(key=lambda t: (t[0], t[1], t[2]))  # 跨度 > 大小 > 優先 cache
+    best = scored[-1]
+    if len(scored) > 1:
+        print(f"  同日有 {len(scored)} 份可讀檔，選 {best[3]}（涵蓋 {best[0]:.0f} 分鐘最大 / {best[1]} bytes）")
+    return best[4]
 
 # 抓取單筆樣本的 value / startDate / duration（endDate 恆等於 startDate，是舊 bug
 # 殘留欄位，不拿來算時長；raw檔本身不是合法JSON，陣列元素缺{}分隔，只能用正則抓）
@@ -399,14 +477,14 @@ def inject_html(records):
 def main():
     raw_path = latest_raw_path()
     if raw_path is None:
-        print(f"在 {RAW_DIR} 找不到任何 sleep_raw_*.txt 檔案")
+        print(f"在 {RAW_CACHE_DIR} 與 {RAW_DIR} 找不到任何 sleep_raw_*.txt 檔案")
         return
     print(f"使用原始資料檔：{raw_path.name}")
 
     # 10-12新增：iCloud原始檔尚未下載到本機時，讀檔會丟OSError（Resource deadlock
     # avoided，10-11 09:37案例），比照v2跳過stub的做法，本次略過交給下一個排程時段。
     try:
-        samples = load_samples(raw_path)
+        samples = _load_samples_timeout(raw_path, 30 if raw_path.parent != RAW_CACHE_DIR else None)
     except OSError as e:
         print(f"⏸ 跳過 {raw_path.name}（iCloud 尚未下載完成：{e.strerror or e}），v3 本次略過，交給下一個排程時段")
         return

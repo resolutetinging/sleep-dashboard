@@ -2,7 +2,7 @@
 # 10-07新增：log 輪替。update.log 從 04-11 起從未清理（685KB、13k 行），除錯時真正的錯誤被雜訊淹沒。
 # 只保留最近 30 天，更舊的段落搬到 update_archive.log（gitignore）；update_error.log 只留最後 2000 行。
 # launchd 的 stdout 指向舊檔，輪替後用 exec 重新以 append 開啟新的 update.log，避免寫進已被取代的檔案。
-SD=/Users/tinayu/sleep-dashboard
+SD="${SD_OVERRIDE:-/Users/tinayu/sleep-dashboard}"  # SD_OVERRIDE 僅供測試用，預設行為不變
 LOG="$SD/update.log"; ARCH="$SD/update_archive.log"; ERR="$SD/update_error.log"
 CUTOFF=$(date -v-30d +%Y-%m-%d)
 if [ -f "$LOG" ]; then
@@ -34,30 +34,68 @@ if [ "$NET_OK" != 1 ]; then
     echo "⏸ $(date '+%Y-%m-%d %H:%M') 網路未就緒（可能是休眠中的背景喚醒），本次略過，交給下一個排程時段"
     exit 0
 fi
-SRC="/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update"
-DEST="/Users/tinayu/sleep-dashboard/json_cache"
+SRC="${SRC_OVERRIDE:-/Users/tinayu/Library/Mobile Documents/iCloud~com~ifunography~HealthExport/Documents/Daily Sleep Update}"
+DEST="$SD/json_cache"
 mkdir -p "$DEST"
+# 以下三個時間參數僅測試時用環境變數覆寫，預設值即正式行為
+WAIT_TODAY_MAX="${WAIT_TODAY_MAX:-300}"   # 等今日檔「實際可讀」的上限（秒）
+WAIT_STEP="${WAIT_STEP:-10}"              # 每輪間隔（秒）
+COPY_RETRY_MAX="${COPY_RETRY_MAX:-120}"   # 複製階段所有重試共用的總時間上限（秒）
+
+# 11-04新增：就緒判斷改為「實際可讀」。iCloud 尚未下載的 dataless 佔位檔 [ -s ] 也會回報完整
+# 大小，但真的讀（head）會丟 Resource deadlock avoided，所以不能只看大小。
+# 真實 iCloud 佔位檔的讀取可能阻塞到下載完成，macOS 沒有 timeout 指令，用 perl alarm 包逾時（逾時視為不可讀）。
+tmo() { local t="$1"; shift; perl -e 'alarm shift; exec @ARGV' "$t" "$@"; }
+READ_PROBE_TMO="${READ_PROBE_TMO:-15}"   # 就緒探測讀檔逾時（秒）
+COPY_READ_TMO="${COPY_READ_TMO:-60}"     # 複製讀檔逾時（秒）
+readable() { [ -s "$1" ] && tmo "$READ_PROBE_TMO" head -c 1 "$1" >/dev/null 2>&1; }
 
 # 觸發整個資料夾下載
 /usr/bin/brctl download "$SRC" 2>/dev/null || true
 
-# 等待今天的檔案（最多 60 秒）
+# 等待今天的檔案「可讀」（最多 WAIT_TODAY_MAX 秒；正本或「 2.txt」等重複副本任一可讀即可）
+# 10-31 v2 封存：只等 v3 的 sleep_raw_TODAY*.txt（不碰 v2 的 sleep_TODAY.txt）
 TODAY=$(date +%Y-%m-%d)
-for i in $(seq 1 12); do
-    # 10-31 v2 封存：只等 v3 的 sleep_raw_TODAY.txt（原本 *TODAY* 會先抓到 v2 的 sleep_TODAY.txt）
-    TODAY_FILE=$(ls "$SRC"/sleep_raw_"$TODAY".txt 2>/dev/null | head -1)
-    if [ -n "$TODAY_FILE" ] && [ -s "$TODAY_FILE" ]; then
-        echo "✓ 今日檔案已就緒（${i}×5s）"
+START_TS=$(date +%s)
+READY=0; ROUND=0
+while :; do
+    ROUND=$((ROUND+1))
+    EXIST=0
+    for f in "$SRC"/sleep_raw_"$TODAY"*.txt "$SRC"/.sleep_raw_"$TODAY"*.txt.icloud; do
+        [ -e "$f" ] || continue
+        EXIST=1
+        case "$f" in *.icloud) ;; *) readable "$f" && READY=1 ;; esac
+        [ "$READY" = 1 ] && break
+    done
+    if [ "$READY" = 1 ]; then
+        echo "✓ 今日檔案已就緒且可讀（第 ${ROUND} 輪，約 $(( $(date +%s) - START_TS )) 秒）"
         break
     fi
-    [ -n "$TODAY_FILE" ] && /usr/bin/brctl download "$TODAY_FILE" 2>/dev/null || true
-    echo "⏳ 等待 iCloud 同步... (${i}/12)"
-    sleep 5
+    ELAPSED=$(( $(date +%s) - START_TS ))
+    if [ "$ELAPSED" -ge "$WAIT_TODAY_MAX" ]; then
+        if [ "$EXIST" = 1 ]; then
+            echo "⚠ 等待 ${ELAPSED} 秒仍放棄：今日檔已上傳到 iCloud，但 Mac 尚未下載完成（不可讀）"
+        else
+            echo "⚠ 等待 ${ELAPSED} 秒仍放棄：iCloud 尚未上傳今日檔（找不到 sleep_raw_${TODAY}*.txt）"
+        fi
+        break
+    fi
+    for f in "$SRC"/sleep_raw_"$TODAY"*.txt; do
+        [ -e "$f" ] && /usr/bin/brctl download "$f" 2>/dev/null || true
+    done
+    if [ "$EXIST" = 1 ]; then
+        echo "⏳ 今日檔已上傳、等待 Mac 下載完成... (第 ${ROUND} 輪，${ELAPSED}s/${WAIT_TODAY_MAX}s)"
+    else
+        echo "⏳ iCloud 尚未出現今日檔，等待上傳/同步... (第 ${ROUND} 輪，${ELAPSED}s/${WAIT_TODAY_MAX}s)"
+    fi
+    sleep "$WAIT_STEP"
 done
 
 # 複製 iCloud 檔案到 cache：缺失、空白，或 iCloud 版本比 cache 新時才複製
 # 10-05修正：原本「已有非空 cache 就跳過」，Shortcut 同一天重新匯出（如 10-04 早上
 # 先出 28KB、22:18 再出完整 31KB）時新版永遠進不了 cache，導致那晚資料漏掉。
+# 11-04修正：讀取失敗（stub 尚未下載）的檔案有限次重試，所有重試共用 COPY_RETRY_MAX 總時間上限。
+COPY_START=$(date +%s)
 for f in "$SRC"/*.json "$SRC"/*.txt; do
     [ -f "$f" ] || continue
     fname=$(basename "$f")
@@ -68,16 +106,26 @@ for f in "$SRC"/*.json "$SRC"/*.txt; do
         continue
     fi
 
-    # 觸發單檔下載
-    /usr/bin/brctl download "$f" 2>/dev/null || true
-
-    cat "$f" > "$cached.tmp" 2>/dev/null
-    if [ -s "$cached.tmp" ]; then
+    TRY=0; OK=0
+    while :; do
+        TRY=$((TRY+1))
+        # 觸發單檔下載
+        /usr/bin/brctl download "$f" 2>/dev/null || true
+        # 逾時被 alarm 殺掉時 cat 可能已寫出部分內容：必須同時看 exit code，否則殘缺檔會進 cache
+        tmo "$COPY_READ_TMO" cat "$f" > "$cached.tmp" 2>/dev/null
+        RC=$?
+        if [ "$RC" -eq 0 ] && [ -s "$cached.tmp" ]; then OK=1; break; fi
+        rm -f "$cached.tmp"
+        [ $(( $(date +%s) - COPY_START )) -ge "$COPY_RETRY_MAX" ] && break
+        [ "$TRY" -ge 6 ] && break
+        sleep "$WAIT_STEP"
+    done
+    if [ "$OK" = 1 ]; then
         mv "$cached.tmp" "$cached"
-        echo "✓ 複製 $fname"
+        echo "✓ 複製 ${fname}（第 ${TRY} 次嘗試）"
     else
         rm -f "$cached.tmp"
-        echo "⚠ 跳過 $fname（iCloud stub 尚未下載）"
+        echo "⚠ 跳過 ${fname}（iCloud stub 尚未下載，已嘗試 ${TRY} 次）"
     fi
 done
 
@@ -89,7 +137,9 @@ done
 # 算完history.json後，update_dashboard_v3_live.py接手轉格式注入v3-live頁，
 # 兩者各自獨立git commit+push（v2/v3互不注入鐵律：這裡只是共用排程時機，
 # 不是共用計算邏輯）。v2本身的排程與計算完全不受這兩行影響。
-python3 /Users/tinayu/sleep-dashboard/update_dashboard_v3.py
+python3 "$SD/update_dashboard_v3.py"
+# RU_SKIP_LIVE_PUSH=1 僅供測試：跳過會 commit/push 的 live 步驟與結尾補推
+[ "${RU_SKIP_LIVE_PUSH:-}" = 1 ] && exit 0
 python3 /Users/tinayu/sleep-dashboard/update_dashboard_v3_live.py
 
 # 10-07新增：結尾補推。網路前置檢查擋不住「檢查時有網路、跑到一半又睡著」（10-06 22:38 案例），
