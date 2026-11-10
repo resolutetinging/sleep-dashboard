@@ -998,7 +998,13 @@ function renderRecapCard(){
     list('有進步',r.prog,false)+list('需要注意',r.att,false)+list('建議',r.sug,true)+
     '<details style="margin-top:10px"><summary style="font-size:12px;cursor:pointer;color:var(--accent)">近 4 週逐週表</summary><div class="rc-scroll"><table class="rc-tb">'+wk+'</table></div></details>'+
     '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" id="recapAIBtn" onclick="runRecapAI()" style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer">AI 解讀</button></div>'+
-    '<div id="recapAIOut" style="font-size:13px;line-height:1.7;margin-top:6px;white-space:pre-wrap"></div>';
+    '<div id="recapAIOut" style="font-size:13px;line-height:1.7;margin-top:6px"></div>';
+}
+// AI 解讀拆成條列：依換行拆、去掉模型自帶的條列符號；若只有一行則依句號拆（CC spec 12.3）
+function _rcBullets(txt){
+  var lines=String(txt||'').split(/\n+/).map(function(l){return l.replace(/^\s*(?:[・•\-\*‧●]|\d+[\.、．)）])\s*/,'').trim();}).filter(Boolean);
+  if(lines.length===1){ var parts=(lines[0].match(/[^。]+。?/g)||[]).map(function(x){return x.trim();}).filter(Boolean); if(parts.length>1) lines=parts; }
+  return lines.length?lines:['分析失敗，請再試一次'];
 }
 async function runRecapAI(){
   if(_rcAIBusy) return;
@@ -1012,7 +1018,7 @@ async function runRecapAI(){
   var payload={asOf:_rcMD(r.L),last7:pick(r.c),prev7:pick(r.p),longestShortRun:r.c.maxRun,
     weeks:r.weeks.map(function(w){return {range:_rcMD(w.lo)+'–'+_rcMD(w.hi),stats:pick(w.s)};}),
     progress:r.prog.map(function(x){return x.t;}),attention:r.att.map(function(x){return x.t;}),suggestions:r.sug,conclusion:r.concl};
-  var promptContent='你是睡眠分析師。以下是已用固定規則算好的近期睡眠統整（JSON）。定義：深睡＝身體修復、REM＝思考與記憶、1 分鐘清醒也算清醒。\n請用繁體中文（台灣用語）寫 3 到 4 句白話解讀，可指出跨週模式。只能使用提供的數字，不得自行計算新數字；這不是醫療診斷。\n'+JSON.stringify(payload);
+  var promptContent='你是睡眠分析師。以下是已用固定規則算好的近期睡眠統整（JSON）。定義：深睡＝身體修復、REM＝思考與記憶、1 分鐘清醒也算清醒。\n請用繁體中文（台灣用語）寫 3 到 5 點白話解讀，可指出跨週模式。格式：條列，每點一行、以「・」開頭、每點只講一件事、不超過 45 字；不要標題、不要開場白或結語。只能使用提供的數字，不得自行計算新數字；這不是醫療診斷。\n'+JSON.stringify(payload);
   _rcAIBusy=true; out.textContent='分析中…';
   var once=async function(model,maxTok){
     for(var attempt=0;attempt<3;attempt++){
@@ -1046,7 +1052,7 @@ async function runRecapAI(){
     if(res.finishReason==='length') res=await once(model,1200);
     var txt=res.content||'分析失敗，請再試一次';
     if(typeof s2t==='function'){ try{ txt=s2t(txt); }catch(_e){} }
-    out.innerHTML=_escH(txt);
+    out.innerHTML=_rcBullets(txt).map(function(t){return '<div style="font-size:13px;line-height:1.6;margin:2px 0">・'+_escH(t)+'</div>';}).join('');
   }catch(e){ out.textContent='AI 解讀失敗：'+String((e&&e.message)||e).slice(0,80); }
   _rcAIBusy=false;
 }
