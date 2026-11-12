@@ -464,6 +464,7 @@
         <div id="ds-single" style="font-size:42px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
         <div id="ds-date" style="font-size:9.5px;color:var(--text-dim);margin-top:4px;font-family:'DM Mono',monospace;">—</div>
         <div id="ds-dow" style="font-size:9px;color:var(--text-dim);">—</div>
+        <div id="ds-sick" style="display:none;font-size:9px;color:var(--text-dim);margin-top:3px;max-width:96px"></div>
       </div>
       <!-- 3夜加權 -->
       <div style="padding:0 14px;border-right:1px solid var(--border);text-align:center;">
@@ -641,6 +642,7 @@
         <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">單夜</div>
         <div id="combatSingle" style="font-size:48px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;">—</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:5px;">昨晚表現</div>
+        <div id="combatSickNote" style="display:none;font-size:10px;color:var(--text-dim);margin-top:3px;"></div>
       </div>
       <div style="flex:1;text-align:center;padding:14px 8px;">
         <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">3夜加權</div>
@@ -849,6 +851,25 @@
 </div>
 
 <script>
+var SICK_HINT_MIN = 480; // 身體不適提示門檻：睡著時數（不含清醒）分鐘
+// 身體不適標記（sleep_feel_v1.nights[date].sick===true）；date 為 summary 同一套（起床日）
+function _sickSet(){
+  var set={}, n=0;
+  try{ var db=_sleepFeelLoad().nights; Object.keys(db).forEach(function(d){ if(db[d].sick===true){ set[d]=1; n++; } }); }catch(e){}
+  return set;
+}
+function _sickCountIn(arr){
+  var set=_sickSet(), n=0;
+  (arr||[]).forEach(function(d){ if(d&&set[d.date]) n++; });
+  return n;
+}
+function _sickExclude(arr){
+  var set=_sickSet();
+  return (arr||[]).filter(function(d){ return !(d&&set[d.date]); });
+}
+function _sickNoteHtml(n){
+  return n>0?'<div style="font-size:11px;color:var(--text-dim);margin-top:6px">已排除 '+(+n)+' 晚身體不適</div>':'';
+}
 function _escH(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // ── 近期統整（固定規則；AI 僅按鈕觸發）RECAP_BEGIN ──
 function _rcDay(s){ var a=String(s).split('-'); return Math.round(Date.UTC(+a[0],+a[1]-1,+a[2])/86400000); }
@@ -882,9 +903,11 @@ function _rcStats(nights){
   };
 }
 function _rcCompute(summary){
-  var arr=(summary||[]).filter(function(d){return d&&d.date;}).slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+  var all0=(summary||[]).filter(function(d){return d&&d.date;}).slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+  var arr=_sickExclude(all0);
   if(arr.length<3) return {insufficient:true};
-  var L=_rcDay(arr[arr.length-1].date);
+  var L=_rcDay(all0[all0.length-1].date);
+  var sickN=_sickCountIn(all0.filter(function(d){var x=_rcDay(d.date);return x>=L-27&&x<=L;}));
   var block=function(k){ var hi=L-7*k, lo=hi-6; return {lo:lo,hi:hi,nights:arr.filter(function(d){var x=_rcDay(d.date);return x>=lo&&x<=hi;})}; };
   var weeks=[0,1,2,3].map(function(k){ var b=block(k); b.s=_rcStats(b.nights); return b; });
   var c=weeks[0].s, p=weeks[1].s, hasPrev=p.n>0;
@@ -937,7 +960,7 @@ function _rcCompute(summary){
   else if(pj.length) concl=pj.join('、');
   else if(aj.length) concl='需要留意：'+aj.join('、');
   else concl='整體維持穩定，沒有明顯進步或警訊';
-  return {insufficient:false,L:L,weeks:weeks,c:c,p:p,hasPrev:hasPrev,prog:prog,att:att,sug:sug,concl:concl};
+  return {insufficient:false,sickN:sickN,L:L,weeks:weeks,c:c,p:p,hasPrev:hasPrev,prog:prog,att:att,sug:sug,concl:concl};
 }
 function _rcRowChange(c,p,type){
   if(!p.n||!c.n) return '—';
@@ -995,6 +1018,7 @@ function renderRecapCard(){
   el.innerHTML=head+'<div style="font-size:11px;color:var(--text-dim)">近 7 晚 vs 前 7 晚（截至 '+E(_rcMD(r.L))+'）</div></div>'+
     '<div style="font-size:13px;line-height:1.6;margin-top:6px">'+E(r.concl)+'</div>'+
     '<div class="rc-scroll"><table class="rc-tb">'+tb+'</table></div>'+
+    _sickNoteHtml(r.sickN)+
     list('有進步',r.prog,false)+list('需要注意',r.att,false)+list('建議',r.sug,true)+
     '<details style="margin-top:10px"><summary style="font-size:12px;cursor:pointer;color:var(--accent)">近 4 週逐週表</summary><div class="rc-scroll"><table class="rc-tb">'+wk+'</table></div></details>'+
     '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" id="recapAIBtn" onclick="runRecapAI()" style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer">AI 解讀</button></div>'+
@@ -1692,12 +1716,16 @@ function _sleepFeelLoad() {
     Object.keys(o.nights).forEach(d => {
       const v = o.nights[d];
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') return;
-      if (!Number.isInteger(v.score) || v.score < 1 || v.score > 5) return;
-      out.nights[d] = {
-        score: v.score,
+      const okScore = Number.isInteger(v.score) && v.score >= 1 && v.score <= 5;
+      const sick = v.sick === true;
+      if (!okScore && !sick) return;
+      const rec = {
         rules: Array.isArray(v.rules) ? v.rules.filter(x => _FEEL_RULES.indexOf(x) >= 0) : [],
         ts: typeof v.ts === 'string' ? v.ts : ''
       };
+      if (okScore) rec.score = v.score;
+      if (sick) rec.sick = true;
+      out.nights[d] = rec;
     });
   } catch (e) {}
   return out;
@@ -1706,10 +1734,45 @@ function sleepFeelSet(date, score) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(score) || score < 1 || score > 5) return;
   const db = _sleepFeelLoad();
   const cur = db.nights[date];
-  if (cur && cur.score === score) { delete db.nights[date]; _feelSavedDate = null; }
-  else { db.nights[date] = { score: score, rules: _feelCurRules.slice(), ts: new Date().toISOString() }; _feelSavedDate = date; }
+  if (cur && cur.score === score) {
+    if (cur.sick === true) { delete cur.score; cur.rules = []; cur.ts = new Date().toISOString(); }
+    else delete db.nights[date];
+    _feelSavedDate = null;
+  }
+  else {
+    const rec = { score: score, rules: _feelCurRules.slice(), ts: new Date().toISOString() };
+    if (cur && cur.sick === true) rec.sick = true;
+    db.nights[date] = rec; _feelSavedDate = date;
+  }
   try { localStorage.setItem('sleep_feel_v1', JSON.stringify(db)); } catch (e) { _feelSavedDate = null; }
   renderCycleCard();
+}
+function sleepFeelSetSick(date, on) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  const db = _sleepFeelLoad();
+  const cur = db.nights[date];
+  if (on) {
+    if (cur) { cur.sick = true; cur.ts = new Date().toISOString(); }
+    else db.nights[date] = { rules: [], ts: new Date().toISOString(), sick: true };
+  } else if (cur) {
+    delete cur.sick;
+    if (!Number.isInteger(cur.score)) delete db.nights[date];
+    else cur.ts = new Date().toISOString();
+  }
+  try { localStorage.setItem('sleep_feel_v1', JSON.stringify(db)); } catch (e) {}
+  _feelSavedDate = null;
+  renderCycleCard();
+  try { renderRecapCard(); updatePersonalBaseline(); updateSickNotes(); } catch (e) {}
+}
+function updateSickNotes() {
+  const set = _sickSet();
+  const last = RAW.summary && RAW.summary[RAW.summary.length - 1];
+  const sick = !!(last && set[last.date]);
+  const t = '身體不適：戰力偏高不代表實際狀態';
+  ['ds-sick', 'combatSickNote'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = sick ? t : ''; el.style.display = sick ? 'block' : 'none'; }
+  });
 }
 function _sleepFeelPillHtml(date) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
@@ -1721,10 +1784,19 @@ function _sleepFeelPillHtml(date) {
     cells += `<button type="button" onclick="sleepFeelSet('${date}',${i})" aria-label="實際體感 ${i} 分" aria-pressed="${on}" style="flex:1;min-height:36px;border:0;${i > 1 ? 'border-left:1px solid var(--border);' : ''}background:${on ? 'var(--accent)' : 'var(--surface2)'};color:${on ? '#fff' : 'var(--text-dim)'};font-family:inherit;font-size:12px;font-weight:${on ? 600 : 400};cursor:pointer">${i}</button>`;
   }
   const saved = rec && _feelSavedDate === date ? '<span style="margin-left:8px;color:var(--accent)">已記錄</span>' : '';
+  const sickOn = !!(rec && rec.sick === true);
+  const sumRow = (RAW.summary || []).find(x => x.date === date);
+  const showHint = !sickOn && sumRow && Number(sumRow.total_min) >= SICK_HINT_MIN;
+  const sickBtn = `<button type="button" onclick="sleepFeelSetSick('${date}',${!sickOn})" aria-pressed="${sickOn}" style="min-height:32px;padding:0 14px;border:1px solid var(--border);border-radius:16px;background:${sickOn ? 'var(--accent)' : 'var(--surface2)'};color:${sickOn ? '#fff' : 'var(--text-dim)'};font-family:inherit;font-size:12px;font-weight:${sickOn ? 600 : 400};cursor:pointer">身體不適</button>`;
+  const sickMsg = sickOn
+    ? '<div style="margin-top:4px;font-size:11px;color:var(--text-dim)">已標記：此晚不列入統計，戰力僅供參考</div><div style="margin-top:2px;font-size:11px;color:var(--text-dim)">身體不適：戰力偏高不代表實際狀態</div>'
+    : (showHint ? '<span style="font-size:11px;color:var(--text-dim)">睡超過 8 小時；如果是身體不適，可以標記</span>' : '');
+  const sickRow = `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${sickBtn}${showHint ? sickMsg : ''}</div>${sickOn ? sickMsg : ''}`;
   return `<div style="margin-top:10px">
       <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">實際體感（選填）${saved}</div>
       <div id="sleepFeelPill" style="margin-top:6px;display:flex;border:1px solid var(--border);border-radius:18px;overflow:hidden;max-width:360px">${cells}</div>
       <div style="margin-top:4px;max-width:360px;display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)"><span>不接近</span><span>←　→</span><span>最接近</span></div>
+      ${sickRow}
     </div>`;
 }
 
@@ -2312,7 +2384,9 @@ function updatePersonalBaseline() {
   // 基準線母體受「排除週末」開關影響（開啟時只算週間夜晚）；
   // 「昨晚」比對點固定用 RAW.summary 真正最後一夜，不受開關影響（同單夜戰力規則）
   const excludeWE = document.getElementById('excludeWeekend').checked;
-  const all = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
+  const pool0 = excludeWE ? RAW.summary.filter(d => !isWeekend(d.date)) : RAW.summary;
+  const sickN = _sickCountIn(pool0);
+  const all = _sickExclude(pool0);
   const el = document.getElementById('personalBaseline');
   if (!el || all.length < 5) return;
   function stagePctArr(key) {
@@ -2353,6 +2427,7 @@ function updatePersonalBaseline() {
   }
   el.innerHTML = `
     <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">個人歷史基準（${all.length} 夜中位數${excludeWE ? '，已排除週末' : ''}）</div>
+    ${_sickNoteHtml(sickN)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
         <div style="font-size:10px;color:var(--deep);font-weight:600;margin-bottom:4px">■ Deep 基礎能量</div>
@@ -2768,6 +2843,7 @@ function refreshAll() {
   const { score: combatScore, singleScore: combatSingle } = updateCombatPower(totalDebt);
   updateDailySummary(totalDebt, combatScore, combatSingle);
   renderRecapCard();
+  updateSickNotes();
   buildWeightedHistory();
   renderWeightedChart();
   runWeightedAI();
