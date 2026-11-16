@@ -920,7 +920,7 @@ function _rcCompute(summary){
     if(dd>=15) prog.push({k:'more',t:'平均睡著時數 '+h(c.avgSleep)+'，比前 7 晚（'+h(p.avgSleep)+'）多 '+dm(dd)});
     else if(dd<=-15) att.push({k:'less',t:'平均睡著時數 '+h(c.avgSleep)+'，比前 7 晚（'+h(p.avgSleep)+'）少 '+dm(dd)});
   }
-  if(c.n7<=2) att.push({k:'lowhrs',t:'近 '+c.n+' 晚只有 '+c.n7+' 晚睡滿 7 小時，時數偏少'});
+  if(c.n7<=2) att.push({k:'lowhrs',t:c.n7===0?'近 '+c.n+' 晚都沒有睡滿 7 小時，時數偏少':'近 '+c.n+' 晚只有 '+c.n7+' 晚睡滿 7 小時，時數偏少'});
   if(c.nShort>=2||c.maxRun>=2) att.push({k:'short',t:'6 小時以下有 '+c.nShort+' 晚，最長連續短睡 '+c.maxRun+' 晚'});
   // 入睡
   if(hasPrev&&c.avgBed!=null&&p.avgBed!=null){
@@ -965,7 +965,7 @@ function _rcCompute(summary){
 function _rcRowChange(c,p,type){
   if(!p.n||!c.n) return '—';
   var s=function(v,u,d){ var r=+v.toFixed(d||0); return (r>0?'+':r<0?'-':'')+Math.abs(r)+u; };
-  if(type==='h'&&c.avgSleep!=null&&p.avgSleep!=null) return s((c.avgSleep-p.avgSleep)/60,' 小時',1);
+  if(type==='h'&&c.avgSleep!=null&&p.avgSleep!=null){ var hd=c.avgSleep-p.avgSleep; return Math.abs(hd)<60 ? s(hd,' 分') : s(hd/60,' 小時',1); }
   if(type==='n7') return s(c.n7-p.n7,' 晚');
   if(type==='ns') return s(c.nShort-p.nShort,' 晚');
   if(type==='bed'&&c.avgBed!=null&&p.avgBed!=null){ var d=c.avgBed-p.avgBed; return d<0?'提早 '+Math.round(-d)+' 分':d>0?'延後 '+Math.round(d)+' 分':'持平'; }
@@ -1030,6 +1030,21 @@ function _rcBullets(txt){
   if(lines.length===1){ var parts=(lines[0].match(/[^。]+。?/g)||[]).map(function(x){return x.trim();}).filter(Boolean); if(parts.length>1) lines=parts; }
   return lines.length?lines:['分析失敗，請再試一次'];
 }
+// 11-16：AI 解讀數字閘門——每點出現的數字必須能在送出的資料（payload）中找到，
+// 找不到（模型自行計算或編造）整點拿掉；不靠 prompt 自律
+function _rcNumTokens(t){ return String(t||'').match(/\d{1,2}:\d{2}|\d+(?:\.\d+)?/g)||[]; }
+function _rcAllowedNums(payload){
+  var set={}, add=function(x){ set[String(x)]=1; };
+  _rcNumTokens(JSON.stringify(payload)).forEach(function(tok){
+    add(tok);
+    if(tok.indexOf(':')<0){ var v=+tok; add(+v.toFixed(1)); add(Math.round(v)); if(/\.\d$/.test(tok)) add(tok.replace(/\.0$/,'')); }
+  });
+  return set;
+}
+function _rcGateBullets(lines, payload){
+  var ok=_rcAllowedNums(payload);
+  return lines.filter(function(l){ return _rcNumTokens(l).every(function(tok){ return ok[tok] || ok[String(+tok)]; }); });
+}
 async function runRecapAI(){
   if(_rcAIBusy) return;
   var out=document.getElementById('recapAIOut');
@@ -1076,7 +1091,9 @@ async function runRecapAI(){
     if(res.finishReason==='length') res=await once(model,1200);
     var txt=res.content||'分析失敗，請再試一次';
     if(typeof s2t==='function'){ try{ txt=s2t(txt); }catch(_e){} }
-    out.innerHTML=_rcBullets(txt).map(function(t){return '<div style="font-size:13px;line-height:1.6;margin:2px 0">・'+_escH(t)+'</div>';}).join('');
+    var _bl=_rcBullets(txt), _gl=_rcGateBullets(_bl,payload);
+    if(!_gl.length) _gl=['AI 解讀的數字與統整資料對不上，請再試一次'];
+    out.innerHTML=_gl.map(function(t){return '<div style="font-size:13px;line-height:1.6;margin:2px 0">・'+_escH(t)+'</div>';}).join('');
   }catch(e){ out.textContent='AI 解讀失敗：'+String((e&&e.message)||e).slice(0,80); }
   _rcAIBusy=false;
 }
