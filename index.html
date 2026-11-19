@@ -4850,7 +4850,7 @@ try{renderSocialCircleCard();}catch(e){console.warn('renderSocialCircleCard',e);
   function setOpen(o){panel.classList.toggle('open',o);fab.setAttribute('aria-expanded',o?'true':'false');}
   function sync(){var on=ov.classList.contains('on');fab.classList.toggle('show',on);if(!on)setOpen(false);}
   fab.addEventListener('click',function(e){e.stopPropagation();setOpen(!panel.classList.contains('open'));});
-  panel.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();var el=document.getElementById(idOf(a));links.forEach(function(x){x.classList.toggle('active',x===a);});clearTimeout(lockMax);lockMax=setTimeout(unlock,1000);lockNow();if(el)el.scrollIntoView({block:'start',behavior:'smooth'});setOpen(false);});
+  panel.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();var el=document.getElementById(idOf(a));links.forEach(function(x){x.classList.toggle('active',x===a);});pinned=idOf(a);clearTimeout(lockMax);lockMax=setTimeout(unlock,1000);lockNow();if(el)el.scrollIntoView({block:'start',behavior:'smooth'});setOpen(false);});
   document.addEventListener('click',function(e){if(!panel.contains(e.target)&&e.target!==fab)setOpen(false);});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')setOpen(false);});
   var ticking=false;
@@ -4858,13 +4858,17 @@ try{renderSocialCircleCard();}catch(e){console.warn('renderSocialCircleCard',e);
     links.forEach(function(a){var el=document.getElementById(idOf(a));var v=!!el&&el.offsetHeight>0;a.hidden=!v;if(v)vis.push(el);});
     if(!vis.length)return;
     if(locked)return;
+    if(pinned){var pe=document.getElementById(pinned),pt=pe?pe.getBoundingClientRect().top-ov.getBoundingClientRect().top:-1e9;
+      if(pe&&pe.offsetHeight>0&&pt>=-4&&pt<ov.clientHeight*0.5){links.forEach(function(a){a.classList.toggle('active',idOf(a)===pinned);});return;}
+      pinned=null;}
     var line=ov.getBoundingClientRect().top+ov.clientHeight*0.3,cur=vis[0];
     if(ov.scrollTop>4){for(var i=0;i<vis.length;i++){if(vis[i].getBoundingClientRect().top<=line)cur=vis[i];else break;}}
     if(ov.scrollTop+ov.clientHeight>=ov.scrollHeight-2)cur=vis[vis.length-1];
     links.forEach(function(a){a.classList.toggle('active',idOf(a)===cur.id);});}
   function kick(){if(!ticking){ticking=true;requestAnimationFrame(update);}}
   /* 點連結：立即標亮，捲動停止 150ms（最長 1 秒）前不讓 scroll 判定覆蓋 */
-  var locked=false,lockMax=0,lockIdle=0;
+  var locked=false,lockMax=0,lockIdle=0,pinned=null;
+  ['wheel','touchstart','keydown'].forEach(function(ev){ov.addEventListener(ev,function(){pinned=null;},{passive:true});});document.addEventListener('keydown',function(){pinned=null;});
   function unlock(){locked=false;clearTimeout(lockMax);clearTimeout(lockIdle);kick();}
   function lockNow(){locked=true;clearTimeout(lockIdle);lockIdle=setTimeout(unlock,150);}
   ov.addEventListener('scroll',function(){if(locked)lockNow();kick();},{passive:true});
