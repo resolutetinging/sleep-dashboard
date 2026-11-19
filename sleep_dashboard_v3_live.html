@@ -3342,17 +3342,21 @@ function staleCheck(latest, now){
     all.forEach(a=>{const el=document.getElementById(idOf(a)); const v=visible(el); a.hidden=!v; if(v&&a.parentNode===toc) vis.push(el);});
     if(!vis.length) return;
     if(locked) return;
+    if(pinned){ const pe=document.getElementById(pinned), t=pe?pe.getBoundingClientRect().top:-1e9;
+      if(pe&&pe.offsetHeight>0&&t>=-4&&t<window.innerHeight*0.5){ all.forEach(a=>a.classList.toggle('active',idOf(a)===pinned)); return; }
+      pinned=null; }
     const line=window.innerHeight*0.3; let cur=vis[0];
     if(window.scrollY>4){ for(const el of vis){ if(el.getBoundingClientRect().top<=line) cur=el; else break; } }
     if(window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-2) cur=vis[vis.length-1];
     all.forEach(a=>a.classList.toggle('active',idOf(a)===cur.id)); };
   // 點連結：立即標亮，捲動停止 150ms（最長 1 秒）前不讓 scroll 判定覆蓋
-  let locked=false, lockMax=0, lockIdle=0;
+  let locked=false, lockMax=0, lockIdle=0, pinned=null;
+  ['wheel','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,()=>{ pinned=null; },{passive:true}));
   const unlock=()=>{ locked=false; clearTimeout(lockMax); clearTimeout(lockIdle); kick(); };
   const lockNow=()=>{ locked=true; clearTimeout(lockIdle); lockIdle=setTimeout(unlock,150); };
   all.forEach(a=>a.addEventListener('click',()=>{
     all.forEach(x=>x.classList.toggle('active',x.getAttribute('href')===a.getAttribute('href')));
-    clearTimeout(lockMax); lockMax=setTimeout(unlock,1000); lockNow(); }));
+    pinned=idOf(a); clearTimeout(lockMax); lockMax=setTimeout(unlock,1000); lockNow(); }));
   const kick=()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update); } };
   window.addEventListener('scroll',()=>{ if(locked) lockNow(); kick(); },{passive:true});
   window.addEventListener('resize',kick);
