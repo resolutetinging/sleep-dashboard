@@ -1809,13 +1809,19 @@ function renderPeriodCard() {
   const db = _sleepFeelLoad().nights;
   const rows = (RAW.summary || []).filter(d => d && !(db[d.date] && db[d.date].sick === true));
   const per = rows.filter(d => db[d.date] && db[d.date].period === true);
-  const oth = rows.filter(d => !(db[d.date] && db[d.date].period === true));
+  const perDates = per.map(d => d.date).sort();
+  const since = perDates.length ? perDates[0] : '';
+  const oth = rows.filter(d => d.date >= since && !(db[d.date] && db[d.date].period === true));
   const head = '<div style="font-size:15px;font-weight:700">生理期 vs 其他夜</div>';
   if (!per.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = '';
-  const note = '<div style="font-size:11px;color:var(--text-dim);margin-top:6px">已排除身體不適的夜晚；生理期標記不影響戰力與其他統計</div>';
+  const note = '<div style="font-size:11px;color:var(--text-dim);margin-top:6px">比較期間：' + _escH(since) + ' 起；已排除身體不適的夜晚；生理期標記不影響戰力與其他統計</div>';
   if (per.length < 3) {
     el.innerHTML = head + '<div style="font-size:13px;color:var(--text-dim);margin-top:8px">已標記 ' + per.length + ' 晚，滿 3 晚後顯示對照</div>' + note;
+    return;
+  }
+  if (oth.length < 3) {
+    el.innerHTML = head + '<div style="font-size:13px;color:var(--text-dim);margin-top:8px">已標記 ' + per.length + ' 晚，其他夜僅 ' + oth.length + ' 晚，滿 3 晚後顯示對照</div>' + note;
     return;
   }
   const avg = (a, k) => a.length ? a.reduce((x, d) => x + (Number(d[k]) || 0), 0) / a.length : null;
