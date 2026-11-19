@@ -298,6 +298,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .lev-impact{font-size:.58rem;color:var(--faint);line-height:1.35;text-align:center;padding:0 4px}
 .lev-note{font-size:.65rem;color:var(--faint);line-height:1.6}
 
+/* 今日總覽目錄：僅總覽 view 顯示的右下懸浮按鈕（左側已有 sidebar，不加側欄） */
+#risk-light,#sec-power,#sec-pace,#sec-mood,#sec-week,#sec-lastweek,#sec-corr,#sec-radar,#deep-card{scroll-margin-top:14px}
+#ov-toc-fab,#ov-toc-panel{display:none}
+#ov-toc-fab.show{display:block;position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:150;background:var(--deep);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-size:.78rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;font-family:inherit}
+#ov-toc-panel.open{display:flex;position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 46px);z-index:150;width:min(260px,calc(100vw - 32px));max-height:min(60vh,calc(100vh - 100px));overflow-y:auto;flex-direction:column;gap:6px;background:var(--card);border:.5px solid var(--bstr);border-radius:10px;padding:10px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+#ov-toc-panel a{font-size:.74rem;color:var(--sub);background:var(--bg2);border:.5px solid var(--border);border-radius:8px;padding:7px 12px;text-decoration:none;cursor:pointer}
+#ov-toc-panel a.active{background:var(--deep);color:#fff;border-color:var(--deep)}
+#ov-toc-panel a[hidden]{display:none}
+@media(max-width:720px){#ov-toc-fab.show{bottom:calc(76px + env(safe-area-inset-bottom))}#ov-toc-panel.open{bottom:calc(76px + env(safe-area-inset-bottom) + 46px)}}
 /* MOBILE */
 .ch-sm{height:90px}
 .ch-lg{height:180px}
@@ -426,7 +435,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div class="bento">
 
   <!-- 戰力儀表 -->
-  <div class="card cg">
+  <div class="card cg" id="sec-power">
     <div class="lbl">⚡ 戰力指數</div>
     <div class="gw">
       <svg viewBox="0 0 180 118" style="width:100%;max-width:170px">
@@ -465,7 +474,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 配速建議 + 慣性警告 + 睡眠負債 -->
-  <div class="card cp">
+  <div class="card cp" id="sec-pace">
     <div class="lbl">📋 今日配速建議</div>
     <div class="pace-badge" id="pace-badge">—</div>
     <div class="pace-body" id="pace-body">—</div>
@@ -502,7 +511,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 情緒雙軌對照 -->
-  <div class="card cm">
+  <div class="card cm" id="sec-mood">
     <div class="lbl">🌊 內在情緒雙軌對照</div>
 
     <div style="font-size:.6rem;color:var(--faint);letter-spacing:.05em;margin-bottom:.3rem">① 理論基準線（18天固定週期）</div>
@@ -565,7 +574,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 本週總覽 -->
-  <div class="card chw">
+  <div class="card chw" id="sec-week">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.3rem">
       <div class="lbl" style="margin-bottom:0">📅 本週總覽 Week View</div>
       <button class="hd-btn" id="week-btn" onclick="analyzeWeek()">
@@ -589,7 +598,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 上週狀態回顧 -->
-  <div class="card clw">
+  <div class="card clw" id="sec-lastweek">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
       <div class="lbl" style="margin-bottom:0">📋 上週狀態回顧</div>
       <button class="hd-btn" id="lw-btn" onclick="analyzeLastWeek()">
@@ -603,7 +612,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 三維相關性圖 -->
-  <div class="card cco">
+  <div class="card cco" id="sec-corr">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
       <div class="lbl" style="margin-bottom:0">🔬 三維相關性 — 情緒 × 睡眠品質分 × 行為完成度</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
@@ -677,7 +686,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 因子導向雷達圖 Phase C -->
-  <div class="card cfr">
+  <div class="card cfr" id="sec-radar">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.6rem">
       <div>
         <div class="lbl" style="margin-bottom:2px">🎯 因子導向雷達圖</div>
@@ -4818,6 +4827,52 @@ try{buildSleepCausalSection();}catch(e){}
 try{buildLeverageBars();}catch(e){}
 try{renderFactorRadar(_radarTab);}catch(e){}
 try{renderSocialCircleCard();}catch(e){console.warn('renderSocialCircleCard',e);}
+</script>
+<button type="button" id="ov-toc-fab" aria-expanded="false" aria-controls="ov-toc-panel">☰ 目錄</button>
+<div id="ov-toc-panel" role="navigation" aria-label="今日總覽目錄">
+  <a href="#risk-light">三燈風險</a>
+  <a href="#sec-power">⚡ 戰力指數</a>
+  <a href="#sec-pace">📋 今日配速建議</a>
+  <a href="#sec-mood">🌊 內在情緒雙軌對照</a>
+  <a href="#sec-week">📅 本週總覽</a>
+  <a href="#sec-lastweek">📋 上週狀態回顧</a>
+  <a href="#sec-corr">🔬 三維相關性</a>
+  <a href="#sec-radar">🎯 因子導向雷達圖</a>
+  <a href="#deep-card">🌙 深層睡眠影響因素</a>
+</div>
+<script>
+/* 今日總覽目錄：捲動容器是 #v-ov（非 window）；只在總覽 view 顯示，切到其他 view 隱藏；區塊不可見時隱藏連結 */
+(function(){
+  var ov=document.getElementById('v-ov'),fab=document.getElementById('ov-toc-fab'),panel=document.getElementById('ov-toc-panel');
+  if(!ov||!fab||!panel)return;
+  var links=[].slice.call(panel.querySelectorAll('a'));
+  var idOf=function(a){return a.getAttribute('href').slice(1);};
+  function setOpen(o){panel.classList.toggle('open',o);fab.setAttribute('aria-expanded',o?'true':'false');}
+  function sync(){var on=ov.classList.contains('on');fab.classList.toggle('show',on);if(!on)setOpen(false);}
+  fab.addEventListener('click',function(e){e.stopPropagation();setOpen(!panel.classList.contains('open'));});
+  panel.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();var el=document.getElementById(idOf(a));links.forEach(function(x){x.classList.toggle('active',x===a);});clearTimeout(lockMax);lockMax=setTimeout(unlock,1000);lockNow();if(el)el.scrollIntoView({block:'start',behavior:'smooth'});setOpen(false);});
+  document.addEventListener('click',function(e){if(!panel.contains(e.target)&&e.target!==fab)setOpen(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')setOpen(false);});
+  var ticking=false;
+  function update(){ticking=false;var vis=[];
+    links.forEach(function(a){var el=document.getElementById(idOf(a));var v=!!el&&el.offsetHeight>0;a.hidden=!v;if(v)vis.push(el);});
+    if(!vis.length)return;
+    if(locked)return;
+    var line=ov.getBoundingClientRect().top+ov.clientHeight*0.3,cur=vis[0];
+    if(ov.scrollTop>4){for(var i=0;i<vis.length;i++){if(vis[i].getBoundingClientRect().top<=line)cur=vis[i];else break;}}
+    if(ov.scrollTop+ov.clientHeight>=ov.scrollHeight-2)cur=vis[vis.length-1];
+    links.forEach(function(a){a.classList.toggle('active',idOf(a)===cur.id);});}
+  function kick(){if(!ticking){ticking=true;requestAnimationFrame(update);}}
+  /* 點連結：立即標亮，捲動停止 150ms（最長 1 秒）前不讓 scroll 判定覆蓋 */
+  var locked=false,lockMax=0,lockIdle=0;
+  function unlock(){locked=false;clearTimeout(lockMax);clearTimeout(lockIdle);kick();}
+  function lockNow(){locked=true;clearTimeout(lockIdle);lockIdle=setTimeout(unlock,150);}
+  ov.addEventListener('scroll',function(){if(locked)lockNow();kick();},{passive:true});
+  window.addEventListener('resize',kick);
+  if('ResizeObserver' in window){var ro=new ResizeObserver(kick);ro.observe(document.getElementById('v-ov'));var bento=ov.querySelector('.bento');if(bento)ro.observe(bento);}
+  if('MutationObserver' in window)new MutationObserver(function(){sync();kick();}).observe(ov,{attributes:true,attributeFilter:['class']});
+  sync();update();
+})();
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sas-hub" data-cc-label="SAS Hub"></script>
 </body>
