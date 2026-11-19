@@ -516,8 +516,9 @@
   </div>
 
   <!-- RECAP CARD -->
-  <style>#recapCard .rc-scroll{overflow-x:auto;margin-top:10px}#recapCard .rc-tb{border-collapse:collapse;width:100%;font-size:12px;min-width:300px}#recapCard .rc-tb th,#recapCard .rc-tb td{padding:4px 6px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}#recapCard .rc-tb th{color:var(--text-dim);font-weight:600}</style>
+  <style>#recapCard .rc-scroll,#periodCard .rc-scroll{overflow-x:auto;margin-top:10px}#recapCard .rc-tb,#periodCard .rc-tb{border-collapse:collapse;width:100%;font-size:12px;min-width:300px}#recapCard .rc-tb th,#recapCard .rc-tb td,#periodCard .rc-tb th,#periodCard .rc-tb td{padding:4px 6px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}#recapCard .rc-tb th,#periodCard .rc-tb th{color:var(--text-dim);font-weight:600}</style>
   <div id="recapCard" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:8px 0 12px;min-width:0"></div>
+  <div id="periodCard" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin:8px 0 12px;min-width:0"></div>
 
   <!-- STAT CARDS -->
   <div class="stats-row">
@@ -1735,13 +1736,15 @@ function _sleepFeelLoad() {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !v || typeof v !== 'object') return;
       const okScore = Number.isInteger(v.score) && v.score >= 1 && v.score <= 5;
       const sick = v.sick === true;
-      if (!okScore && !sick) return;
+      const period = v.period === true;
+      if (!okScore && !sick && !period) return;
       const rec = {
         rules: Array.isArray(v.rules) ? v.rules.filter(x => _FEEL_RULES.indexOf(x) >= 0) : [],
         ts: typeof v.ts === 'string' ? v.ts : ''
       };
       if (okScore) rec.score = v.score;
       if (sick) rec.sick = true;
+      if (period) rec.period = true;
       out.nights[d] = rec;
     });
   } catch (e) {}
@@ -1752,13 +1755,14 @@ function sleepFeelSet(date, score) {
   const db = _sleepFeelLoad();
   const cur = db.nights[date];
   if (cur && cur.score === score) {
-    if (cur.sick === true) { delete cur.score; cur.rules = []; cur.ts = new Date().toISOString(); }
+    if (cur.sick === true || cur.period === true) { delete cur.score; cur.rules = []; cur.ts = new Date().toISOString(); }
     else delete db.nights[date];
     _feelSavedDate = null;
   }
   else {
     const rec = { score: score, rules: _feelCurRules.slice(), ts: new Date().toISOString() };
     if (cur && cur.sick === true) rec.sick = true;
+    if (cur && cur.period === true) rec.period = true;
     db.nights[date] = rec; _feelSavedDate = date;
   }
   try { localStorage.setItem('sleep_feel_v1', JSON.stringify(db)); } catch (e) { _feelSavedDate = null; }
@@ -1773,13 +1777,54 @@ function sleepFeelSetSick(date, on) {
     else db.nights[date] = { rules: [], ts: new Date().toISOString(), sick: true };
   } else if (cur) {
     delete cur.sick;
-    if (!Number.isInteger(cur.score)) delete db.nights[date];
+    if (!Number.isInteger(cur.score) && cur.period !== true) delete db.nights[date];
     else cur.ts = new Date().toISOString();
   }
   try { localStorage.setItem('sleep_feel_v1', JSON.stringify(db)); } catch (e) {}
   _feelSavedDate = null;
   renderCycleCard();
-  try { renderRecapCard(); updatePersonalBaseline(); updateSickNotes(); } catch (e) {}
+  try { renderRecapCard(); updatePersonalBaseline(); updateSickNotes(); renderPeriodCard(); } catch (e) {}
+}
+// 生理期標記（sleep_feel_v1.nights[date].period===true）：不影響戰力／基準線／統計，只供生理期對照卡使用
+function sleepFeelSetPeriod(date, on) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  const db = _sleepFeelLoad();
+  const cur = db.nights[date];
+  if (on) {
+    if (cur) { cur.period = true; cur.ts = new Date().toISOString(); }
+    else db.nights[date] = { rules: [], ts: new Date().toISOString(), period: true };
+  } else if (cur) {
+    delete cur.period;
+    if (!Number.isInteger(cur.score) && cur.sick !== true) delete db.nights[date];
+    else cur.ts = new Date().toISOString();
+  }
+  try { localStorage.setItem('sleep_feel_v1', JSON.stringify(db)); } catch (e) {}
+  _feelSavedDate = null;
+  renderCycleCard();
+  try { renderPeriodCard(); } catch (e) {}
+}
+function renderPeriodCard() {
+  const el = document.getElementById('periodCard');
+  if (!el) return;
+  const db = _sleepFeelLoad().nights;
+  const rows = (RAW.summary || []).filter(d => d && !(db[d.date] && db[d.date].sick === true));
+  const per = rows.filter(d => db[d.date] && db[d.date].period === true);
+  const oth = rows.filter(d => !(db[d.date] && db[d.date].period === true));
+  const head = '<div style="font-size:15px;font-weight:700">生理期 vs 其他夜</div>';
+  if (!per.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  const note = '<div style="font-size:11px;color:var(--text-dim);margin-top:6px">已排除身體不適的夜晚；生理期標記不影響戰力與其他統計</div>';
+  if (per.length < 3) {
+    el.innerHTML = head + '<div style="font-size:13px;color:var(--text-dim);margin-top:8px">已標記 ' + per.length + ' 晚，滿 3 晚後顯示對照</div>' + note;
+    return;
+  }
+  const avg = (a, k) => a.length ? a.reduce((x, d) => x + (Number(d[k]) || 0), 0) / a.length : null;
+  const fm = (v, unit) => v == null ? '—' : (unit === '%' ? v.toFixed(1) + '%' : (Math.round(v) >= 60 ? Math.round(v) + ' 分（' + minToHm(v) + '）' : Math.round(v) + ' 分'));
+  const items = [['平均總睡眠', 'total_min', ''], ['深睡', 'deep_min', ''], ['REM', 'rem_min', ''], ['清醒', 'awake_min', ''], ['效率', 'efficiency', '%']];
+  const E = _escH;
+  let tb = '<tr><th></th><th>生理期（' + per.length + ' 晚）</th><th>其他夜（' + oth.length + ' 晚）</th></tr>';
+  items.forEach(x => { tb += '<tr><td>' + E(x[0]) + '</td><td>' + E(fm(avg(per, x[1]), x[2])) + '</td><td>' + E(fm(avg(oth, x[1]), x[2])) + '</td></tr>'; });
+  el.innerHTML = head + '<div class="rc-scroll"><table class="rc-tb">' + tb + '</table></div>' + note;
 }
 function updateSickNotes() {
   const set = _sickSet();
@@ -1804,11 +1849,13 @@ function _sleepFeelPillHtml(date) {
   const sickOn = !!(rec && rec.sick === true);
   const sumRow = (RAW.summary || []).find(x => x.date === date);
   const showHint = !sickOn && sumRow && Number(sumRow.total_min) >= SICK_HINT_MIN;
+  const periodOn = !!(rec && rec.period === true);
+  const periodBtn = `<button type="button" onclick="sleepFeelSetPeriod('${date}',${!periodOn})" aria-pressed="${periodOn}" style="min-height:32px;padding:0 14px;border:1px solid var(--border);border-radius:16px;background:${periodOn ? 'var(--accent)' : 'var(--surface2)'};color:${periodOn ? '#fff' : 'var(--text-dim)'};font-family:inherit;font-size:12px;font-weight:${periodOn ? 600 : 400};cursor:pointer">生理期</button>`;
   const sickBtn = `<button type="button" onclick="sleepFeelSetSick('${date}',${!sickOn})" aria-pressed="${sickOn}" style="min-height:32px;padding:0 14px;border:1px solid var(--border);border-radius:16px;background:${sickOn ? 'var(--accent)' : 'var(--surface2)'};color:${sickOn ? '#fff' : 'var(--text-dim)'};font-family:inherit;font-size:12px;font-weight:${sickOn ? 600 : 400};cursor:pointer">身體不適</button>`;
   const sickMsg = sickOn
     ? '<div style="margin-top:4px;font-size:11px;color:var(--text-dim)">已標記：此晚不列入統計，戰力僅供參考</div><div style="margin-top:2px;font-size:11px;color:var(--text-dim)">身體不適：戰力偏高不代表實際狀態</div>'
     : (showHint ? '<span style="font-size:11px;color:var(--text-dim)">睡超過 8 小時；如果是身體不適，可以標記</span>' : '');
-  const sickRow = `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${sickBtn}${showHint ? sickMsg : ''}</div>${sickOn ? sickMsg : ''}`;
+  const sickRow = `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${sickBtn}${periodBtn}${showHint ? sickMsg : ''}</div>${sickOn ? sickMsg : ''}`;
   return `<div style="margin-top:10px">
       <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase">實際體感（選填）${saved}</div>
       <div id="sleepFeelPill" style="margin-top:6px;display:flex;border:1px solid var(--border);border-radius:18px;overflow:hidden;max-width:360px">${cells}</div>
@@ -1832,16 +1879,18 @@ function _singleNightBodyFeel(n, r) {
   const lines = [];
   const codes = [];
   let negative = false;
+  const lightEnd = (lastStage === 'core' || lastStage === 'rem');
   if (lastStage === 'deep') {
     lines.push('起床前最後落在 deep，起床可能較昏沉、頭重，需要較久才清醒（睡眠慣性）。');
     codes.push('deep_end');
     negative = true;
-  } else if (lastStage === 'core' || lastStage === 'rem') {
-    lines.push('起床前最後落在較淺的睡眠階段，起床時通常比較容易清醒。');
+  } else if (lightEnd) {
+    if (!lastIncomplete) lines.push('起床前最後落在較淺的睡眠階段，起床時通常比較容易清醒。');
     codes.push('light_end');
   }
   if (lastIncomplete) {
-    lines.push('最後一個週期未完整結束，可能是被鬧鐘或外力在週期中途叫醒，起床較不清爽。');
+    if (lightEnd) lines.push('起床前最後落在較淺的睡眠階段，不至於太昏沉；但最後一個週期未完整結束，可能是被鬧鐘或外力在週期中途叫醒，起床仍可能不夠清爽。');
+    else lines.push('最後一個週期未完整結束，可能是被鬧鐘或外力在週期中途叫醒，起床較不清爽。');
     codes.push('last_incomplete');
     negative = true;
   }
@@ -2860,6 +2909,7 @@ function refreshAll() {
   const { score: combatScore, singleScore: combatSingle } = updateCombatPower(totalDebt);
   updateDailySummary(totalDebt, combatScore, combatSingle);
   renderRecapCard();
+  try { renderPeriodCard(); } catch (e) {}
   updateSickNotes();
   buildWeightedHistory();
   renderWeightedChart();
