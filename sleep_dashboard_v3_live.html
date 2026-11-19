@@ -212,6 +212,26 @@
   /* Bold axis ticks */
   .chart-wrap canvas, .hypno-wrap canvas { font-weight:700 !important; }
 
+
+  /* 目錄：>=1400px 固定右側（左側 aside 名詞定義欄維持原位），內文右側讓位；<1400px 右下懸浮按鈕 */
+  .toc { display:none; }
+  #toc-fab, #toc-panel { display:none; }
+  #dailySummary, #recapCard, #periodCard, #debtPanel, #cyclePanel, #sec-metrics, .panel[id^="sec-"] { scroll-margin-top:14px; }
+  .toc a, #toc-panel a { font-size:11.5px; color:var(--text-dim); background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 12px; text-decoration:none; }
+  .toc a:hover { border-color:var(--accent); color:var(--accent); }
+  .toc a.active, #toc-panel a.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .toc a[hidden], #toc-panel a[hidden] { display:none; }
+  @media(min-width:1400px) {
+    .toc { display:flex; flex-direction:column; gap:6px; position:fixed; right:16px; top:20px; bottom:20px; width:172px; overflow-y:auto; align-content:flex-start; z-index:20; }
+    .toc a { flex:none; }
+    .main { padding-right:204px; }
+  }
+  @media(max-width:1399px) {
+    #toc-fab { display:block; position:fixed; right:max(16px,env(safe-area-inset-right)); bottom:max(16px,env(safe-area-inset-bottom)); z-index:60; background:var(--accent); color:#fff; border:none; border-radius:20px; padding:9px 16px; font-size:12px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.25); cursor:pointer; font-family:inherit; }
+    #toc-panel { position:fixed; right:max(16px,env(safe-area-inset-right)); bottom:calc(max(16px,env(safe-area-inset-bottom)) + 46px); z-index:60; width:min(260px,calc(100vw - 32px)); max-height:min(60vh,calc(100vh - 100px)); overflow-y:auto; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px; box-shadow:0 4px 16px rgba(0,0,0,.2); }
+    #toc-panel.open { display:flex; }
+  }
+
   /* 窄螢幕名詞定義面板（桌機隱藏） */
   .def-open-btn { display:none; font-family:inherit; font-size:12px; font-weight:600; padding:5px 12px; border-radius:14px; border:1px solid var(--border); background:var(--surface); color:var(--accent); cursor:pointer; }
   .def-panel[hidden] { display:none; }
@@ -545,7 +565,7 @@
   </div>
 
   <!-- KEY METRICS COMPARISON -->
-  <div class="metrics-grid">
+  <div class="metrics-grid" id="sec-metrics">
 
     <!-- Deep Sleep -->
     <div class="metric-card">
@@ -630,7 +650,7 @@
     </div>
 
   <!-- COMBAT POWER INDEX（全寬） -->
-  <div class="panel">
+  <div class="panel" id="sec-dual">
     <div class="panel-header">
       <div>
         <div class="panel-title">⚡ 雙軌戰力</div>
@@ -709,7 +729,7 @@
     </div>
 
   <!-- WEIGHTED COMBAT TREND CHART -->
-  <div class="panel">
+  <div class="panel" id="sec-w3">
     <div class="panel-header">
       <div>
         <div class="panel-title">📈 三夜加權戰力走勢</div>
@@ -727,7 +747,7 @@
   </div>
 
   <!-- TREND CHART -->
-  <div class="panel">
+  <div class="panel" id="sec-dur">
     <div class="panel-header">
       <div>
         <div class="panel-title">睡眠時長趨勢</div>
@@ -748,7 +768,7 @@
   </div>
 
   <!-- STAGE PERCENTAGE CHART -->
-  <div class="panel">
+  <div class="panel" id="sec-stage">
     <div class="panel-header">
       <div>
         <div class="panel-title">睡眠分期佔比趨勢</div>
@@ -814,7 +834,7 @@
   </div>
 
   <!-- REGULARITY CARD -->
-  <div class="panel">
+  <div class="panel" id="sec-regular">
     <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
         <div class="panel-title">作息規律性分析</div>
@@ -831,7 +851,7 @@
   </div>
 
   <!-- EFFICIENCY TREND -->
-  <div class="panel">
+  <div class="panel" id="sec-eff">
     <div class="panel-header">
       <div>
         <div class="panel-title">睡眠效率趨勢</div>
@@ -3283,6 +3303,61 @@ function staleCheck(latest, now){
     box.classList.add('show');
     document.getElementById('staleX').addEventListener('click', function(){ box.classList.remove('show'); });
   } catch(e) {}
+})();
+</script>
+<nav class="toc" id="toc" aria-label="目錄">
+  <a href="#dailySummary">今日統整</a>
+  <a href="#recapCard">近期統整</a>
+  <a href="#periodCard">生理期對照</a>
+  <a href="#sec-metrics">關鍵指標對照</a>
+  <a href="#debtPanel">睡眠債 · 過去 7 天</a>
+  <a href="#sec-dual">⚡ 雙軌戰力</a>
+  <a href="#sec-w3">📈 三夜加權走勢</a>
+  <a href="#sec-dur">睡眠時長趨勢</a>
+  <a href="#cyclePanel">睡眠週期</a>
+  <a href="#sec-stage">睡眠分期佔比趨勢</a>
+  <a href="#sec-regular">作息規律性分析</a>
+  <a href="#sec-eff">睡眠效率趨勢</a>
+</nav>
+<button type="button" id="toc-fab" aria-expanded="false" aria-controls="toc-panel">☰ 目錄</button>
+<div id="toc-panel" role="navigation" aria-label="目錄"></div>
+<script>
+// 目錄：>=1400px 固定右側＋scrollspy；窄螢幕右下角懸浮按鈕（連結由 #toc 複製）；區塊不存在或不可見（如生理期對照未啟用）時隱藏連結
+(function(){
+  const toc=document.getElementById('toc'), fab=document.getElementById('toc-fab'), panel=document.getElementById('toc-panel');
+  if(!toc||!fab||!panel) return;
+  const links=[...toc.querySelectorAll('a[href^="#"]')];
+  links.forEach(a=>panel.appendChild(a.cloneNode(true)));
+  const all=[...toc.querySelectorAll('a'),...panel.querySelectorAll('a')];
+  const idOf=a=>a.getAttribute('href').slice(1);
+  const setOpen=o=>{panel.classList.toggle('open',o);fab.setAttribute('aria-expanded',o?'true':'false');};
+  fab.addEventListener('click',e=>{e.stopPropagation();setOpen(!panel.classList.contains('open'));});
+  panel.addEventListener('click',e=>{if(e.target.closest('a')) setOpen(false);});
+  document.addEventListener('click',e=>{if(!panel.contains(e.target)&&e.target!==fab) setOpen(false);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape') setOpen(false);});
+  const visible=el=>!!el&&el.offsetHeight>0;
+  let ticking=false;
+  const update=()=>{ ticking=false;
+    const vis=[];
+    all.forEach(a=>{const el=document.getElementById(idOf(a)); const v=visible(el); a.hidden=!v; if(v&&a.parentNode===toc) vis.push(el);});
+    if(!vis.length) return;
+    if(locked) return;
+    const line=window.innerHeight*0.3; let cur=vis[0];
+    if(window.scrollY>4){ for(const el of vis){ if(el.getBoundingClientRect().top<=line) cur=el; else break; } }
+    if(window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-2) cur=vis[vis.length-1];
+    all.forEach(a=>a.classList.toggle('active',idOf(a)===cur.id)); };
+  // 點連結：立即標亮，捲動停止 150ms（最長 1 秒）前不讓 scroll 判定覆蓋
+  let locked=false, lockMax=0, lockIdle=0;
+  const unlock=()=>{ locked=false; clearTimeout(lockMax); clearTimeout(lockIdle); kick(); };
+  const lockNow=()=>{ locked=true; clearTimeout(lockIdle); lockIdle=setTimeout(unlock,150); };
+  all.forEach(a=>a.addEventListener('click',()=>{
+    all.forEach(x=>x.classList.toggle('active',x.getAttribute('href')===a.getAttribute('href')));
+    clearTimeout(lockMax); lockMax=setTimeout(unlock,1000); lockNow(); }));
+  const kick=()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update); } };
+  window.addEventListener('scroll',()=>{ if(locked) lockNow(); kick(); },{passive:true});
+  window.addEventListener('resize',kick);
+  if('ResizeObserver' in window) new ResizeObserver(kick).observe(document.body);
+  update();
 })();
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_zht.js"></script>
