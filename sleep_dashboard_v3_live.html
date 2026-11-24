@@ -872,6 +872,83 @@
 </div>
 
 <script>
+// ===== 生理期標記疊在日期軸趨勢圖（只讀 sleep_feel_v1.nights[date].period；純顯示，不影響任何計算） =====
+var _periodCacheRaw=null, _periodCacheSet={};
+// 取得生理期夜晚集合 {YYYY-MM-DD:1}；以 localStorage 原字串比對做快取，避免 hover 重繪時反覆解析
+function _periodSet(){
+  var raw=null;
+  try{ raw=localStorage.getItem('sleep_feel_v1'); }catch(e){}
+  if(raw===_periodCacheRaw) return _periodCacheSet;
+  var set={};
+  try{ var db=_sleepFeelLoad().nights; Object.keys(db).forEach(function(d){ if(db[d].period===true) set[d]=1; }); }catch(e){}
+  _periodCacheRaw=raw; _periodCacheSet=set;
+  return set;
+}
+// tooltip footer：該夜有生理期標記才多一行
+function _periodFooter(dates){
+  return function(items){
+    var set=_periodSet(), i=items&&items[0]?items[0].dataIndex:-1;
+    return (i>=0&&dates[i]&&set[dates[i]])?'🌸 生理期':'';
+  };
+}
+// 共用 plugin：chart.data.periodDates 為與 labels 同序的日期（YYYY-MM-DD，起床日）陣列
+// 算出連續生理期夜晚合併後的 x 區段（像素）
+function _periodSegs(chart){
+  var dates=chart.data&&chart.data.periodDates, xs=chart.scales&&chart.scales.x;
+  if(!dates||!dates.length||!xs) return [];
+  var set=_periodSet(), n=dates.length, area=chart.chartArea;
+  var step=n>1?(xs.getPixelForValue(n-1)-xs.getPixelForValue(0))/(n-1):(area.right-area.left);
+  var segs=[], cur=null;
+  for(var i=0;i<n;i++){
+    if(set[dates[i]]){ if(cur) cur.end=i; else { cur={start:i,end:i}; segs.push(cur); } }
+    else cur=null;
+  }
+  return segs.map(function(g){
+    var l=Math.max(area.left,xs.getPixelForValue(g.start)-step/2), r=Math.min(area.right,xs.getPixelForValue(g.end)+step/2);
+    return {l:l,r:r};
+  }).filter(function(g){ return g.r>g.l; });
+}
+// beforeDatasetsDraw 畫淡暖色底色帶（連續夜合併），afterDraw 在每段頂端中央放 🌸
+const periodBandPlugin = {
+  id:'periodBand',
+  beforeDatasetsDraw:function(chart){
+    var segs=_periodSegs(chart); if(!segs.length) return;
+    var ctx=chart.ctx, a=chart.chartArea;
+    ctx.save();
+    ctx.fillStyle='rgba(232,168,124,0.20)'; // 淡暖橘（非紫紅）
+    segs.forEach(function(g){ ctx.fillRect(g.l,a.top,g.r-g.l,a.bottom-a.top); });
+    ctx.restore();
+  },
+  afterDraw:function(chart){
+    var segs=_periodSegs(chart); if(!segs.length) return;
+    var ctx=chart.ctx, a=chart.chartArea;
+    ctx.save();
+    ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+    segs.forEach(function(g){ ctx.fillText('🌸',(g.l+g.r)/2,a.top+1); });
+    ctx.restore();
+  },
+  afterUpdate:function(chart){
+    // 圖下方小字：僅在目前範圍內有標記夜時顯示
+    try{
+      var wrap=chart.canvas.parentNode, host=wrap&&wrap.parentNode; if(!host) return;
+      var note=wrap.nextElementSibling;
+      if(!note||!note.classList||!note.classList.contains('period-note')){
+        note=document.createElement('div'); note.className='period-note';
+        note.style.cssText='font-size:11px;color:var(--text-dim);margin-top:6px;display:none';
+        note.textContent='🌸 生理期（已標記夜）';
+        host.insertBefore(note,wrap.nextSibling);
+      }
+      var set=_periodSet(), dates=chart.data.periodDates||[], any=dates.some(function(d){ return set[d]; });
+      note.style.display=any?'block':'none';
+    }catch(e){}
+  }
+};
+// 切換生理期後讓所有日期軸趨勢圖立即重繪
+function _periodRefreshCharts(){
+  [trendChart,regularityTrendChart,pctTrendChart,effChart,(typeof _wChart!=='undefined'?_wChart:null)].forEach(function(c){
+    try{ if(c) c.update('none'); }catch(e){}
+  });
+}
 var SICK_HINT_MIN = 480; // 身體不適提示門檻：睡著時數（不含清醒）分鐘
 // 身體不適標記（sleep_feel_v1.nights[date].sick===true）；date 為 summary 同一套（起床日）
 function _sickSet(){
@@ -1286,7 +1363,7 @@ function updateTrend(data) {
   const cfg = {
     type: 'bar',
     data: {
-      labels,
+      labels, periodDates: data.map(d=>d.date),
       datasets: [
         { label:'深度', data:deep,  backgroundColor:COLORS.deep+'cc', stack:'s' },
         { label:'REM',  data:rem,   backgroundColor:COLORS.rem+'cc',  stack:'s' },
@@ -1320,7 +1397,8 @@ function updateTrend(data) {
             const pctVal = total > 0 ? (i.raw / total * 100).toFixed(1) : '0';
             return ` ${i.dataset.label}: ${Math.round(i.raw)} 分鐘（${pctVal}%）`;
           },
-          afterBody: i => [`睡眠（不含清醒）: ${minToHm(sleepOnly[i[0].dataIndex])}`, `在床（含清醒）: ${minToHm(totals[i[0].dataIndex])}`]
+          afterBody: i => [`睡眠（不含清醒）: ${minToHm(sleepOnly[i[0].dataIndex])}`, `在床（含清醒）: ${minToHm(totals[i[0].dataIndex])}`],
+          footer: _periodFooter(data.map(d=>d.date))
         }}
       },
       scales:{
@@ -1366,7 +1444,7 @@ function updateTrend(data) {
   if (_lgEl) _lgEl.innerHTML = [_lgBar(COLORS.deep+'cc','深度'), _lgBar(COLORS.rem+'cc','REM'), _lgBar(COLORS.core+'cc','核心'), _lgBar(COLORS.awake+'88','清醒'),
     _lgLine(COLORS.deep,'睡眠（不含清醒）',false,2), _lgLine(COLORS.awake,'在床（含清醒）',false,2), _lgLine('#ff7a1a','趨勢線（前後 7 晚平均）',true,3)].join('');
   if (trendChart) { trendChart.destroy(); trendChart = null; }
-  trendChart = new Chart(document.getElementById('trendChart'), { ...cfg, plugins:[totalLabelPlugin] });
+  trendChart = new Chart(document.getElementById('trendChart'), { ...cfg, plugins:[periodBandPlugin, totalLabelPlugin] });
 }
 
 function updateRegularity(data) {
@@ -1489,7 +1567,7 @@ function updateRegularity(data) {
   const pointR=data.length>60?0:2;
   const cfg={
     type:'line',
-    data:{labels,datasets:[
+    data:{labels,periodDates:data.map(d=>d.date),datasets:[
       {label:'入睡',data:bedPts,borderColor:COLORS.deep,borderWidth:1.5,pointRadius:pointR,pointHoverRadius:4,tension:0.3,fill:false},
       {label:'起床',data:wakePts,borderColor:COLORS.rem,borderWidth:1.5,pointRadius:pointR,pointHoverRadius:4,tension:0.3,fill:false}
     ]},
@@ -1499,7 +1577,8 @@ function updateRegularity(data) {
         legend:{labels:{color:tickColor,boxWidth:12,font:{size:11,weight:'bold'}}},
         tooltip:{callbacks:{
           title:i=>{const d=data[i[0].dataIndex];const dow=DOW[new Date(d.date+'T12:00:00').getDay()];return d.date+'（週'+dow+'）';},
-          label:i=>{let v=i.raw;if(v<0)v+=1440;return ` ${i.dataset.label}: ${minutesToTime(v)}`;}
+          label:i=>{let v=i.raw;if(v<0)v+=1440;return ` ${i.dataset.label}: ${minutesToTime(v)}`;},
+          footer:_periodFooter(data.map(d=>d.date))
         }}
       },
       scales:{
@@ -1513,7 +1592,7 @@ function updateRegularity(data) {
     }
   };
   if(regularityTrendChart){regularityTrendChart.data=cfg.data;regularityTrendChart.options=cfg.options;regularityTrendChart.update();}
-  else regularityTrendChart=new Chart(document.getElementById('regularityTrendChart'),cfg);
+  else regularityTrendChart=new Chart(document.getElementById('regularityTrendChart'),{...cfg,plugins:[periodBandPlugin]});
 }
 
 // HYPNOGRAM — sleep stage line chart
@@ -1822,6 +1901,7 @@ function sleepFeelSetPeriod(date, on) {
   _feelSavedDate = null;
   renderCycleCard();
   try { renderPeriodCard(); } catch (e) {}
+  try { _periodRefreshCharts(); } catch (e) {}
 }
 function renderPeriodCard() {
   const el = document.getElementById('periodCard');
@@ -2362,7 +2442,7 @@ function updatePctTrend(data) {
   const cfg = {
     type: 'line',
     data: {
-      labels,
+      labels, periodDates: data.map(d => d.date),
       datasets: [
         { label:'Deep 基礎能量', data:deepPcts,
           borderColor:COLORS.deep, backgroundColor:COLORS.deep+'22',
@@ -2393,7 +2473,8 @@ function updatePctTrend(data) {
             const dow = DOW[new Date(d.date + 'T12:00:00').getDay()];
             return d.date + '（週' + dow + '）';
           },
-          label: i => ` ${i.dataset.label}: ${i.raw}%`
+          label: i => ` ${i.dataset.label}: ${i.raw}%`,
+          footer: _periodFooter(data.map(d => d.date))
         }}
       },
       scales: {
@@ -2408,7 +2489,7 @@ function updatePctTrend(data) {
   };
 
   if (pctTrendChart) { pctTrendChart.destroy(); pctTrendChart = null; }
-  pctTrendChart = new Chart(document.getElementById('pctTrendChart'), { ...cfg, plugins:[refBandPlugin] });
+  pctTrendChart = new Chart(document.getElementById('pctTrendChart'), { ...cfg, plugins:[periodBandPlugin, refBandPlugin] });
 }
 
 function setEffRange(range) {
@@ -2447,7 +2528,7 @@ function updateEffTrend(data) {
   };
   const cfg = {
     type: 'line',
-    data: { labels, datasets: [{
+    data: { labels, periodDates: data.map(d => d.date), datasets: [{
       label: '睡眠效率', data: effs,
       borderColor: '#5c7a96', backgroundColor: '#5c7a9618',
       borderWidth: 1.5, pointRadius: pointR, pointHoverRadius: 4,
@@ -2459,7 +2540,8 @@ function updateEffTrend(data) {
         legend: { display: false },
         tooltip: { callbacks: {
           title: i => { const d = data[i[0].dataIndex]; const dow = DOW[new Date(d.date+'T12:00:00').getDay()]; return d.date+'（週'+dow+'）'; },
-          label: i => ` 效率: ${i.raw}%`
+          label: i => ` 效率: ${i.raw}%`,
+          footer: _periodFooter(data.map(d => d.date))
         }}
       },
       scales: {
@@ -2469,7 +2551,7 @@ function updateEffTrend(data) {
     }
   };
   if (effChart) { effChart.destroy(); effChart = null; }
-  effChart = new Chart(document.getElementById('effChart'), { ...cfg, plugins: [refLinePlugin] });
+  effChart = new Chart(document.getElementById('effChart'), { ...cfg, plugins: [periodBandPlugin, refLinePlugin] });
 }
 
 function updatePersonalBaseline() {
@@ -3063,7 +3145,7 @@ function renderWeightedChart() {
   const ctx = document.getElementById('weightedChart').getContext('2d');
   _wChart = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [
+    data: { labels, periodDates: slice.map(d => d.date), datasets: [
       { data: scores, borderColor: '#5c7a96',
         backgroundColor: 'rgba(92,122,150,0.07)', fill: true, tension: 0.35,
         pointRadius: 3, pointBackgroundColor: ptColors, pointBorderWidth: 0, borderWidth: 2,
@@ -3072,12 +3154,12 @@ function renderWeightedChart() {
         borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false,
         tension: 0, order: 2, label: 'trend' }
     ]},
-    plugins: [_verticalDropPlugin],
+    plugins: [periodBandPlugin, _verticalDropPlugin],
     options: {
       responsive: true, maintainAspectRatio: !_isMobileChart(),
       plugins: { legend: { display: false },
         tooltip: { filter: i => i.datasetIndex === 0,
-          callbacks: { label: c => `戰力 ${c.raw}` },
+          callbacks: { label: c => `戰力 ${c.raw}`, footer: _periodFooter(slice.map(d => d.date)) },
           backgroundColor: 'rgba(252,251,248,.96)', titleColor: '#2a2520', bodyColor: '#2a2520',
           borderColor: 'rgba(0,0,0,.08)', borderWidth: 1 }},
       scales: {
