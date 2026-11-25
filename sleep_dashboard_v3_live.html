@@ -915,7 +915,7 @@ const periodBandPlugin = {
     var segs=_periodSegs(chart); if(!segs.length) return;
     var ctx=chart.ctx, a=chart.chartArea;
     ctx.save();
-    ctx.fillStyle='rgba(232,168,124,0.20)'; // 淡暖橘（非紫紅）
+    ctx.fillStyle='rgba(122,114,104,0.13)'; // 暖灰（11-25 使用者選，取 --text-dim）
     segs.forEach(function(g){ ctx.fillRect(g.l,a.top,g.r-g.l,a.bottom-a.top); });
     ctx.restore();
   },
