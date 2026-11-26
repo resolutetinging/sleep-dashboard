@@ -489,7 +489,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 三維狀態 + Alignment -->
-  <div class="card cb">
+  <div class="card cb" data-flash-key="state3">
     <div class="lbl">三維狀態</div>
     <div class="sbar-list">
       <div class="sbar-row"><span class="sbar-name">戰力</span><div class="sbar-track"><div class="sbar-fill" id="bar-combat" style="width:0%"></div></div><span class="sbar-num" id="num-combat">—</span></div>
@@ -557,7 +557,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 人際圈與睡眠/完成率關聯（跨 App：Mental Dashboard wellness_v5 × SAS Hub） -->
-  <div class="card csoc">
+  <div class="card csoc" data-flash-key="social">
     <div class="lbl">🧑‍🤝‍🧑 人際圈與睡眠/完成率關聯</div>
     <div id="sc-coverage" style="font-size:.67rem;color:var(--sub);line-height:1.75;margin-bottom:.35rem"></div>
     <div id="sc-body"><div style="font-size:.7rem;color:var(--faint);padding:.4rem 0">載入中…</div></div>
@@ -845,7 +845,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 睡眠變異亮燈 / 因果回溯 -->
-  <div class="card csca" style="background:var(--card);padding:1.4rem 1.4rem 1.2rem">
+  <div class="card csca" data-flash-key="variance" style="background:var(--card);padding:1.4rem 1.4rem 1.2rem">
     <div class="lbl" style="margin-bottom:1rem;display:flex;align-items:center;gap:8px;">
       🔍 睡眠變異亮燈與因果回溯
       <div style="margin-left:auto;display:flex;align-items:center;gap:4px;">
@@ -863,7 +863,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 跨維度長期因果槓桿條 -->
-  <div class="card clv">
+  <div class="card clv" data-flash-key="lever">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.8rem">
       <div>
         <div class="lbl" style="margin-bottom:2px">🔗 跨維度因果槓桿條</div>
@@ -909,7 +909,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 任務屬性熱點 -->
-  <div class="card ctx">
+  <div class="card ctx" data-flash-key="taxonomy">
     <div class="lbl">📊 任務屬性熱點 × 狀態匹配建議</div>
     <div class="ctx-inner">
       <div>
@@ -924,11 +924,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 
   <!-- 人類圖 AI -->
-  <div class="card cha">
+  <div class="card cha" data-flash-key="hd-ai">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.7rem">
       <div class="lbl" style="margin-bottom:0">🌟 人類圖 AI 深度解析</div>
       <button class="hd-btn" id="hd-analyze-btn" onclick="analyzeHD()">
-        <div class="hd-spinner-inline" id="hd-spinner"></div><span id="hd-btn-text">生成今日解析</span>
+        <div class="hd-spinner-inline" id="hd-spinner"></div><span id="hd-btn-text" data-flash-ignore>生成今日解析</span>
       </button>
     </div>
     <div class="hd-ai-grid">
@@ -938,7 +938,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       </div>
       <div>
         <div class="lbl">AI 解析結果</div>
-        <div class="hd-result" id="hd-result">點擊「生成今日解析」，AI 將根據你的人類圖設定給出今日行動策略。</div>
+        <div class="hd-result" id="hd-result" data-flash-ignore>點擊「生成今日解析」，AI 將根據你的人類圖設定給出今日行動策略。</div>
       </div>
     </div>
   </div>
@@ -4879,5 +4879,6 @@ try{renderSocialCircleCard();}catch(e){console.warn('renderSocialCircleCard',e);
 })();
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sas-hub" data-cc-label="SAS Hub"></script>
+<script src="https://resolutetinging.github.io/control-center/cc_flash.js" data-flash-sel=".card" data-flash-page="sas_hub"></script>
 </body>
 </html>

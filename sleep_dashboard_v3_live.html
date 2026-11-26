@@ -743,7 +743,7 @@
       </div>
     </div>
     <div class="chart-wrap"><canvas id="weightedChart" height="120"></canvas></div>
-    <div id="weightedAIOut" style="margin-top:10px;padding:10px 13px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-dim);line-height:1.75;min-height:36px;">—</div>
+    <div id="weightedAIOut" data-flash-ignore style="margin-top:10px;padding:10px 13px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-dim);line-height:1.75;min-height:36px;">—</div>
   </div>
 
   <!-- TREND CHART -->
@@ -1119,8 +1119,8 @@ function renderRecapCard(){
     _sickNoteHtml(r.sickN)+
     list('有進步',r.prog,false)+list('需要注意',r.att,false)+list('建議',r.sug,true)+
     '<details style="margin-top:10px"><summary style="font-size:12px;cursor:pointer;color:var(--accent)">近 4 週逐週表</summary><div class="rc-scroll"><table class="rc-tb">'+wk+'</table></div></details>'+
-    '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" id="recapAIBtn" onclick="runRecapAI()" style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer">AI 解讀</button></div>'+
-    '<div id="recapAIOut" style="font-size:13px;line-height:1.7;margin-top:6px"></div>';
+    '<div data-flash-ignore style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" id="recapAIBtn" onclick="runRecapAI()" style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer">AI 解讀</button></div>'+
+    '<div id="recapAIOut" data-flash-ignore style="font-size:13px;line-height:1.7;margin-top:6px"></div>';
 }
 // AI 解讀拆成條列：依換行拆、去掉模型自帶的條列符號；若只有一行則依句號拆（CC spec 12.3）
 function _rcBullets(txt){
@@ -3448,5 +3448,6 @@ function staleCheck(latest, now){
 </script>
 <script src="https://resolutetinging.github.io/control-center/cc_zht.js"></script>
 <script src="https://resolutetinging.github.io/control-center/cc_track.js" data-cc-key="sleep" data-cc-label="Sleep Dashboard"></script>
+<script src="https://resolutetinging.github.io/control-center/cc_flash.js" data-flash-sel="#dailySummary,#recapCard,#periodCard,.stat-card,.metric-card,.panel" data-flash-page="sleep_v3"></script>
 </body>
 </html>
